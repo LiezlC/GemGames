@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bio-Acoustic Plant Interface</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+        body {
+            background-color: #0d1117;
+            color: #00ff41;
+            font-family: 'Share Tech Mono', monospace;
+            overflow: hidden;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* CRT Scanline Effect */
+        .crt::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 2;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+        }
+
+        .glow-text {
+            text-shadow: 0 0 5px #00ff41, 0 0 10px #00ff41;
+        }
+
+        /* Plant Container */
+        .plant-container {
+            position: relative;
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1;
+        }
+
+        /* SVG Styles */
+        .plant-svg {
+            height: 60vh;
+            filter: drop-shadow(0 0 10px rgba(0, 255, 65, 0.5));
+            transition: filter 0.3s ease;
+        }
+
+        .leaf {
+            fill: #1a4d1a;
+            stroke: #00ff41;
+            stroke-width: 2;
+            transition: fill 0.5s ease;
+        }
+
+        .vein {
+            stroke: #00ff41;
+            stroke-width: 1;
+            stroke-opacity: 0.6;
+            fill: none;
+        }
+
+        .tomato {
+            fill: #1a3300;
+            stroke: #00ff41;
+            stroke-width: 2;
+            transition: fill 1s ease, filter 0.5s ease;
+        }
+
+        .stem {
+            stroke: #2d5a2d;
+            stroke-width: 8;
+            fill: none;
+            stroke-linecap: round;
+        }
+
+        /* UI Elements */
+        .hud-panel {
+            border: 1px solid #00ff41;
+            background: rgba(0, 20, 0, 0.8);
+            padding: 1rem;
+            box-shadow: 0 0 15px rgba(0, 255, 65, 0.2);
+            backdrop-filter: blur(4px);
+        }
+
+        .slider-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 150px;
+        }
+
+        input[type=range][orient=vertical] {
+            writing-mode: bt-lr; /* IE */
+            -webkit-appearance: slider-vertical; /* WebKit */
+            width: 8px;
+            height: 100px;
+            padding: 0 5px;
+            accent-color: #00ff41;
+            background: transparent;
+        }
+
+        /* Mic Icon styling */
+        .mic-head {
+            width: 20px;
+            height: 30px;
+            background: repeating-linear-gradient(
+                0deg,
+                #333,
+                #333 2px,
+                #666 2px,
+                #666 4px
+            );
+            border-radius: 10px;
+            border: 2px solid #888;
+            margin-bottom: 5px;
+            position: relative;
+        }
+        .mic-head::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 8px;
+            width: 4px;
+            height: 10px;
+            background: #444;
+        }
+
+        .data-stream {
+            font-size: 10px;
+            line-height: 1.1;
+            opacity: 0.7;
+            white-space: pre;
+            overflow: hidden;
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0% { opacity: 0.5; }
+            50% { opacity: 1; }
+            100% { opacity: 0.5; }
+        }
+
+        .animate-pulse-fast {
+            animation: pulse 0.2s infinite;
+        }
+        
+        .animate-pulse-slow {
+            animation: pulse 2s infinite;
+        }
+
+        .active-mic {
+            box-shadow: 0 0 10px #00ff41;
+            border-color: #00ff41;
+        }
+
+    </style>
+</head>
+<body class="crt">
+
+    <!-- Header / Top HUD -->
+    <div class="flex justify-between items-start p-4 z-10">
+        <div class="hud-panel w-64">
+            <h1 class="text-xl font-bold glow-text mb-2">BIO-SYNTH v9.0</h1>
+            <div class="flex justify-between text-xs">
+                <span>STATUS:</span>
+                <span id="status-text" class="text-white">MONITORING</span>
+            </div>
+            <div class="flex justify-between text-xs mt-1">
+                <span>RESONANCE:</span>
+                <span id="resonance-val">0%</span>
+            </div>
+            <div class="w-full bg-gray-800 h-2 mt-2 border border-green-900">
+                <div id="resonance-bar" class="h-full bg-green-500 w-0 transition-all duration-300"></div>
+            </div>
+        </div>
+
+        <!-- Binary Rain / Data Stream -->
+        <div class="hud-panel w-48 h-24 overflow-hidden hidden md:block">
+            <div id="binary-stream" class="data-stream text-green-300"></div>
+        </div>
+    </div>
+
+    <!-- Main Visualization Area -->
+    <div class="plant-container">
+        <!-- Floating Holographic UI Elements -->
+        <div class="absolute left-10 top-1/3 opacity-50 hidden md:block">
+            <div class="border-l-2 border-green-500 pl-2 text-xs">
+                <div>RNA_SEQ: ACTIVE</div>
+                <div>CHLOROPHYLL: 88%</div>
+                <div class="mt-2 text-[8px]">101101011101</div>
+            </div>
+        </div>
+
+        <div class="absolute right-10 top-1/4 opacity-50 hidden md:block">
+            <svg width="100" height="60">
+                <path d="M0,30 Q25,10 50,30 T100,30" fill="none" stroke="#00ff41" stroke-width="1" class="animate-pulse-slow"/>
+                <text x="0" y="55" fill="#00ff41" font-size="8">WAVE_MODULATION</text>
+            </svg>
+        </div>
+
+        <!-- The Plant SVG -->
+        <svg id="bio-plant" class="plant-svg" viewBox="0 0 300 400" xmlns="http://www.w3.org/2000/svg">
+            <!-- Glow Filter -->
+            <defs>
+                <filter id="glow">
+                    <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+                    <feMerge>
+                        <feMergeNode in="coloredBlur"/>
+                        <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                </filter>
+            </defs>
+
+            <!-- Stem -->
+            <path d="M150,400 Q140,300 150,250 T150,150" class="stem" />
+            
+            <!-- Leaves (Left) -->
+            <g transform="translate(150, 250) rotate(-45)">
+                <path d="M0,0 Q-30,-10 -50,0 Q-30,10 0,0" class="leaf" />
+                <path d="M0,0 L-45,0 M-15,0 L-20,-5 M-15,0 L-20,5 M-30,0 L-35,-5 M-30,0 L-35,5" class="vein" />
+            </g>
+            <g transform="translate(145, 320) rotate(-20)">
+                <path d="M0,0 Q-40,-15 -70,0 Q-40,15 0,0" class="leaf" />
+                <path d="M0,0 L-65,0 M-20,0 L-25,-8 M-20,0 L-25,8" class="vein" />
+            </g>
+
+            <!-- Leaves (Right) -->
+            <g transform="translate(150, 200) rotate(45)">
+                <path d="M0,0 Q30,-10 50,0 Q30,10 0,0" class="leaf" />
+                <path d="M0,0 L45,0 M15,0 L20,-5 M15,0 L20,5" class="vein" />
+            </g>
+            <g transform="translate(155, 280) rotate(20)">
+                <path d="M0,0 Q40,-15 70,0 Q40,15 0,0" class="leaf" />
+                <path d="M0,0 L65,0" class="vein" />
+            </g>
+
+            <!-- Top Growth -->
+            <g transform="translate(150, 150)">
+                <path d="M0,0 Q-10,-20 0,-40 Q10,-20 0,0" class="leaf" />
+            </g>
+
+            <!-- The Fruit (Tomato) -->
+            <g id="fruit-group" transform="translate(150, 180)">
+                <circle cx="0" cy="0" r="0" class="tomato" id="main-fruit" />
+                <!-- Highlights on fruit -->
+                <path d="M-10,-10 Q0,-20 10,-10" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2" id="fruit-highlight" style="opacity:0"/>
+            </g>
+            
+            <!-- Connection Lines (Simulated wires from soil) -->
+            <path d="M100,400 C100,380 120,380 130,400" fill="none" stroke="#333" stroke-width="2" />
+            <path d="M200,400 C200,380 180,380 170,400" fill="none" stroke="#333" stroke-width="2" />
+        </svg>
+    </div>
+
+    <!-- Bottom Controls -->
+    <div class="z-10 bg-black bg-opacity-80 border-t border-green-900 p-4">
+        <div class="flex justify-center items-end gap-8 md:gap-16">
+            
+            <!-- Mic 1: Frequency -->
+            <div class="slider-container">
+                <div class="mic-head" id="mic1-head"></div>
+                <input type="range" orient="vertical" min="100" max="1000" value="200" id="freq-slider">
+                <label class="text-xs mt-2 text-green-500">FREQ</label>
+                <div class="text-[10px] text-gray-400" id="freq-val">200Hz</div>
+            </div>
+
+            <!-- Oscilloscope Canvas -->
+            <div class="hidden md:flex flex-col items-center justify-center w-64 h-32 border border-green-800 bg-black relative rounded-lg overflow-hidden shadow-[0_0_10px_rgba(0,255,0,0.1)]">
+                <canvas id="scope" width="256" height="128"></canvas>
+                <div class="absolute top-1 left-1 text-[8px] text-green-600">AUDIO_INPUT_VISUALIZER</div>
+            </div>
+
+            <!-- Mic 2: Amplitude -->
+            <div class="slider-container">
+                <div class="mic-head" id="mic2-head"></div>
+                <input type="range" orient="vertical" min="0" max="100" value="10" id="amp-slider">
+                <label class="text-xs mt-2 text-green-500">GAIN</label>
+                <div class="text-[10px] text-gray-400" id="amp-val">10%</div>
+            </div>
+
+            <!-- Mic 3: Modulation -->
+            <div class="slider-container">
+                <div class="mic-head" id="mic3-head"></div>
+                <input type="range" orient="vertical" min="0" max="50" value="0" id="mod-slider">
+                <label class="text-xs mt-2 text-green-500">MOD</label>
+                <div class="text-[10px] text-gray-400" id="mod-val">0%</div>
+            </div>
+
+        </div>
+        
+        <div class="text-center mt-4 text-xs text-gray-500">
+            ADJUST FREQUENCIES TO ACHIEVE BIO-RESONANCE. TARGET: <span class="text-green-400">432Hz - 440Hz</span>
+        </div>
+    </div>
+
+    <script>
+        // --- Audio Context Setup ---
+        let audioCtx;
+        let oscillator;
+        let gainNode;
+        let isAudioStarted = false;
+
+        function initAudio() {
+            if (isAudioStarted) return;
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            audioCtx = new AudioContext();
+            
+            oscillator = audioCtx.createOscillator();
+            gainNode = audioCtx.createGain();
+            
+            oscillator.type = 'sine';
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            oscillator.start();
+            gainNode.gain.setValueAtTime(0, audioCtx.currentTime); // Start silent
+            
+            isAudioStarted = true;
+        }
+
+        // --- UI Elements ---
+        const freqSlider = document.getElementById('freq-slider');
+        const ampSlider = document.getElementById('amp-slider');
+        const modSlider = document.getElementById('mod-slider');
+        
+        const freqVal = document.getElementById('freq-val');
+        const ampVal = document.getElementById('amp-val');
+        const modVal = document.getElementById('mod-val');
+
+        const mic1Head = document.getElementById('mic1-head');
+        const mic2Head = document.getElementById('mic2-head');
+        const mic3Head = document.getElementById('mic3-head');
+
+        const resonanceBar = document.getElementById('resonance-bar');
+        const resonanceText = document.getElementById('resonance-val');
+        const statusText = document.getElementById('status-text');
+        
+        const plantSvg = document.getElementById('bio-plant');
+        const fruit = document.getElementById('main-fruit');
+        const fruitHighlight = document.getElementById('fruit-highlight');
+        const leaves = document.querySelectorAll('.leaf');
+
+        // --- Canvas Setup ---
+        const canvas = document.getElementById('scope');
+        const canvasCtx = canvas.getContext('2d');
+        let time = 0;
+
+        // --- State ---
+        let frequency = 200;
+        let amplitude = 10;
+        let modulation = 0;
+        let resonance = 0;
+        let targetFreq = 432; // The magic frequency
+        let targetRange = 30; // Tolerance
+
+        // --- Event Listeners ---
+        const updateValues = () => {
+            frequency = parseInt(freqSlider.value);
+            amplitude = parseInt(ampSlider.value);
+            modulation = parseInt(modSlider.value);
+
+            freqVal.textContent = frequency + 'Hz';
+            ampVal.textContent = amplitude + '%';
+            modVal.textContent = modulation + '%';
+
+            // Visual feedback on mics
+            mic1Head.classList.toggle('active-mic', amplitude > 0);
+            mic2Head.classList.toggle('active-mic', amplitude > 0);
+            mic3Head.classList.toggle('active-mic', modulation > 0);
+
+            // Audio updates
+            if (isAudioStarted) {
+                oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime);
+                // Volume is low to not be annoying, scaled by amplitude slider
+                const vol = (amplitude / 100) * 0.1; 
+                gainNode.gain.setTargetAtTime(vol, audioCtx.currentTime, 0.1);
+                
+                // Modulation effect (wobble)
+                if (modulation > 0) {
+                    const wobble = Math.sin(Date.now() / 100) * modulation;
+                    oscillator.frequency.setValueAtTime(frequency + wobble, audioCtx.currentTime);
+                }
+            }
+
+            calculateResonance();
+        };
+
+        [freqSlider, ampSlider, modSlider].forEach(input => {
+            input.addEventListener('input', () => {
+                if(!isAudioStarted) initAudio();
+                updateValues();
+            });
+        });
+
+        // --- Logic ---
+        function calculateResonance() {
+            // Calculate how close we are to the target frequency
+            const dist = Math.abs(frequency - targetFreq);
+            
+            // Normalize distance to a 0-100 score
+            let score = 0;
+            if (dist < targetRange) {
+                score = 100 - (dist / targetRange) * 100;
+            }
+
+            // Amplitude must be sufficient to "reach" the plant
+            if (amplitude < 10) score = 0;
+
+            // Modulation adds a bonus if close, penalty if far
+            if (score > 80 && modulation > 10) score += 10;
+            if (score < 50 && modulation > 20) score -= 10;
+
+            // Clamp
+            resonance = Math.max(0, Math.min(100, score));
+
+            // Update UI
+            resonanceBar.style.width = resonance + '%';
+            resonanceText.textContent = Math.floor(resonance) + '%';
+
+            // Update Plant Visuals based on resonance
+            updatePlantState();
+        }
+
+        function updatePlantState() {
+            // 1. Fruit Growth
+            const fruitSize = (resonance / 100) * 25; // Max radius 25
+            fruit.setAttribute('r', Math.max(0, fruitSize));
+            
+            // 2. Color Shift (Green -> Red)
+            // Start: #1a3300 (Dark Green), End: #ff3300 (Red)
+            if (resonance > 80) {
+                fruit.style.fill = '#ff4400';
+                fruit.style.filter = 'url(#glow)';
+                fruitHighlight.style.opacity = 1;
+                statusText.textContent = "HARMONIZED";
+                statusText.style.color = "#00ff41";
+            } else if (resonance > 40) {
+                fruit.style.fill = '#aa5500';
+                fruit.style.filter = 'none';
+                fruitHighlight.style.opacity = 0.5;
+                statusText.textContent = "TUNING...";
+                statusText.style.color = "yellow";
+            } else {
+                fruit.style.fill = '#1a3300';
+                fruit.style.filter = 'none';
+                fruitHighlight.style.opacity = 0;
+                statusText.textContent = "SEARCHING";
+                statusText.style.color = "white";
+            }
+
+            // 3. Leaves Glow
+            leaves.forEach(leaf => {
+                if (resonance > 50) {
+                    leaf.style.fill = `rgb(0, ${100 + resonance}, 0)`;
+                    leaf.style.strokeWidth = 2 + (resonance/50);
+                } else {
+                    leaf.style.fill = '#1a4d1a';
+                    leaf.style.strokeWidth = 2;
+                }
+            });
+        }
+
+        // --- Animation Loop ---
+        function draw() {
+            requestAnimationFrame(draw);
+
+            // Clear Canvas
+            canvasCtx.fillStyle = 'rgba(0, 0, 0, 0.2)'; // Trail effect
+            canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+
+            canvasCtx.lineWidth = 2;
+            canvasCtx.strokeStyle = '#00ff41';
+            canvasCtx.beginPath();
+
+            const width = canvas.width;
+            const height = canvas.height;
+            const sliceWidth = width * 1.0 / width;
+            let x = 0;
+
+            // Draw Waveform
+            for (let i = 0; i < width; i++) {
+                // Create a wave based on frequency and amplitude
+                // Scale frequency to look good on canvas
+                const freqScale = frequency / 5000; 
+                const ampScale = (amplitude / 100) * (height / 2.5);
+                
+                // Add modulation jitter
+                const modJitter = modulation > 0 ? Math.sin(time * 0.1) * (modulation/5) : 0;
+
+                const y = (height / 2) + Math.sin((i * freqScale * 100) + time + modJitter) * ampScale;
+
+                if (i === 0) {
+                    canvasCtx.moveTo(x, y);
+                } else {
+                    canvasCtx.lineTo(x, y);
+                }
+
+                x += 1;
+            }
+
+            canvasCtx.stroke();
+            time += 0.2 + (frequency / 1000);
+        }
+
+        // --- Binary Stream Logic ---
+        function updateBinary() {
+            const stream = document.getElementById('binary-stream');
+            const bin = Math.random() > 0.5 ? '1' : '0';
+            stream.textContent += bin;
+            if (stream.textContent.length > 300) {
+                stream.textContent = stream.textContent.substring(100);
+            }
+            // Randomly insert "BIO-SIGNAL" text
+            if (Math.random() > 0.98) {
+                stream.textContent += "\n[BIO-SIGNAL DETECTED]\n";
+            }
+        }
+
+        // Start Loops
+        draw();
+        setInterval(updateBinary, 50);
+
+        // Initial call
+        updateValues();
+
+    </script>
+</body>
+</html>

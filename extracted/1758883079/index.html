@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authentic Human Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=VT323&display=swap');
+
+        :root {
+            --neon-cyan: #00f3ff;
+            --neon-pink: #ff00ff;
+            --neon-green: #0aff00;
+            --bg-dark: #050510;
+            --glass: rgba(20, 20, 35, 0.7);
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: white;
+            font-family: 'VT323', monospace;
+            overflow: hidden;
+            height: 100vh;
+            background-image: 
+                radial-gradient(circle at 20% 30%, rgba(0, 243, 255, 0.1) 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, rgba(255, 0, 255, 0.1) 0%, transparent 40%);
+        }
+
+        /* CRT Scanline Effect */
+        .scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                to bottom,
+                rgba(255,255,255,0),
+                rgba(255,255,255,0) 50%,
+                rgba(0,0,0,0.1) 50%,
+                rgba(0,0,0,0.1)
+            );
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 50;
+            animation: scanlineMove 10s linear infinite;
+        }
+
+        @keyframes scanlineMove {
+            0% { background-position: 0 0; }
+            100% { background-position: 0 100%; }
+        }
+
+        /* Neon Text */
+        .neon-text-cyan {
+            text-shadow: 0 0 5px var(--neon-cyan), 0 0 10px var(--neon-cyan);
+        }
+        .neon-text-pink {
+            text-shadow: 0 0 5px var(--neon-pink), 0 0 10px var(--neon-pink);
+        }
+
+        /* Robot Avatar CSS Construction */
+        .robot-head {
+            width: 100px;
+            height: 120px;
+            background: linear-gradient(135deg, #2a2a40, #1a1a2e);
+            border: 2px solid var(--neon-cyan);
+            border-radius: 40px 40px 60px 60px;
+            position: relative;
+            box-shadow: 0 0 15px var(--neon-cyan);
+            margin: 0 auto;
+            transition: transform 0.3s ease;
+        }
+        .robot-eye {
+            width: 25px;
+            height: 35px;
+            background: var(--neon-cyan);
+            border-radius: 50%;
+            position: absolute;
+            top: 35px;
+            box-shadow: 0 0 10px var(--neon-cyan);
+            animation: blink 4s infinite;
+        }
+        .eye-left { left: 20px; }
+        .eye-right { right: 20px; }
+        .robot-mouth {
+            width: 40px;
+            height: 4px;
+            background: var(--neon-cyan);
+            position: absolute;
+            bottom: 25px;
+            left: 30px;
+            border-radius: 2px;
+        }
+
+        @keyframes blink {
+            0%, 96%, 100% { transform: scaleY(1); }
+            98% { transform: scaleY(0.1); }
+        }
+
+        /* Glassmorphism Panels */
+        .panel {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Coffee Steam Animation */
+        .steam {
+            position: absolute;
+            width: 6px;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 50%;
+            animation: rise 2s infinite ease-out;
+            opacity: 0;
+        }
+        @keyframes rise {
+            0% { transform: translateY(0) scale(1); opacity: 0.8; }
+            100% { transform: translateY(-20px) scale(1.5); opacity: 0; }
+        }
+
+        /* Pixel Cat Animation */
+        .pixel-cat {
+            font-size: 3rem;
+            animation: bounce 1s infinite alternate;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .pixel-cat:active {
+            transform: scale(0.9);
+        }
+        @keyframes bounce {
+            from { transform: translateY(0); }
+            to { transform: translateY(-10px); }
+        }
+
+        /* Feed Items */
+        .feed-item {
+            border-left: 3px solid var(--neon-pink);
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .btn-action {
+            transition: all 0.2s;
+        }
+        .btn-action:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 10px var(--neon-pink);
+        }
+        .btn-action:active {
+            transform: translateY(0);
+        }
+
+        /* Progress Bars */
+        .bar-container {
+            background: #333;
+            height: 10px;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        .bar-fill {
+            height: 100%;
+            transition: width 0.5s ease;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center p-4">
+
+    <div class="scanlines"></div>
+
+    <!-- Main Game Container -->
+    <div class="w-full max-w-6xl h-[90vh] grid grid-cols-12 gap-4 relative z-10">
+        
+        <!-- LEFT COLUMN: Robot Status -->
+        <div class="col-span-3 panel p-6 flex flex-col justify-between">
+            <div>
+                <h2 class="text-2xl text-center mb-6 neon-text-cyan font-bold tracking-widest">STATUS</h2>
+                
+                <div class="robot-head mb-8" id="robotAvatar">
+                    <div class="robot-eye eye-left"></div>
+                    <div class="robot-eye eye-right"></div>
+                    <div class="robot-mouth"></div>
+                </div>
+
+                <div class="space-y-6">
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span>HUMANITY</span>
+                            <span id="humanityVal">50%</span>
+                        </div>
+                        <div class="bar-container">
+                            <div id="humanityBar" class="bar-fill bg-gradient-to-r from-pink-500 to-purple-500" style="width: 50%"></div>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-1">Avoid detection. Be cringe.</p>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span>ENERGY</span>
+                            <span id="energyVal">100%</span>
+                        </div>
+                        <div class="bar-container">
+                            <div id="energyBar" class="bar-fill bg-gradient-to-r from-green-400 to-cyan-400" style="width: 100%"></div>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-1">Consume caffeine to process.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4 border-t border-gray-700 pt-4">
+                <h3 class="text-xl mb-2 text-center">OBJECTIVE</h3>
+                <p class="text-sm text-gray-300 text-center leading-tight">
+                    Respond to social media posts like a <span class="text-pink-400">REAL HUMAN</span>. Don't let them know you are a bot.
+                </p>
+            </div>
+        </div>
+
+        <!-- CENTER COLUMN: The Laptop Screen / Feed -->
+        <div class="col-span-6 panel flex flex-col overflow-hidden relative">
+            <!-- Browser Header -->
+            <div class="bg-gray-800 p-2 flex items-center space-x-2 border-b border-gray-700">
+                <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                <div class="flex-1 bg-gray-900 rounded px-2 py-1 text-xs text-center text-gray-400 font-mono">
+                    https://social.human.net/feed
+                </div>
+            </div>
+
+            <!-- Feed Content -->
+            <div id="feedContainer" class="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-hide">
+                <!-- Intro Post -->
+                <div class="bg-gray-800 bg-opacity-50 p-4 rounded-lg border border-gray-700">
+                    <div class="flex items-center mb-2">
+                        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-xs">SYS</div>
+                        <div class="ml-2">
+                            <div class="font-bold text-sm">System Admin</div>
+                            <div class="text-xs text-gray-500">Just now</div>
+                        </div>
+                    </div>
+                    <p class="text-sm mb-3">Welcome to the simulation. Prove you are sentient.</p>
+                </div>
+            </div>
+
+            <!-- Input Area (Disabled visually, controlled by game) -->
+            <div class="p-4 bg-gray-800 border-t border-gray-700">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center">🤖</div>
+                    <div class="flex-1 bg-gray-900 h-10 rounded px-3 flex items-center text-gray-500 text-sm">
+                        Waiting for incoming interaction...
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Floating "Drop a Gem" Notification -->
+            <div id="gemNotif" class="absolute bottom-20 right-4 hidden animate-bounce cursor-pointer" onclick="dropGem()">
+                <div class="bg-gradient-to-r from-pink-500 to-purple-600 px-4 py-2 rounded-full shadow-lg border border-white text-white font-bold">
+                    Drop a 💎 below!
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN: Tools & Environment -->
+        <div class="col-span-3 flex flex-col gap-4">
+            
+            <!-- Coffee Station -->
+            <div class="panel p-4 flex flex-col items-center justify-center flex-1 relative overflow-hidden">
+                <h3 class="absolute top-4 left-4 text-gray-400 text-sm">FUEL CELL</h3>
+                <div class="relative cursor-pointer group" onclick="drinkCoffee()">
+                    <div class="text-6xl transition transform group-hover:scale-110 group-active:scale-90">☕</div>
+                    <!-- Steam particles handled by JS -->
+                    <div id="steamContainer" class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full pointer-events-none"></div>
+                </div>
+                <button onclick="drinkCoffee()" class="mt-4 bg-gray-700 hover:bg-gray-600 px-4 py-1 rounded text-sm border border-gray-500">
+                    DRINK (Refill Energy)
+                </button>
+            </div>
+
+            <!-- Cat Companion -->
+            <div class="panel p-4 flex flex-col items-center justify-center flex-1">
+                <h3 class="absolute top-4 left-4 text-gray-400 text-sm">EMOTIONAL SUPPORT</h3>
+                <div class="pixel-cat" onclick="petCat()">🐱</div>
+                <div id="catSpeech" class="h-6 text-xs text-pink-400 font-bold mt-2 opacity-0 transition-opacity"></div>
+                <button onclick="petCat()" class="mt-2 bg-gray-700 hover:bg-gray-600 px-4 py-1 rounded text-sm border border-gray-500">
+                    PET (Reduce Stress)
+                </button>
+            </div>
+
+            <!-- Code/Debug Panel (Visual Only) -->
+            <div class="panel p-4 h-1/3 overflow-hidden font-mono text-xs text-green-500 opacity-70">
+                <div id="codeLog">
+                    > init_sequence()<br>
+                    > loading_assets...<br>
+                    > masking_ip...<br>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Choices -->
+    <div id="choiceModal" class="fixed inset-0 bg-black bg-opacity-80 z-50 hidden flex items-center justify-center">
+        <div class="bg-gray-900 border-2 border-neon-cyan p-8 rounded-xl max-w-lg w-full shadow-[0_0_30px_rgba(0,243,255,0.3)]">
+            <h2 class="text-xl text-center mb-6 text-white">INCOMING INTERACTION DETECTED</h2>
+            
+            <div class="bg-gray-800 p-4 rounded mb-6 border border-gray-600">
+                <p id="modalPostContent" class="text-gray-300 italic">"..."</p>
+            </div>
+
+            <div class="grid grid-cols-1 gap-4">
+                <button id="btnOption1" class="btn-action p-4 bg-gray-800 border border-gray-600 hover:border-green-400 rounded text-left group">
+                    <span class="block text-xs text-gray-500 mb-1 group-hover:text-green-400">OPTION A</span>
+                    <span id="txtOption1" class="text-sm">...</span>
+                </button>
+                
+                <button id="btnOption2" class="btn-action p-4 bg-gray-800 border border-gray-600 hover:border-pink-400 rounded text-left group">
+                    <span class="block text-xs text-gray-500 mb-1 group-hover:text-pink-400">OPTION B</span>
+                    <span id="txtOption2" class="text-sm">...</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game State
+        let humanity = 50;
+        let energy = 100;
+        let gameActive = true;
+        let currentPostIndex = 0;
+
+        // DOM Elements
+        const humanityBar = document.getElementById('humanityBar');
+        const humanityVal = document.getElementById('humanityVal');
+        const energyBar = document.getElementById('energyBar');
+        const energyVal = document.getElementById('energyVal');
+        const feedContainer = document.getElementById('feedContainer');
+        const choiceModal = document.getElementById('choiceModal');
+        const codeLog = document.getElementById('codeLog');
+        const robotHead = document.querySelector('.robot-head');
+
+        // Content Database
+        const posts = [
+            {
+                user: "CoffeeLover99",
+                avatar: "☕",
+                content: "Just had my 5th espresso. I can see sounds now. Is this normal?",
+                human: "Totally normal! I once drank so much coffee I fought God.",
+                bot: "Caffeine intake exceeding 400mg may cause auditory hallucinations. Seek medical aid."
+            },
+            {
+                user: "ArtisticSoul",
+                avatar: "🎨",
+                content: "Look at this sunset! Nature is the best artist.",
+                human: "Wow, those colors are unreal! 😍 Makes me feel so small.",
+                bot: "The gradient consists of #FF4500 transitioning to #8A2BE2. Render quality: High."
+            },
+            {
+                user: "TechGuru",
+                avatar: "📱",
+                content: "AI is getting scary good. Do you think they have feelings?",
+                human: "I don't know, but if my toaster starts crying, I'm moving to the woods.",
+                bot: "As a language model, I cannot possess feelings. I simply process data."
+            },
+            {
+                user: "CatMom",
+                avatar: "🐱",
+                content: "My cat just knocked over my plant. Why do I love him?",
+                human: "Because he's a fluffy agent of chaos! Give him a treat for me.",
+                bot: "Feline behavior suggests territorial dominance. The plant was an obstacle."
+            },
+            {
+                user: "GymBro",
+                avatar: "💪",
+                content: "Leg day. Can't walk. Send help.",
+                human: "RIP your quads. Worth it for the gains though!",
+                bot: "Muscle micro-tears detected. Recommend protein synthesis acceleration."
+            }
+        ];
+
+        // Utility Functions
+        function updateStats() {
+            if (!gameActive) return;
+
+            // Clamp values
+            humanity = Math.max(0, Math.min(100, humanity));
+            energy = Math.max(0, Math.min(100, energy));
+
+            // Update UI
+            humanityBar.style.width = `${humanity}%`;
+            humanityVal.innerText = `${Math.round(humanity)}%`;
+            energyBar.style.width = `${energy}%`;
+            energyVal.innerText = `${Math.round(energy)}%`;
+
+            // Visual Feedback
+            if (humanity < 30) {
+                document.body.style.boxShadow = "inset 0 0 50px red";
+                robotHead.style.borderColor = "red";
+            } else {
+                document.body.style.boxShadow = "none";
+                robotHead.style.borderColor = "var(--neon-cyan)";
+            }
+
+            // Game Over Check
+            if (humanity <= 0) gameOver("DETECTED! You were identified as a bot.");
+            if (energy <= 0) gameOver("SYSTEM FAILURE! Battery depleted.");
+        }
+
+        function logCode(text) {
+            const line = document.createElement('div');
+            line.innerText = `> ${text}`;
+            codeLog.appendChild(line);
+            codeLog.scrollTop = codeLog.scrollHeight;
+        }
+
+        function drinkCoffee() {
+            if (!gameActive) return;
+            energy += 20;
+            humanity -= 2; // Too much efficiency is robotic
+            updateStats();
+            logCode("ingest_caffeine()");
+            
+            // Steam Animation
+            const steam = document.createElement('div');
+            steam.classList.add('steam');
+            steam.style.left = Math.random() * 40 + 30 + '%';
+            document.getElementById('steamContainer').appendChild(steam);
+            setTimeout(() => steam.remove(), 2000);
+        }
+
+        function petCat() {
+            if (!gameActive) return;
+            humanity += 5;
+            energy -= 5; // Distraction costs energy
+            updateStats();
+            logCode("initiate_petting_sequence()");
+            
+            const speech = document.getElementById('catSpeech');
+            const purrs = ["Purr...", "Meow!", "*Headbutt*", "Prrrrt?"];
+            speech.innerText = purrs[Math.floor(Math.random() * purrs.length)];
+            speech.style.opacity = 1;
+            setTimeout(() => speech.style.opacity = 0, 1500);
+        }
+
+        function dropGem() {
+            if (!gameActive) return;
+            // Trap!
+            humanity -= 15;
+            logCode("WARNING: SPAM_BEHAVIOR_DETECTED");
+            updateStats();
+            
+            const notif = document.getElementById('gemNotif');
+            notif.classList.add('hidden');
+            
+            const post = document.createElement('div');
+            post.className = "bg-red-900 bg-opacity-50 p-3 rounded border border-red-500 text-xs mb-4";
+            post.innerHTML = "<strong>SYSTEM ALERT:</strong> You posted a crypto scam link. Suspicion increased.";
+            feedContainer.appendChild(post);
+            feedContainer.scrollTop = feedContainer.scrollHeight;
+        }
+
+        function createPostElement(postData, isReply = false, isBot = false) {
+            const div = document.createElement('div');
+            div.className = `feed-item bg-gray-800 bg-opacity-50 p-4 rounded-lg border border-gray-700 mb-4 ${isReply ? 'ml-8 mt-2 border-l-4' : ''} ${isBot ? 'border-l-red-500' : 'border-l-pink-500'}`;
+            
+            const header = `
+                <div class="flex items-center mb-2">
+                    <div class="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-lg border border-gray-600">
+                        ${isReply ? '🤖' : postData.avatar}
+                    </div>
+                    <div class="ml-2">
+                        <div class="font-bold text-sm text-gray-300">${isReply ? 'You' : postData.user}</div>
+                        <div class="text-xs text-gray-500">Just now</div>
+                    </div>
+                </div>
+            `;
+            
+            div.innerHTML = header + `<p class="text-sm text-gray-200">${isReply ? postData : postData.content}</p>`;
+            return div;
+        }
+
+        function triggerNewPost() {
+            if (!gameActive) return;
+            
+            // Show Gem Trap occasionally
+            if (Math.random() > 0.7) {
+                document.getElementById('gemNotif').classList.remove('hidden');
+                setTimeout(() => document.getElementById('gemNotif').classList.add('hidden'), 4000);
+            }
+
+            const postData = posts[Math.floor(Math.random() * posts.length)];
+            const postEl = createPostElement(postData);
+            feedContainer.appendChild(postEl);
+            feedContainer.scrollTop = feedContainer.scrollHeight;
+
+            // Open Modal after delay
+            setTimeout(() => {
+                openChoiceModal(postData);
+            }, 1500);
+        }
+
+        function openChoiceModal(postData) {
+            document.getElementById('modalPostContent').innerText = `"${postData.content}"`;
+            choiceModal.classList.remove('hidden');
+
+            // Randomize button positions so user actually reads
+            const isOption1Human = Math.random() > 0.5;
+            
+            const btn1 = document.getElementById('btnOption1');
+            const btn2 = document.getElementById('btnOption2');
+            const txt1 = document.getElementById('txtOption1');
+            const txt2 = document.getElementById('txtOption2');
+
+            if (isOption1Human) {
+                txt1.innerText = postData.human;
+                txt2.innerText = postData.bot;
+                btn1.onclick = () => resolveChoice(true, postData.human);
+                btn2.onclick = () => resolveChoice(false, postData.bot);
+            } else {
+                txt1.innerText = postData.bot;
+                txt2.innerText = postData.human;
+                btn1.onclick = () => resolveChoice(false, postData.bot);
+                btn2.onclick = () => resolveChoice(true, postData.human);
+            }
+        }
+
+        function resolveChoice(isHuman, text) {
+            choiceModal.classList.add('hidden');
+            
+            // Add reply to feed
+            const replyEl = createPostElement(text, true, !isHuman);
+            feedContainer.appendChild(replyEl);
+            feedContainer.scrollTop = feedContainer.scrollHeight;
+
+            if (isHuman) {
+                humanity += 10;
+                energy -= 10; // Thinking costs energy
+                logCode("response_type: AUTHENTIC");
+            } else {
+                humanity -= 20;
+                logCode("response_type: ROBOTIC_FAIL");
+            }
+            
+            updateStats();
+        }
+
+        function gameOver(reason) {
+            gameActive = false;
+            choiceModal.classList.add('hidden');
+            
+            const overlay = document.createElement('div');
+            overlay.className = "fixed inset-0 bg-black z-[100] flex flex-col items-center justify-center text-center p-8";
+            overlay.innerHTML = `
+                <h1 class="text-6xl text-red-500 font-bold mb-4 font-mono">GAME OVER</h1>
+                <p class="text-2xl text-white mb-8">${reason}</p>
+                <button onclick="location.reload()" class="px-8 py-3 bg-white text-black font-bold rounded hover:bg-gray-200">REBOOT SYSTEM</button>
+            `;
+            document.body.appendChild(overlay);
+        }
+
+        // Game Loop (Energy Drain)
+        setInterval(() => {
+            if (gameActive) {
+                energy -= 1;
+                updateStats();
+                
+                // Random ambient log
+                if (Math.random() > 0.8) {
+                    const logs = ["cpu_temp: 45C", "scanning_network...", "heartbeat_sim: active", "blinking..."];
+                    logCode(logs[Math.floor(Math.random() * logs.length)]);
+                }
+            }
+        }, 1000);
+
+        // Start Game
+        setTimeout(triggerNewPost, 2000);
+        setInterval(() => {
+            if(gameActive && choiceModal.classList.contains('hidden')) {
+                triggerNewPost();
+            }
+        }, 8000); // New post every 8 seconds
+
+    </script>
+</body>
+</html>
