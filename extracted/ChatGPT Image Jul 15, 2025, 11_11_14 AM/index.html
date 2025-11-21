@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyber-Homestead OS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;600;800&display=swap');
+
+        :root {
+            --neon-cyan: #00f3ff;
+            --neon-pink: #ff00ff;
+            --neon-orange: #ff5e00;
+            --neon-green: #39ff14;
+            --bg-dark: #050510;
+            --glass: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: #e0e0e0;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            min-height: 100vh;
+            background: radial-gradient(circle at 50% -20%, #1a1a40, #000000);
+        }
+
+        /* Circuit Background Animation */
+        #circuit-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.3;
+        }
+
+        /* Typography */
+        h1, h2, h3, .mono {
+            font-family: 'Space Mono', monospace;
+        }
+
+        /* Glassmorphism Panels */
+        .panel {
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .panel:hover {
+            border-color: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.1);
+        }
+
+        /* Glitch Effect Text */
+        .glitch {
+            position: relative;
+            color: white;
+        }
+        .glitch::before, .glitch::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-dark);
+        }
+        .glitch::before {
+            left: 2px;
+            text-shadow: -1px 0 var(--neon-pink);
+            clip: rect(24px, 550px, 90px, 0);
+            animation: glitch-anim-2 3s infinite linear alternate-reverse;
+        }
+        .glitch::after {
+            left: -2px;
+            text-shadow: -1px 0 var(--neon-cyan);
+            clip: rect(85px, 550px, 140px, 0);
+            animation: glitch-anim 2.5s infinite linear alternate-reverse;
+        }
+
+        @keyframes glitch-anim {
+            0% { clip: rect(10px, 9999px, 30px, 0); }
+            20% { clip: rect(80px, 9999px, 100px, 0); }
+            40% { clip: rect(10px, 9999px, 50px, 0); }
+            60% { clip: rect(40px, 9999px, 80px, 0); }
+            80% { clip: rect(90px, 9999px, 100px, 0); }
+            100% { clip: rect(20px, 9999px, 60px, 0); }
+        }
+        @keyframes glitch-anim-2 {
+            0% { clip: rect(60px, 9999px, 80px, 0); }
+            20% { clip: rect(10px, 9999px, 30px, 0); }
+            40% { clip: rect(90px, 9999px, 110px, 0); }
+            60% { clip: rect(20px, 9999px, 40px, 0); }
+            80% { clip: rect(50px, 9999px, 70px, 0); }
+            100% { clip: rect(10px, 9999px, 30px, 0); }
+        }
+
+        /* Custom Buttons */
+        .btn-cyber {
+            background: linear-gradient(45deg, transparent 5%, var(--neon-cyan) 5%);
+            color: #000;
+            box-shadow: 6px 0px 0px #00e1ff;
+            transition: all 0.2s;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-cyber:active {
+            box-shadow: 2px 0px 0px #00e1ff;
+            transform: translateX(4px);
+        }
+        .btn-cyber.orange {
+            background: linear-gradient(45deg, transparent 5%, var(--neon-orange) 5%);
+            box-shadow: 6px 0px 0px #cc4d00;
+        }
+        .btn-cyber.orange:active {
+            box-shadow: 2px 0px 0px #cc4d00;
+        }
+
+        /* Grid Field */
+        .field-cell {
+            aspect-ratio: 1;
+            border-radius: 8px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s;
+            background: rgba(255,255,255,0.05);
+            border: 1px dashed rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+        }
+        .field-cell:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: var(--neon-green);
+        }
+        .field-cell.growing {
+            background: rgba(57, 255, 20, 0.1);
+            border: 1px solid var(--neon-green);
+        }
+        .field-cell.ready {
+            background: rgba(255, 215, 0, 0.2);
+            border: 1px solid gold;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+        }
+        
+        /* Progress Bars */
+        .progress-container {
+            background: rgba(0,0,0,0.5);
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 6px;
+        }
+        .progress-bar {
+            height: 100%;
+            background: var(--neon-cyan);
+            width: 100%;
+            transition: width 0.5s ease;
+        }
+        .progress-bar.low { background: var(--neon-orange); }
+        .progress-bar.critical { background: var(--neon-pink); }
+
+        /* Terminal */
+        .terminal-line {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.8rem;
+            margin-bottom: 4px;
+            opacity: 0.8;
+        }
+        .terminal-line.success { color: var(--neon-green); }
+        .terminal-line.warn { color: var(--neon-orange); }
+        .terminal-line.error { color: var(--neon-pink); }
+
+        /* Floating Elements */
+        .floating-icon {
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Background Canvas -->
+    <canvas id="circuit-canvas"></canvas>
+
+    <div class="container mx-auto p-4 max-w-6xl relative z-10">
+        
+        <!-- Header -->
+        <header class="flex justify-between items-center mb-8 py-4 border-b border-gray-800">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center shadow-lg shadow-purple-500/20">
+                    <span class="text-2xl">🌾</span>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-bold glitch" data-text="CYBER-HOMESTEAD">CYBER-HOMESTEAD</h1>
+                    <p class="text-xs text-gray-400 mono tracking-widest">SYSTEM STATUS: ONLINE // NODE: BARN_01</p>
+                </div>
+            </div>
+            <div class="panel px-6 py-3 flex items-center gap-4">
+                <div class="text-right">
+                    <div class="text-xs text-gray-400 uppercase">Bio-Data Credits</div>
+                    <div class="text-2xl font-bold text-green-400 mono" id="credits-display">0000</div>
+                </div>
+                <div class="h-8 w-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-400">
+                    ₿
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            <!-- Left Column: Livestock Nodes -->
+            <div class="lg:col-span-1 space-y-6">
+                <div class="panel p-6">
+                    <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+                        <span class="text-blue-400">⚡</span> LIVESTOCK NODES
+                    </h2>
+                    <div id="livestock-container" class="space-y-4">
+                        <!-- Animals injected via JS -->
+                    </div>
+                </div>
+
+                <div class="panel p-6 bg-black/40">
+                    <h3 class="text-sm font-bold text-gray-400 mb-2 mono">SYSTEM LOGS</h3>
+                    <div id="terminal" class="h-48 overflow-y-auto font-mono text-xs p-2 border border-gray-800 rounded bg-black/80">
+                        <!-- Logs go here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Middle Column: Crop Matrix -->
+            <div class="lg:col-span-1">
+                <div class="panel p-6 h-full flex flex-col">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold flex items-center gap-2">
+                            <span class="text-green-400">💾</span> CROP MATRIX
+                        </h2>
+                        <span class="text-xs text-gray-500 mono">CLICK TO PLANT/HARVEST</span>
+                    </div>
+                    
+                    <div class="grid grid-cols-3 gap-3 flex-grow" id="field-grid">
+                        <!-- Fields injected via JS -->
+                    </div>
+                    
+                    <div class="mt-4 pt-4 border-t border-gray-800">
+                        <div class="flex justify-between text-sm text-gray-400 mb-2">
+                            <span>Auto-Harvester</span>
+                            <span id="auto-harvester-status">OFFLINE</span>
+                        </div>
+                        <button id="btn-upgrade-harvester" class="w-full py-2 px-4 bg-gray-800 hover:bg-gray-700 rounded text-xs mono transition-colors disabled:opacity-50">
+                            UPGRADE (500 CREDITS)
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Environment & Utilities -->
+            <div class="lg:col-span-1 space-y-6">
+                
+                <!-- Weather/Environment -->
+                <div class="panel p-6 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-orange-500 blur-[80px] opacity-20"></div>
+                    <h2 class="text-xl font-bold mb-4">ENVIRONMENT</h2>
+                    
+                    <div class="flex items-center justify-center py-6">
+                        <div class="relative w-32 h-32">
+                            <!-- CSS Sun/Sunset -->
+                            <div class="absolute inset-0 rounded-full bg-gradient-to-b from-orange-400 to-pink-600 blur-sm shadow-[0_0_50px_rgba(255,100,0,0.5)]"></div>
+                            <div class="absolute bottom-0 w-full h-1/2 bg-black/20 backdrop-blur-sm"></div>
+                            <!-- Digital Lines -->
+                            <div class="absolute top-1/2 left-0 w-full h-[1px] bg-white/30"></div>
+                            <div class="absolute top-[60%] left-0 w-full h-[1px] bg-white/20"></div>
+                            <div class="absolute top-[70%] left-0 w-full h-[1px] bg-white/10"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4 text-center">
+                        <div class="bg-white/5 p-2 rounded">
+                            <div class="text-xs text-gray-400">TEMP</div>
+                            <div class="text-lg font-bold mono">24°C</div>
+                        </div>
+                        <div class="bg-white/5 p-2 rounded">
+                            <div class="text-xs text-gray-400">NET SPEED</div>
+                            <div class="text-lg font-bold mono text-cyan-400">10Gbps</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="panel p-6">
+                    <h2 class="text-xl font-bold mb-4">GLOBAL OPS</h2>
+                    <div class="space-y-3">
+                        <button onclick="globalSync()" class="btn-cyber w-full py-3 px-4 text-sm">
+                            SYSTEM DEFRAG (HEAL ALL)
+                        </button>
+                        <button onclick="boostNetwork()" class="btn-cyber orange w-full py-3 px-4 text-sm">
+                            OVERCLOCK NETWORK (SPEED UP)
+                        </button>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-4 text-center">
+                        Cost: 50 Credits per Operation
+                    </p>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // --- Game State ---
+        const state = {
+            credits: 100,
+            tickRate: 1000,
+            autoHarvester: false,
+            animals: [
+                { id: 1, type: 'HORSE', icon: '🐴', name: 'Unit_H01', sync: 100, hunger: 100 },
+                { id: 2, type: 'COW', icon: '🐄', name: 'Unit_C88', sync: 90, hunger: 85 },
+                { id: 3, type: 'CHICKEN', icon: '🐔', name: 'Unit_KFC', sync: 95, hunger: 90 },
+                { id: 4, type: 'DOG', icon: '🐕', name: 'Unit_D06', sync: 100, hunger: 95 }
+            ],
+            fields: Array(9).fill().map((_, i) => ({ id: i, status: 'empty', progress: 0 })) // status: empty, growing, ready
+        };
+
+        // --- DOM Elements ---
+        const creditsEl = document.getElementById('credits-display');
+        const livestockContainer = document.getElementById('livestock-container');
+        const fieldGrid = document.getElementById('field-grid');
+        const terminal = document.getElementById('terminal');
+        const btnUpgrade = document.getElementById('btn-upgrade-harvester');
+
+        // --- Initialization ---
+        function init() {
+            renderAnimals();
+            renderFields();
+            log("SYSTEM INITIALIZED...", "success");
+            log("CONNECTED TO BIO-NET.", "success");
+            updateCredits(0); // just render
+            
+            // Game Loop
+            setInterval(gameLoop, state.tickRate);
+            
+            // Animation Loop
+            animateCanvas();
+        }
+
+        // --- Core Logic ---
+        function updateCredits(amount) {
+            state.credits += amount;
+            creditsEl.innerText = state.credits.toString().padStart(4, '0');
+            
+            // Check upgrade availability
+            if(state.credits >= 500 && !state.autoHarvester) {
+                btnUpgrade.classList.remove('opacity-50', 'cursor-not-allowed');
+                btnUpgrade.innerText = "UPGRADE (500 CREDITS)";
+            } else if (state.autoHarvester) {
+                btnUpgrade.innerText = "INSTALLED";
+                btnUpgrade.disabled = true;
+                btnUpgrade.classList.add('opacity-50');
+            }
+        }
+
+        function log(msg, type = "normal") {
+            const div = document.createElement('div');
+            div.className = `terminal-line ${type}`;
+            const time = new Date().toLocaleTimeString([], {hour12: false});
+            div.innerText = `[${time}] > ${msg}`;
+            terminal.prepend(div);
+            if (terminal.children.length > 20) terminal.lastChild.remove();
+        }
+
+        function gameLoop() {
+            // Degrade Animals
+            state.animals.forEach(animal => {
+                if (Math.random() > 0.5) animal.hunger = Math.max(0, animal.hunger - 2);
+                if (Math.random() > 0.7) animal.sync = Math.max(0, animal.sync - 1);
+                
+                if (animal.sync < 20) log(`WARNING: ${animal.name} SYNC CRITICAL`, "error");
+                if (animal.hunger < 20) log(`WARNING: ${animal.name} LOW ENERGY`, "warn");
+            });
+            renderAnimals();
+
+            // Grow Crops
+            state.fields.forEach(field => {
+                if (field.status === 'growing') {
+                    field.progress += 10; // Grow by 10%
+                    if (state.autoHarvester) field.progress += 5; // Faster with upgrade
+                    
+                    if (field.progress >= 100) {
+                        field.status = 'ready';
+                        field.progress = 100;
+                        log(`Field ${field.id} READY for harvest.`, "success");
+                    }
+                    updateFieldVisual(field.id);
+                }
+            });
+        }
+
+        // --- Livestock System ---
+        function renderAnimals() {
+            livestockContainer.innerHTML = '';
+            state.animals.forEach(animal => {
+                const isCritical = animal.sync < 30 || animal.hunger < 30;
+                const glitchClass = isCritical ? 'animate-pulse' : '';
+                
+                const div = document.createElement('div');
+                div.className = `flex items-center gap-4 bg-white/5 p-3 rounded-lg border border-white/5 hover:border-white/10 transition-colors ${glitchClass}`;
+                
+                div.innerHTML = `
+                    <div class="text-3xl floating-icon">${animal.icon}</div>
+                    <div class="flex-grow">
+                        <div class="flex justify-between items-end mb-1">
+                            <span class="text-sm font-bold mono text-blue-300">${animal.name}</span>
+                            <button onclick="feedAnimal(${animal.id})" class="text-[10px] bg-blue-900/50 hover:bg-blue-800 text-blue-200 px-2 py-1 rounded border border-blue-500/30">UPLOAD FEED</button>
+                        </div>
+                        
+                        <div class="flex items-center gap-2 text-xs text-gray-400">
+                            <span class="w-8">SYNC</span>
+                            <div class="progress-container flex-grow">
+                                <div class="progress-bar ${animal.sync < 30 ? 'critical' : ''}" style="width: ${animal.sync}%"></div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 text-xs text-gray-400 mt-1">
+                            <span class="w-8">NRG</span>
+                            <div class="progress-container flex-grow">
+                                <div class="progress-bar ${animal.hunger < 30 ? 'low' : ''}" style="width: ${animal.hunger}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                livestockContainer.appendChild(div);
+            });
+        }
+
+        window.feedAnimal = (id) => {
+            const animal = state.animals.find(a => a.id === id);
+            if (state.credits >= 10) {
+                updateCredits(-10);
+                animal.hunger = Math.min(100, animal.hunger + 30);
+                animal.sync = Math.min(100, animal.sync + 10);
+                log(`Uploaded nutrients to ${animal.name}`, "success");
+                renderAnimals();
+            } else {
+                log("INSUFFICIENT CREDITS", "error");
+            }
+        };
+
+        window.globalSync = () => {
+            if (state.credits >= 50) {
+                updateCredits(-50);
+                state.animals.forEach(a => {
+                    a.sync = 100;
+                    a.hunger = Math.min(100, a.hunger + 20);
+                });
+                log("SYSTEM WIDE DEFRAG COMPLETE", "success");
+                renderAnimals();
+            } else {
+                log("INSUFFICIENT CREDITS", "error");
+            }
+        }
+
+        window.boostNetwork = () => {
+            if (state.credits >= 50) {
+                updateCredits(-50);
+                // Instantly grow all planted crops by 50%
+                state.fields.forEach(f => {
+                    if(f.status === 'growing') {
+                        f.progress = Math.min(100, f.progress + 50);
+                        if(f.progress === 100) f.status = 'ready';
+                        updateFieldVisual(f.id);
+                    }
+                });
+                log("NETWORK OVERCLOCKED. GROWTH ACCELERATED.", "warn");
+            } else {
+                log("INSUFFICIENT CREDITS", "error");
+            }
+        }
+
+        // --- Crop System ---
+        function renderFields() {
+            fieldGrid.innerHTML = '';
+            state.fields.forEach(field => {
+                const div = document.createElement('div');
+                div.id = `field-${field.id}`;
+                div.className = 'field-cell';
+                div.onclick = () => handleFieldClick(field.id);
+                updateFieldVisual(field.id, div);
+                fieldGrid.appendChild(div);
+            });
+        }
+
+        function updateFieldVisual(id, element = null) {
+            const field = state.fields[id];
+            const el = element || document.getElementById(`field-${id}`);
+            
+            el.className = 'field-cell'; // reset
+            el.innerHTML = '';
+
+            if (field.status === 'empty') {
+                el.innerHTML = '<span class="opacity-20 text-4xl">+</span>';
+            } else if (field.status === 'growing') {
+                el.classList.add('growing');
+                // Visual representation of growth code
+                const opacity = field.progress / 100;
+                el.innerHTML = `<span style="opacity: ${opacity}; font-family: monospace; color: #39ff14; font-size: 1rem; word-break: break-all;">010101<br>101010<br>001100</span>`;
+            } else if (field.status === 'ready') {
+                el.classList.add('ready');
+                el.innerHTML = '🌾';
+            }
+        }
+
+        function handleFieldClick(id) {
+            const field = state.fields[id];
+            
+            if (field.status === 'empty') {
+                // Plant
+                if (state.credits >= 5) {
+                    updateCredits(-5);
+                    field.status = 'growing';
+                    field.progress = 0;
+                    updateFieldVisual(id);
+                    // log(`Planted binary wheat in Sector ${id}`);
+                } else {
+                    log("NEED 5 CREDITS TO PLANT", "error");
+                }
+            } else if (field.status === 'ready') {
+                // Harvest
+                const yieldAmount = Math.floor(Math.random() * 20) + 30;
+                updateCredits(yieldAmount);
+                field.status = 'empty';
+                field.progress = 0;
+                updateFieldVisual(id);
+                log(`Harvested Sector ${id}: +${yieldAmount} Credits`, "success");
+                
+                // Visual effect
+                createFloatingText(yieldAmount, id);
+            }
+        }
+
+        function createFloatingText(amount, fieldId) {
+            // Simple visual feedback could go here, omitted for brevity but logic exists
+        }
+
+        // --- Upgrades ---
+        btnUpgrade.onclick = () => {
+            if (state.credits >= 500) {
+                updateCredits(-500);
+                state.autoHarvester = true;
+                document.getElementById('auto-harvester-status').innerText = "ONLINE";
+                document.getElementById('auto-harvester-status').classList.add('text-green-400');
+                log("AUTO-HARVESTER PROTOCOL INSTALLED", "success");
+                updateCredits(0); // trigger button update
+            }
+        };
+
+        // --- Background Animation (Circuit Sky) ---
+        function animateCanvas() {
+            const canvas = document.getElementById('circuit-canvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            const nodes = [];
+            const nodeCount = 30;
+
+            for(let i=0; i<nodeCount; i++) {
+                nodes.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height * 0.6, // Keep mostly in top half
+                    vx: (Math.random() - 0.5) * 0.5,
+                    vy: (Math.random() - 0.5) * 0.5
+                });
+            }
+
+            function draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Draw connections
+                ctx.strokeStyle = 'rgba(0, 243, 255, 0.15)';
+                ctx.lineWidth = 1;
+                
+                for(let i=0; i<nodes.length; i++) {
+                    const node = nodes[i];
+                    
+                    // Update pos
+                    node.x += node.vx;
+                    node.y += node.vy;
+
+                    // Bounce
+                    if(node.x < 0 || node.x > canvas.width) node.vx *= -1;
+                    if(node.y < 0 || node.y > canvas.height) node.vy *= -1;
+
+                    // Draw Node
+                    ctx.fillStyle = '#00f3ff';
+                    ctx.beginPath();
+                    ctx.arc(node.x, node.y, 2, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Connect
+                    for(let j=i+1; j<nodes.length; j++) {
+                        const other = nodes[j];
+                        const dist = Math.hypot(node.x - other.x, node.y - other.y);
+                        
+                        if(dist < 150) {
+                            // Circuit style lines (Manhattan distance-ish)
+                            ctx.beginPath();
+                            ctx.moveTo(node.x, node.y);
+                            ctx.lineTo(other.x, node.y); // Horizontal first
+                            ctx.lineTo(other.x, other.y);
+                            ctx.stroke();
+                        }
+                    }
+                }
+                requestAnimationFrame(draw);
+            }
+            draw();
+        }
+
+        // Start
+        init();
+
+    </script>
+</body>
+</html>

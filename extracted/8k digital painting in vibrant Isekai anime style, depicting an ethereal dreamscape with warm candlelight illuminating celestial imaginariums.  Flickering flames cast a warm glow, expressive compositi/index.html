@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Eternal Vigil: Cosmic Altar</title>
+    <style>
+        :root {
+            --wax-color: #ffcc00;
+            --wax-shadow: #b8860b;
+            --flame-core: #fff;
+            --flame-outer: #ff4500;
+            --sky-dark: #1a0b2e;
+            --sky-light: #431252;
+            --sun-glow: #ffaa00;
+            --floor-dark: #2a1a3a;
+            --floor-light: #3d2652;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: linear-gradient(to bottom, var(--sky-dark), var(--sky-light));
+            font-family: 'Inter', system-ui, sans-serif;
+            color: white;
+        }
+
+        /* --- BACKGROUND LAYERS --- */
+        .scene {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            perspective: 1000px;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        /* The Cosmic Sun */
+        .sun {
+            position: absolute;
+            top: -10%;
+            right: -10%;
+            width: 60vw;
+            height: 60vw;
+            background: radial-gradient(circle, #fff 0%, #ffdd00 20%, #ff8800 40%, transparent 70%);
+            filter: blur(20px);
+            opacity: 0.8;
+            animation: sunPulse 10s infinite alternate;
+            z-index: 1;
+        }
+
+        /* Nebula Clouds */
+        .nebula {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(40px);
+            opacity: 0.6;
+            z-index: 2;
+        }
+        .n1 { top: 10%; left: 10%; width: 400px; height: 400px; background: #4b0082; }
+        .n2 { top: 40%; right: 30%; width: 300px; height: 300px; background: #ff4500; }
+        .n3 { bottom: 20%; left: -10%; width: 500px; height: 500px; background: #00008b; }
+
+        /* Stars */
+        .stars {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: 
+                radial-gradient(2px 2px at 20px 30px, #eee, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 50px 160px, #ddd, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 90px 40px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 130px 80px, #fff, rgba(0,0,0,0));
+            background-repeat: repeat;
+            background-size: 200px 200px;
+            animation: twinkle 5s infinite linear;
+            z-index: 1;
+            opacity: 0.7;
+        }
+
+        /* Floating Orbs/Planets */
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            box-shadow: inset -5px -5px 10px rgba(0,0,0,0.5);
+            z-index: 3;
+        }
+        .orb1 { top: 20%; left: 30%; width: 60px; height: 60px; background: radial-gradient(circle at 30% 30%, #ffcc00, #b8860b); animation: float 8s infinite ease-in-out; }
+        .orb2 { top: 35%; right: 40%; width: 40px; height: 40px; background: radial-gradient(circle at 30% 30%, #ff69b4, #8b008b); animation: float 6s infinite ease-in-out reverse; }
+
+        /* Mountains / Spires */
+        .landscape {
+            position: absolute;
+            bottom: 20%;
+            left: 0;
+            width: 100%;
+            height: 40%;
+            z-index: 4;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            pointer-events: none;
+        }
+        .mountain {
+            width: 0; 
+            height: 0; 
+            border-left: 100px solid transparent;
+            border-right: 100px solid transparent;
+            border-bottom: 300px solid #2a1a3a;
+            position: absolute;
+            bottom: 0;
+        }
+        .m1 { left: -50px; border-bottom-color: #1e1028; transform: scale(1.5); }
+        .m2 { right: -50px; border-bottom-color: #1e1028; transform: scale(1.5); }
+        .m3 { left: 20%; border-bottom: 200px solid #352248; }
+        
+        .spire {
+            position: absolute;
+            bottom: 0;
+            left: 60%;
+            width: 40px;
+            height: 250px;
+            background: linear-gradient(to top, #1a0b2e, #4a1c40);
+            clip-path: polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .spire::after {
+            content: '';
+            width: 60px;
+            height: 10px;
+            background: #5a2c50;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+
+        /* Checkered Floor */
+        .floor {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 30%;
+            background: 
+                linear-gradient(45deg, var(--floor-dark) 25%, transparent 25%, transparent 75%, var(--floor-dark) 75%, var(--floor-dark)),
+                linear-gradient(45deg, var(--floor-dark) 25%, transparent 25%, transparent 75%, var(--floor-dark) 75%, var(--floor-dark));
+            background-color: var(--floor-light);
+            background-size: 40px 40px;
+            background-position: 0 0, 20px 20px;
+            transform: perspective(600px) rotateX(60deg) scale(2);
+            transform-origin: bottom;
+            opacity: 0.6;
+            z-index: 5;
+            mask-image: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 80%);
+        }
+
+        /* --- GAMEPLAY LAYER --- */
+        .altar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 40%;
+            z-index: 10;
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-end;
+            padding: 0 5%;
+            pointer-events: none; /* Let clicks pass to candles */
+        }
+
+        .candle-container {
+            position: relative;
+            width: 60px;
+            height: 300px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: center;
+            pointer-events: auto;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .candle-container:active {
+            transform: scale(0.95);
+        }
+
+        .candle-body {
+            width: 100%;
+            background: linear-gradient(to right, var(--wax-shadow), var(--wax-color) 30%, var(--wax-color) 70%, var(--wax-shadow));
+            border-radius: 5px;
+            position: relative;
+            box-shadow: 0 0 20px rgba(255, 165, 0, 0.2);
+            transition: height 0.2s linear;
+        }
+        
+        /* Drips */
+        .candle-body::before {
+            content: '';
+            position: absolute;
+            top: 5px;
+            left: 10%;
+            width: 8px;
+            height: 30px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 4px;
+        }
+
+        .wick {
+            width: 4px;
+            height: 10px;
+            background: #333;
+            margin-bottom: -2px;
+            z-index: 2;
+        }
+
+        .flame {
+            width: 30px;
+            height: 50px;
+            background: radial-gradient(ellipse at bottom, var(--flame-core) 0%, var(--flame-outer) 60%, transparent 90%);
+            border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            filter: blur(1px);
+            animation: flicker 0.1s infinite alternate;
+            opacity: 0; /* Hidden by default */
+            transition: opacity 0.3s;
+            box-shadow: 0 0 30px 10px rgba(255, 140, 0, 0.4);
+        }
+
+        .flame.lit {
+            opacity: 1;
+        }
+
+        /* UI Overlay */
+        .ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 20;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+        }
+
+        .hud {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .score-board {
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            padding: 15px 25px;
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.1);
+            text-align: center;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.2rem;
+            color: #aaa;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .score {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--wax-color);
+            text-shadow: 0 0 10px var(--wax-shadow);
+            font-family: monospace;
+        }
+
+        .message-area {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        .message-area.visible {
+            opacity: 1;
+        }
+
+        .message-title {
+            font-size: 3rem;
+            color: white;
+            text-shadow: 0 0 20px #ff4500;
+            margin-bottom: 10px;
+        }
+
+        .btn {
+            pointer-events: auto;
+            background: linear-gradient(45deg, #ff4500, #ff8c00);
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            color: white;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 0 20px rgba(255, 69, 0, 0.5);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(255, 69, 0, 0.8);
+        }
+
+        /* Particles */
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            background: gold;
+            border-radius: 50%;
+            animation: fadeUp 1s forwards;
+        }
+
+        /* Animations */
+        @keyframes flicker {
+            0% { transform: translateX(-50%) scale(1); opacity: 0.9; }
+            100% { transform: translateX(-50%) scale(1.1, 0.9); opacity: 1; }
+        }
+        @keyframes sunPulse {
+            0% { transform: scale(1); filter: blur(20px) brightness(1); }
+            100% { transform: scale(1.05); filter: blur(25px) brightness(1.2); }
+        }
+        @keyframes twinkle {
+            0% { opacity: 0.7; }
+            50% { opacity: 0.3; }
+            100% { opacity: 0.7; }
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+        @keyframes fadeUp {
+            0% { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(var(--tx), -100px) scale(0); opacity: 0; }
+        }
+
+        /* Overlay for darkness */
+        .darkness-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: black;
+            opacity: 0;
+            z-index: 15;
+            pointer-events: none;
+            transition: opacity 0.5s;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Visual Background -->
+    <div class="scene">
+        <div class="sun" id="sun"></div>
+        <div class="stars"></div>
+        
+        <!-- Nebulas -->
+        <div class="nebula n1"></div>
+        <div class="nebula n2"></div>
+        <div class="nebula n3"></div>
+
+        <!-- Orbs -->
+        <div class="orb orb1"></div>
+        <div class="orb orb2"></div>
+
+        <!-- Landscape -->
+        <div class="landscape">
+            <div class="mountain m1"></div>
+            <div class="mountain m3"></div>
+            <div class="mountain m2"></div>
+            <div class="spire"></div>
+        </div>
+
+        <!-- Floor -->
+        <div class="floor"></div>
+    </div>
+
+    <!-- Darkness Overlay (Game Over State) -->
+    <div class="darkness-overlay" id="darkness"></div>
+
+    <!-- Interactive Layer -->
+    <div class="altar" id="altar">
+        <!-- Candles generated by JS -->
+    </div>
+
+    <!-- UI -->
+    <div class="ui-layer">
+        <div class="hud">
+            <div class="score-board">
+                <h1>Cosmic Energy</h1>
+                <div class="score" id="scoreDisplay">0</div>
+            </div>
+            <div class="score-board">
+                <h1>Harmony</h1>
+                <div class="score" id="harmonyDisplay">100%</div>
+            </div>
+        </div>
+
+        <div class="message-area" id="startScreen">
+            <div class="message-title">The Eternal Vigil</div>
+            <p style="color: #ddd; margin-bottom: 20px;">Click candles to keep the flame alive.<br>Do not let the darkness win.</p>
+            <button class="btn" onclick="startGame()">Ignite the Altar</button>
+        </div>
+
+        <div class="message-area" id="gameOverScreen" style="display: none;">
+            <div class="message-title">Darkness Consumed You</div>
+            <p style="color: #ddd; margin-bottom: 20px;">The sun has faded.</p>
+            <button class="btn" onclick="resetGame()">Rekindle</button>
+        </div>
+    </div>
+
+    <script>
+        // Game Configuration
+        const CONFIG = {
+            candleCount: 7,
+            maxHeight: 200,
+            burnRate: 0.2, // Pixels per frame
+            clickRestore: 60, // Pixels restored per click
+            scorePerSecond: 10
+        };
+
+        // State
+        let gameState = {
+            isPlaying: false,
+            score: 0,
+            candles: [],
+            lastFrame: 0
+        };
+
+        // DOM Elements
+        const altar = document.getElementById('altar');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const harmonyDisplay = document.getElementById('harmonyDisplay');
+        const darknessOverlay = document.getElementById('darkness');
+        const startScreen = document.getElementById('startScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const sun = document.getElementById('sun');
+
+        // Initialize Candles
+        function initCandles() {
+            altar.innerHTML = '';
+            gameState.candles = [];
+
+            for (let i = 0; i < CONFIG.candleCount; i++) {
+                // Create DOM structure
+                const container = document.createElement('div');
+                container.className = 'candle-container';
+                
+                const flame = document.createElement('div');
+                flame.className = 'flame';
+                
+                const wick = document.createElement('div');
+                wick.className = 'wick';
+                
+                const body = document.createElement('div');
+                body.className = 'candle-body';
+                
+                // Random initial height
+                const initialHeight = 100 + Math.random() * 100;
+                body.style.height = `${initialHeight}px`;
+
+                container.appendChild(flame);
+                container.appendChild(wick);
+                container.appendChild(body);
+                altar.appendChild(container);
+
+                // State object
+                const candleObj = {
+                    id: i,
+                    elBody: body,
+                    elFlame: flame,
+                    height: initialHeight,
+                    isLit: false,
+                    burnSpeed: 0.05 + (Math.random() * 0.1) // Random burn speed variation
+                };
+
+                // Interaction
+                container.addEventListener('mousedown', (e) => {
+                    if (!gameState.isPlaying) return;
+                    lightCandle(candleObj);
+                    createParticles(e.clientX, e.clientY);
+                });
+
+                gameState.candles.push(candleObj);
+            }
+        }
+
+        function lightCandle(candle) {
+            candle.isLit = true;
+            candle.elFlame.classList.add('lit');
+            candle.height = Math.min(CONFIG.maxHeight, candle.height + CONFIG.clickRestore);
+            updateCandleVisuals(candle);
+            
+            // Add score
+            gameState.score += 5;
+            updateScore();
+        }
+
+        function updateCandleVisuals(candle) {
+            candle.elBody.style.height = `${Math.max(0, candle.height)}px`;
+        }
+
+        function createParticles(x, y) {
+            for (let i = 0; i < 8; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                const size = Math.random() * 6 + 2;
+                p.style.width = `${size}px`;
+                p.style.height = `${size}px`;
+                p.style.left = `${x}px`;
+                p.style.top = `${y}px`;
+                
+                const tx = (Math.random() - 0.5) * 100;
+                p.style.setProperty('--tx', `${tx}px`);
+                
+                document.body.appendChild(p);
+                setTimeout(() => p.remove(), 1000);
+            }
+        }
+
+        function gameLoop(timestamp) {
+            if (!gameState.isPlaying) return;
+
+            const dt = timestamp - gameState.lastFrame;
+            gameState.lastFrame = timestamp;
+
+            let litCount = 0;
+            let totalHeight = 0;
+
+            gameState.candles.forEach(candle => {
+                if (candle.isLit) {
+                    litCount++;
+                    // Burn logic
+                    candle.height -= candle.burnSpeed * (dt / 16); // Normalize to 60fps
+                    
+                    // Random wind gusts
+                    if (Math.random() < 0.001) {
+                        candle.isLit = false;
+                        candle.elFlame.classList.remove('lit');
+                    }
+
+                    if (candle.height <= 0) {
+                        candle.height = 0;
+                        candle.isLit = false;
+                        candle.elFlame.classList.remove('lit');
+                    }
+                }
+                totalHeight += candle.height;
+                updateCandleVisuals(candle);
+            });
+
+            // Game Logic
+            const harmony = (litCount / CONFIG.candleCount);
+            
+            // Visual feedback based on harmony
+            darknessOverlay.style.opacity = 1 - harmony;
+            sun.style.opacity = 0.2 + (harmony * 0.8);
+            sun.style.filter = `blur(${20 + (harmony * 10)}px) brightness(${0.5 + harmony})`;
+
+            harmonyDisplay.innerText = `${Math.round(harmony * 100)}%`;
+            
+            if (litCount > 0) {
+                gameState.score += 1;
+                updateScore();
+            } else {
+                // Game Over
+                endGame();
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function updateScore() {
+            scoreDisplay.innerText = gameState.score.toLocaleString();
+        }
+
+        function startGame() {
+            gameState.isPlaying = true;
+            gameState.score = 0;
+            gameState.lastFrame = performance.now();
+            
+            startScreen.classList.remove('visible');
+            gameOverScreen.style.display = 'none';
+            
+            // Light all candles initially
+            gameState.candles.forEach(c => {
+                c.height = CONFIG.maxHeight * 0.8;
+                c.isLit = true;
+                c.elFlame.classList.add('lit');
+                updateCandleVisuals(c);
+            });
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function resetGame() {
+            gameOverScreen.classList.remove('visible');
+            setTimeout(() => {
+                gameOverScreen.style.display = 'none';
+                startGame();
+            }, 200);
+        }
+
+        function endGame() {
+            gameState.isPlaying = false;
+            gameOverScreen.style.display = 'block';
+            // Force reflow
+            void gameOverScreen.offsetWidth;
+            gameOverScreen.classList.add('visible');
+        }
+
+        // Initial Setup
+        initCandles();
+        setTimeout(() => startScreen.classList.add('visible'), 500);
+
+    </script>
+</body>
+</html>

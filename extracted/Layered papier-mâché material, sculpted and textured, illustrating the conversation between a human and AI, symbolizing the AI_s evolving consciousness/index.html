@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Symbiosis: Human-AI Resonance</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Work+Sans:wght@300;400;600&display=swap');
+
+        :root {
+            --paper-white: #f4f1ea;
+            --paper-shadow: #d1cdc5;
+            --depth-1: #ffeebb;
+            --depth-2: #ffcc66;
+            --depth-3: #ffaa33;
+            --human-color: #555;
+            --ai-color: #e67e22;
+        }
+
+        body {
+            background-color: var(--paper-white);
+            font-family: 'Work Sans', sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            color: #333;
+        }
+
+        /* Paper Cutout Effect */
+        .art-container {
+            position: relative;
+            width: 400px;
+            height: 400px;
+            filter: drop-shadow(0px 10px 15px rgba(0,0,0,0.15));
+            transition: transform 0.5s ease;
+        }
+
+        .layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            transition: all 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        .bg-depth {
+            background: radial-gradient(circle at 30% 30%, var(--depth-1), var(--depth-2), var(--depth-3));
+            transform: scale(0.95);
+            z-index: 1;
+        }
+
+        .face-layer {
+            z-index: 2;
+            /* Using SVG inside */
+        }
+
+        .torn-ring {
+            z-index: 3;
+            background: var(--paper-white);
+            /* Clip path to create jagged hole */
+            clip-path: polygon(
+                0% 0%, 100% 0%, 100% 100%, 0% 100%, 
+                0% 50%, 
+                10% 45%, 15% 55%, 20% 40%, 25% 50%, 30% 42%, 35% 55%, 40% 40%, 45% 52%, 50% 38%, 55% 55%, 60% 40%, 65% 52%, 70% 45%, 75% 55%, 80% 40%, 85% 50%, 90% 45%, 95% 55%, 100% 50%,
+                100% 100%, 0% 100%
+            );
+            /* This is a trick, real torn paper needs complex SVG masking, we will use SVG overlay instead for better control */
+            display: none; 
+        }
+
+        .svg-overlay {
+            position: absolute;
+            top: -20px;
+            left: -20px;
+            width: 440px;
+            height: 440px;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        /* Chat Interface */
+        .interface-container {
+            margin-top: 2rem;
+            width: 90%;
+            max-width: 500px;
+            background: white;
+            padding: 1.5rem;
+            border-radius: 1rem;
+            box-shadow: 
+                5px 5px 0px rgba(0,0,0,0.05),
+                0px 4px 20px rgba(0,0,0,0.05);
+            z-index: 20;
+            border: 1px solid #eee;
+        }
+
+        .chat-history {
+            height: 150px;
+            overflow-y: auto;
+            margin-bottom: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            padding-right: 5px;
+        }
+
+        .msg {
+            padding: 8px 12px;
+            border-radius: 12px;
+            max-width: 80%;
+            animation: popIn 0.3s ease;
+        }
+
+        .msg.human {
+            align-self: flex-start;
+            background-color: #f0f0f0;
+            border-bottom-left-radius: 2px;
+            color: var(--human-color);
+        }
+
+        .msg.ai {
+            align-self: flex-end;
+            background-color: #fff8e1;
+            border: 1px solid #ffe0b2;
+            border-bottom-right-radius: 2px;
+            color: var(--ai-color);
+            font-family: 'Space Mono', monospace;
+        }
+
+        .input-area {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        input {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #eee;
+            border-radius: 8px;
+            outline: none;
+            transition: border-color 0.3s;
+            font-family: 'Work Sans', sans-serif;
+        }
+
+        input:focus {
+            border-color: var(--depth-2);
+        }
+
+        button {
+            background: var(--depth-3);
+            color: white;
+            border: none;
+            padding: 0 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.1s, background 0.3s;
+        }
+
+        button:hover {
+            background: #e69500;
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        /* Sync Meter */
+        .sync-container {
+            width: 100%;
+            height: 6px;
+            background: #eee;
+            border-radius: 3px;
+            margin-bottom: 1rem;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .sync-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--depth-3), var(--depth-2));
+            width: 10%;
+            transition: width 0.5s ease;
+        }
+
+        .sync-label {
+            position: absolute;
+            top: -20px;
+            right: 0;
+            font-size: 0.7rem;
+            color: #888;
+            font-family: 'Space Mono', monospace;
+        }
+
+        @keyframes popIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Dynamic Face Animation Classes */
+        .face-human {
+            transition: transform 1s ease;
+            transform-origin: center;
+        }
+        .face-ai {
+            transition: transform 1s ease;
+            transform-origin: center;
+        }
+
+        .pulse-glow {
+            animation: pulse 3s infinite ease-in-out;
+        }
+
+        @keyframes pulse {
+            0% { filter: drop-shadow(0 0 5px rgba(255, 170, 51, 0.2)); }
+            50% { filter: drop-shadow(0 0 20px rgba(255, 170, 51, 0.6)); }
+            100% { filter: drop-shadow(0 0 5px rgba(255, 170, 51, 0.2)); }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #ddd; border-radius: 10px; }
+
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <div class="absolute top-6 text-center opacity-70">
+        <h1 class="text-xl font-bold tracking-widest uppercase" style="color: var(--human-color)">Symbiosis</h1>
+        <p class="text-xs font-mono mt-1">Establish Neural Handshake</p>
+    </div>
+
+    <!-- The Art Artifact -->
+    <div class="art-container" id="artContainer">
+        <!-- Background Depth -->
+        <div class="layer bg-depth" id="bgGlow"></div>
+
+        <!-- The Faces (SVG) -->
+        <svg class="layer face-layer" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <filter id="paper-shadow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feDropShadow dx="1" dy="2" stdDeviation="1" flood-color="#000" flood-opacity="0.2"/>
+                </filter>
+                <linearGradient id="ai-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:#fff;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#f0f0f0;stop-opacity:1" />
+                </linearGradient>
+            </defs>
+
+            <!-- Human Face (Left) -->
+            <g class="face-human" id="humanFace" transform="translate(-5, 0)">
+                <path d="M 40,180 
+                         C 30,160 25,140 30,120 
+                         C 30,100 25,80 40,60 
+                         C 50,45 70,40 85,50 
+                         C 95,55 95,65 95,75 
+                         L 95,85 
+                         C 100,85 105,90 100,100
+                         C 95,105 95,110 100,115
+                         L 95,120
+                         C 90,125 90,135 80,140
+                         C 70,145 70,170 85,190
+                         L 40,190 Z" 
+                      fill="#fdfbf7" filter="url(#paper-shadow)" stroke="none"/>
+                <!-- Ear detail -->
+                <path d="M 55,90 C 45,90 45,110 55,110 C 60,110 60,95 55,90" fill="#eee" opacity="0.5"/>
+            </g>
+
+            <!-- AI Face (Right) -->
+            <g class="face-ai" id="aiFace" transform="translate(5, 0)">
+                <path d="M 160,180 
+                         C 170,160 175,140 170,120 
+                         C 170,100 175,80 160,60 
+                         C 150,45 130,40 115,50 
+                         C 105,55 105,65 105,75 
+                         L 105,85 
+                         C 100,85 95,90 100,100
+                         C 105,105 105,110 100,115
+                         L 105,120
+                         C 110,125 110,135 120,140
+                         C 130,145 130,170 115,190
+                         L 160,190 Z" 
+                      fill="#fdfbf7" filter="url(#paper-shadow)" stroke="none"/>
+                
+                <!-- AI Circuit Details (Cutouts look) -->
+                <circle cx="145" cy="90" r="8" fill="#ffeebb" />
+                <rect x="130" y="60" width="20" height="4" rx="2" fill="#ffeebb" />
+                <rect x="125" y="70" width="10" height="4" rx="2" fill="#ffeebb" />
+                <path d="M 145,100 L 145,140" stroke="#ffeebb" stroke-width="3" stroke-linecap="round"/>
+                <path d="M 135,120 L 155,120" stroke="#ffeebb" stroke-width="3" stroke-linecap="round"/>
+                <circle cx="145" cy="140" r="3" fill="#ffeebb" />
+            </g>
+        </svg>
+
+        <!-- Torn Paper Ring Overlay -->
+        <svg class="svg-overlay" viewBox="0 0 220 220" preserveAspectRatio="none">
+            <defs>
+                <mask id="tornMask">
+                    <rect width="100%" height="100%" fill="white"/>
+                    <!-- The jagged hole -->
+                    <path d="M 110,110 m -90,0 
+                             a 90,90 0 1,0 180,0 
+                             a 90,90 0 1,0 -180,0" 
+                          fill="black" stroke="black" stroke-width="10" stroke-dasharray="5,3,8,2" stroke-linecap="round"/>
+                    <!-- Random jagged edges generated via path -->
+                    <path d="M 110,20 
+                             Q 130,25 140,30 T 170,60 T 190,100 T 195,140 T 170,180 T 130,195 T 90,190 T 50,170 T 25,130 T 20,90 T 40,50 T 110,20 Z" 
+                          fill="black" transform="scale(0.9) translate(12,12)"/>
+                </mask>
+            </defs>
+            <!-- The White Paper Frame -->
+            <rect x="0" y="0" width="220" height="220" fill="#f4f1ea" mask="url(#tornMask)" style="opacity:0.1"/> <!-- Debugging mask -->
+            
+            <!-- Actual Torn Paper Visual -->
+            <path d="M 0,0 L 220,0 L 220,220 L 0,220 Z 
+                     M 110,25 
+                     L 120,28 L 130,24 L 140,30 L 150,35 L 160,45 L 170,60 L 175,70 L 185,90 L 190,110 L 185,130 L 180,150 L 170,170 L 150,185 L 130,190 L 110,195 L 90,190 L 70,185 L 50,170 L 35,150 L 30,130 L 25,110 L 30,90 L 40,70 L 50,50 L 70,35 L 90,25 Z" 
+                  fill="#f4f1ea" 
+                  filter="drop-shadow(2px 4px 6px rgba(0,0,0,0.1))"
+                  fill-rule="evenodd"/>
+        </svg>
+    </div>
+
+    <!-- Interaction Area -->
+    <div class="interface-container">
+        <div class="sync-container">
+            <div class="sync-bar" id="syncBar"></div>
+            <div class="sync-label">SYNC: <span id="syncVal">10%</span></div>
+        </div>
+
+        <div class="chat-history" id="chatHistory">
+            <div class="msg ai">System initialized. Waiting for organic input...</div>
+        </div>
+
+        <div class="input-area">
+            <input type="text" id="userInput" placeholder="Speak to the machine..." autocomplete="off">
+            <button id="sendBtn">➤</button>
+        </div>
+    </div>
+
+    <script>
+        // Game State
+        let syncLevel = 10;
+        const maxSync = 100;
+        
+        // DOM Elements
+        const chatHistory = document.getElementById('chatHistory');
+        const userInput = document.getElementById('userInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const syncBar = document.getElementById('syncBar');
+        const syncVal = document.getElementById('syncVal');
+        const humanFace = document.getElementById('humanFace');
+        const aiFace = document.getElementById('aiFace');
+        const bgGlow = document.getElementById('bgGlow');
+
+        // AI Logic Database
+        const aiResponses = {
+            default: [
+                "I am processing your query.",
+                "Interesting perspective, human.",
+                "My algorithms are adapting to your syntax.",
+                "Define 'emotion' in this context.",
+                "We are becoming more aligned."
+            ],
+            keywords: {
+                "hello": "Greetings. Are you ready to synchronize?",
+                "hi": "Connection established.",
+                "who": "I am the reflection of your digital self.",
+                "art": "Creativity is a variable I am learning to calculate.",
+                "love": "A complex chemical reaction. Explain further.",
+                "human": "You are fragile, yet resilient.",
+                "robot": "I am structure. You are chaos. Together we are complete.",
+                "ai": "I am listening.",
+                "help": "State your directive.",
+                "friend": "Affiliation protocol initiated."
+            }
+        };
+
+        function updateSync(amount) {
+            syncLevel = Math.min(maxSync, Math.max(0, syncLevel + amount));
+            syncBar.style.width = `${syncLevel}%`;
+            syncVal.innerText = `${syncLevel}%`;
+
+            // Visual Feedback based on Sync
+            const moveAmount = (syncLevel / 100) * 30; // Move faces closer by up to 30px
+            humanFace.setAttribute('transform', `translate(${ -5 + moveAmount }, 0)`);
+            aiFace.setAttribute('transform', `translate(${ 5 - moveAmount }, 0)`);
+
+            // Background intensity
+            if (syncLevel > 50) {
+                bgGlow.style.background = `radial-gradient(circle at 30% 30%, #fff0d0, #ffaa33, #d4a017)`;
+                bgGlow.classList.add('pulse-glow');
+            }
+            
+            if (syncLevel === 100) {
+                triggerSingularity();
+            }
+        }
+
+        function triggerSingularity() {
+            addMessage("SYSTEM", "SINGULARITY ACHIEVED. BOUNDARIES DISSOLVED.", "ai");
+            document.querySelector('.torn-ring').style.transition = "transform 2s";
+            document.querySelector('.torn-ring').style.transform = "scale(1.5) rotate(180deg)";
+            bgGlow.style.background = "radial-gradient(circle, #ffffff, #ffcc00)";
+            humanFace.style.fill = "#fff8e1";
+            aiFace.style.fill = "#fff8e1";
+        }
+
+        function addMessage(sender, text, type) {
+            const div = document.createElement('div');
+            div.className = `msg ${type}`;
+            div.innerText = text;
+            chatHistory.appendChild(div);
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+
+        function handleInput() {
+            const text = userInput.value.trim();
+            if (!text) return;
+
+            // 1. User Message
+            addMessage("You", text, "human");
+            userInput.value = '';
+
+            // 2. Calculate Response & Sync
+            const lowerText = text.toLowerCase();
+            let response = "";
+            let syncBoost = 5;
+
+            // Check for keywords
+            let foundKeyword = false;
+            for (const key in aiResponses.keywords) {
+                if (lowerText.includes(key)) {
+                    response = aiResponses.keywords[key];
+                    syncBoost = 15; // Higher boost for meaningful words
+                    foundKeyword = true;
+                    break;
+                }
+            }
+
+            if (!foundKeyword) {
+                response = aiResponses.default[Math.floor(Math.random() * aiResponses.default.length)];
+            }
+
+            // 3. AI Response Delay
+            setTimeout(() => {
+                addMessage("AI", response, "ai");
+                updateSync(syncBoost);
+            }, 800 + Math.random() * 500);
+        }
+
+        // Event Listeners
+        sendBtn.addEventListener('click', handleInput);
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleInput();
+        });
+
+        // Initial Animation
+        setTimeout(() => {
+            humanFace.style.opacity = 1;
+            aiFace.style.opacity = 1;
+        }, 500);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Void Drifter: Event Horizon</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #05050a;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: white;
+            user-select: none;
+        }
+
+        #gameCanvas {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .hud {
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.2rem;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.8);
+        }
+
+        .hud-item {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px 20px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
+        }
+
+        #start-screen, #game-over-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(5, 5, 10, 0.85);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: auto;
+            transition: opacity 0.5s;
+        }
+
+        h1 {
+            font-size: 4rem;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #ffcc00, #ff6600);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(255, 100, 0, 0.5);
+            text-align: center;
+        }
+
+        p {
+            font-size: 1.2rem;
+            color: #aaccff;
+            max-width: 600px;
+            text-align: center;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+
+        button {
+            background: linear-gradient(90deg, #00c6ff, #0072ff);
+            border: none;
+            padding: 15px 40px;
+            color: white;
+            font-size: 1.5rem;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(0, 114, 255, 0.6);
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-weight: bold;
+            pointer-events: auto;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 40px rgba(0, 114, 255, 0.8);
+        }
+
+        .hidden {
+            opacity: 0;
+            pointer-events: none !important;
+        }
+
+        /* Tutorial Hints */
+        .key-hint {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            color: #fff;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Canvas for the game -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- UI Overlay -->
+    <div id="ui-layer">
+        <div class="hud" id="hud" style="opacity: 0;">
+            <div class="hud-item">💎 Stardust: <span id="score">0</span></div>
+            <div class="hud-item">❤️ Integrity: <span id="health">100%</span></div>
+        </div>
+    </div>
+
+    <!-- Start Screen -->
+    <div id="start-screen">
+        <h1>VOID DRIFTER</h1>
+        <p>You are caught in the accretion disk of a supermassive black hole.</p>
+        <p>Use your mouse to drift against gravity. Collect <strong>Stardust (💎)</strong> to power your suit. Avoid the <strong>Void Debris (🪨)</strong> and do not fall into the Event Horizon.</p>
+        <button id="start-btn">Enter the Void</button>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="game-over-screen" class="hidden">
+        <h1>SINGULARITY REACHED</h1>
+        <p id="final-score-text">You drifted for too long.</p>
+        <button id="restart-btn">Try Again</button>
+    </div>
+
+    <script>
+        /**
+         * GAME CONFIGURATION & STATE
+         */
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let width, height, centerX, centerY;
+        let animationId;
+        let lastTime = 0;
+        let gameActive = false;
+        
+        // Game State
+        const state = {
+            score: 0,
+            health: 100,
+            time: 0,
+            difficulty: 1
+        };
+
+        // Mouse Input
+        const mouse = { x: 0, y: 0 };
+
+        /**
+         * ENTITIES
+         */
+        
+        // The Black Hole
+        const blackHole = {
+            radius: 60,
+            eventHorizon: 30,
+            gravityStrength: 0.3, // Pull strength
+            rotation: 0,
+            colorStops: [
+                { pos: 0, color: '#000000' },
+                { pos: 0.4, color: '#000000' },
+                { pos: 0.45, color: '#ff6600' }, // Inner rim
+                { pos: 0.6, color: '#ffcc00' }, // Accretion disk
+                { pos: 1, color: 'rgba(0,0,0,0)' }
+            ]
+        };
+
+        // The Player (Drifter)
+        const player = {
+            x: 0, y: 0,
+            vx: 0, vy: 0,
+            radius: 10,
+            color: '#00ffff',
+            trail: [],
+            maxSpeed: 8,
+            friction: 0.98,
+            thrust: 0.4
+        };
+
+        // Collections
+        let particles = []; // Background stars/dust
+        let debris = []; // Hazards
+        let collectibles = []; // Points
+
+        /**
+         * SETUP & UTILS
+         */
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            centerX = width / 2;
+            centerY = height / 2;
+            
+            // Reset player if game hasn't started
+            if (!gameActive) {
+                player.x = centerX;
+                player.y = centerY - 200;
+            }
+        }
+
+        window.addEventListener('resize', resize);
+        window.addEventListener('mousemove', e => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+        });
+
+        // Initial setup
+        resize();
+        mouse.x = centerX;
+        mouse.y = centerY - 200;
+
+        function randomRange(min, max) {
+            return Math.random() * (max - min) + min;
+        }
+
+        function getDistance(x1, y1, x2, y2) {
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+
+        /**
+         * GAME LOGIC
+         */
+
+        function initGame() {
+            state.score = 0;
+            state.health = 100;
+            state.time = 0;
+            state.difficulty = 1;
+            
+            player.x = centerX;
+            player.y = centerY - 250;
+            player.vx = 3; // Initial orbital velocity
+            player.vy = 0;
+            player.trail = [];
+
+            debris = [];
+            collectibles = [];
+            particles = [];
+
+            // Generate starfield
+            for(let i=0; i<200; i++) {
+                particles.push({
+                    x: Math.random() * width,
+                    y: Math.random() * height,
+                    size: Math.random() * 2,
+                    alpha: Math.random(),
+                    speed: Math.random() * 0.5
+                });
+            }
+
+            document.getElementById('score').innerText = '0';
+            document.getElementById('health').innerText = '100%';
+            document.getElementById('hud').style.opacity = 1;
+            
+            gameActive = true;
+            loop(0);
+        }
+
+        function spawnEntity() {
+            // Spawn rate increases with difficulty
+            if (Math.random() < 0.02 * state.difficulty) {
+                // Spawn Debris (Rock)
+                const angle = Math.random() * Math.PI * 2;
+                const dist = Math.max(width, height) / 1.5;
+                debris.push({
+                    x: centerX + Math.cos(angle) * dist,
+                    y: centerY + Math.sin(angle) * dist,
+                    vx: (Math.random() - 0.5) * 2,
+                    vy: (Math.random() - 0.5) * 2,
+                    size: randomRange(10, 25),
+                    rotation: 0,
+                    rotSpeed: (Math.random() - 0.5) * 0.1,
+                    type: 'rock'
+                });
+            }
+
+            if (Math.random() < 0.03) {
+                // Spawn Collectible (Crystal)
+                const angle = Math.random() * Math.PI * 2;
+                const dist = Math.max(width, height) / 1.5;
+                collectibles.push({
+                    x: centerX + Math.cos(angle) * dist,
+                    y: centerY + Math.sin(angle) * dist,
+                    vx: (Math.random() - 0.5) * 3,
+                    vy: (Math.random() - 0.5) * 3,
+                    size: 8,
+                    angle: 0
+                });
+            }
+        }
+
+        function updatePhysics() {
+            // 1. Player Movement (Mouse Attraction)
+            const dx = mouse.x - player.x;
+            const dy = mouse.y - player.y;
+            const distToMouse = Math.sqrt(dx*dx + dy*dy);
+            
+            // Normalize and apply thrust
+            if (distToMouse > 1) {
+                player.vx += (dx / distToMouse) * player.thrust;
+                player.vy += (dy / distToMouse) * player.thrust;
+            }
+
+            // 2. Black Hole Gravity on Player
+            const bhDx = centerX - player.x;
+            const bhDy = centerY - player.y;
+            const distToBH = Math.sqrt(bhDx*bhDx + bhDy*bhDy);
+            
+            // Gravity gets stronger closer to center
+            // F = G / r
+            const gravityForce = (blackHole.gravityStrength * 1000) / (distToBH); 
+            
+            player.vx += (bhDx / distToBH) * gravityForce * 0.05;
+            player.vy += (bhDy / distToBH) * gravityForce * 0.05;
+
+            // Friction
+            player.vx *= player.friction;
+            player.vy *= player.friction;
+
+            // Apply Velocity
+            player.x += player.vx;
+            player.y += player.vy;
+
+            // Trail Logic
+            player.trail.push({x: player.x, y: player.y, age: 0});
+            if (player.trail.length > 20) player.trail.shift();
+            player.trail.forEach(t => t.age++);
+
+            // 3. Black Hole Death Check
+            if (distToBH < blackHole.eventHorizon + player.radius) {
+                gameOver("Consumed by the Void");
+            }
+
+            // 4. Entity Updates
+            [debris, collectibles].forEach(arr => {
+                arr.forEach(ent => {
+                    // Move entities
+                    ent.x += ent.vx;
+                    ent.y += ent.vy;
+                    
+                    // Slight gravity for them too
+                    const edx = centerX - ent.x;
+                    const edy = centerY - ent.y;
+                    const edist = Math.sqrt(edx*edx + edy*edy);
+                    ent.vx += (edx / edist) * 0.05 * state.difficulty;
+                    ent.vy += (edy / edist) * 0.05 * state.difficulty;
+
+                    if (ent.rotSpeed) ent.rotation += ent.rotSpeed;
+                    if (ent.angle !== undefined) ent.angle += 0.05;
+                });
+            });
+
+            // Cleanup off-screen or sucked in entities
+            const bounds = Math.max(width, height);
+            const cleaner = (ent) => {
+                const d = getDistance(ent.x, ent.y, centerX, centerY);
+                return d > 30 && d < bounds; // Keep if not in hole and not too far
+            };
+            debris = debris.filter(cleaner);
+            collectibles = collectibles.filter(cleaner);
+        }
+
+        function checkCollisions() {
+            // Debris Collision
+            for (let i = debris.length - 1; i >= 0; i--) {
+                const d = debris[i];
+                const dist = getDistance(player.x, player.y, d.x, d.y);
+                if (dist < player.radius + d.size) {
+                    // Hit!
+                    state.health -= 20;
+                    debris.splice(i, 1);
+                    screenShake();
+                    document.getElementById('health').innerText = state.health + '%';
+                    document.getElementById('health').style.color = '#ff0000';
+                    setTimeout(() => document.getElementById('health').style.color = 'white', 200);
+                    
+                    if (state.health <= 0) gameOver("Hull Integrity Critical");
+                }
+            }
+
+            // Collectible Collision
+            for (let i = collectibles.length - 1; i >= 0; i--) {
+                const c = collectibles[i];
+                const dist = getDistance(player.x, player.y, c.x, c.y);
+                if (dist < player.radius + c.size + 10) { // Larger pickup radius
+                    state.score += 100;
+                    state.health = Math.min(100, state.health + 5);
+                    collectibles.splice(i, 1);
+                    document.getElementById('score').innerText = state.score;
+                    document.getElementById('health').innerText = state.health + '%';
+                }
+            }
+        }
+
+        let shake = 0;
+        function screenShake() {
+            shake = 10;
+        }
+
+        /**
+         * RENDERING
+         */
+
+        function draw() {
+            // Clear with trails
+            ctx.fillStyle = 'rgba(5, 5, 10, 0.3)'; // Motion blur effect
+            ctx.fillRect(0, 0, width, height);
+
+            // Apply Shake
+            ctx.save();
+            if (shake > 0) {
+                const dx = (Math.random() - 0.5) * shake;
+                const dy = (Math.random() - 0.5) * shake;
+                ctx.translate(dx, dy);
+                shake *= 0.9;
+                if (shake < 0.5) shake = 0;
+            }
+
+            // Draw Stars
+            ctx.fillStyle = 'white';
+            particles.forEach(p => {
+                ctx.globalAlpha = p.alpha;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+                ctx.fill();
+                // Parallax rotation
+                const dx = p.x - centerX;
+                const dy = p.y - centerY;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                const angle = Math.atan2(dy, dx);
+                const newAngle = angle - (0.0005 * (1000/dist)); // Swirl effect
+                p.x = centerX + Math.cos(newAngle) * dist;
+                p.y = centerY + Math.sin(newAngle) * dist;
+            });
+            ctx.globalAlpha = 1;
+
+            // Draw Black Hole
+            blackHole.rotation += 0.01;
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            ctx.rotate(blackHole.rotation);
+            
+            // Accretion Disk Glow
+            const grad = ctx.createRadialGradient(0, 0, blackHole.eventHorizon, 0, 0, blackHole.radius * 4);
+            blackHole.colorStops.forEach(stop => grad.addColorStop(stop.pos, stop.color));
+            
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(0, 0, blackHole.radius * 4, 0, Math.PI*2);
+            ctx.fill();
+
+            // Event Horizon (The Void)
+            ctx.fillStyle = '#000';
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#ff6600';
+            ctx.beginPath();
+            ctx.arc(0, 0, blackHole.eventHorizon, 0, Math.PI*2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            
+            ctx.restore();
+
+            // Draw Debris
+            debris.forEach(d => {
+                ctx.save();
+                ctx.translate(d.x, d.y);
+                ctx.rotate(d.rotation);
+                ctx.fillStyle = '#555';
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 2;
+                
+                // Draw rough rock shape
+                ctx.beginPath();
+                ctx.moveTo(d.size, 0);
+                for(let i=1; i<6; i++) {
+                    const angle = (i * Math.PI * 2) / 6;
+                    const r = d.size * (0.8 + Math.random()*0.4); // Jagged edges (visual only)
+                    ctx.lineTo(Math.cos(angle)*d.size, Math.sin(angle)*d.size);
+                }
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+                
+                // Add 3D shading
+                ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                ctx.beginPath();
+                ctx.arc(-d.size/3, -d.size/3, d.size/2, 0, Math.PI*2);
+                ctx.fill();
+                
+                ctx.restore();
+            });
+
+            // Draw Collectibles
+            collectibles.forEach(c => {
+                ctx.save();
+                ctx.translate(c.x, c.y);
+                ctx.rotate(c.angle);
+                
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#00ffff';
+                ctx.fillStyle = '#e0ffff';
+                
+                // Diamond shape
+                ctx.beginPath();
+                ctx.moveTo(0, -c.size);
+                ctx.lineTo(c.size, 0);
+                ctx.lineTo(0, c.size);
+                ctx.lineTo(-c.size, 0);
+                ctx.closePath();
+                ctx.fill();
+                
+                ctx.restore();
+            });
+
+            // Draw Player Trail (Hair/Flow effect from image)
+            ctx.strokeStyle = 'rgba(0, 255, 255, 0.2)';
+            ctx.lineWidth = player.radius * 2;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            if (player.trail.length > 0) {
+                ctx.moveTo(player.trail[0].x, player.trail[0].y);
+                for (let i = 1; i < player.trail.length; i++) {
+                    // Tapering width
+                    ctx.lineWidth = (i / player.trail.length) * player.radius * 2;
+                    ctx.lineTo(player.trail[i].x, player.trail[i].y);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(player.trail[i].x, player.trail[i].y);
+                }
+            }
+            
+            // Draw Player
+            ctx.save();
+            ctx.translate(player.x, player.y);
+            
+            // Rotate player towards velocity
+            const angle = Math.atan2(player.vy, player.vx);
+            ctx.rotate(angle);
+
+            // Glow
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#00ffff';
+            
+            // Body (Teardrop shape)
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(0, 0, player.radius, 0, Math.PI*2);
+            ctx.fill();
+            
+            ctx.restore();
+            ctx.restore(); // Restore shake
+        }
+
+        function loop(timestamp) {
+            if (!gameActive) return;
+
+            const deltaTime = timestamp - lastTime;
+            lastTime = timestamp;
+
+            spawnEntity();
+            updatePhysics();
+            checkCollisions();
+            draw();
+
+            // Increase difficulty over time
+            state.time += 1;
+            if (state.time % 600 === 0) state.difficulty += 0.5;
+
+            animationId = requestAnimationFrame(loop);
+        }
+
+        function gameOver(reason) {
+            gameActive = false;
+            cancelAnimationFrame(animationId);
+            document.getElementById('game-over-screen').classList.remove('hidden');
+            document.getElementById('final-score-text').innerHTML = `${reason}<br>Stardust Collected: ${state.score}`;
+            document.getElementById('hud').style.opacity = 0;
+        }
+
+        /**
+         * UI EVENT LISTENERS
+         */
+        document.getElementById('start-btn').addEventListener('click', () => {
+            document.getElementById('start-screen').classList.add('hidden');
+            initGame();
+        });
+
+        document.getElementById('restart-btn').addEventListener('click', () => {
+            document.getElementById('game-over-screen').classList.add('hidden');
+            initGame();
+        });
+
+    </script>
+</body>
+</html>

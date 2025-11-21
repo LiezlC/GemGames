@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Wyvern: Protocol</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;500;700&display=swap');
+
+        :root {
+            --neon-blue: #00f3ff;
+            --neon-purple: #bc13fe;
+            --dark-bg: #050a14;
+            --glass: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            background-color: var(--dark-bg);
+            color: white;
+            font-family: 'Rajdhani', sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Background Animation */
+        #matrix-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            opacity: 0.3;
+        }
+
+        /* UI Layer */
+        #ui-layer {
+            position: relative;
+            z-index: 10;
+            height: 100%;
+            width: 100%;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-rows: 1fr auto;
+        }
+
+        /* Towers & Dragons */
+        .tower-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: center;
+            position: relative;
+            padding-bottom: 0;
+        }
+
+        .dragon-avatar {
+            font-size: 8rem;
+            filter: drop-shadow(0 0 20px var(--neon-blue));
+            animation: float 6s ease-in-out infinite;
+            cursor: pointer;
+            transition: transform 0.2s, filter 0.2s;
+            user-select: none;
+            z-index: 20;
+        }
+
+        .dragon-avatar:active {
+            transform: scale(0.95);
+        }
+
+        .dragon-left {
+            filter: drop-shadow(0 0 30px var(--neon-purple)) hue-rotate(45deg);
+            transform: scaleX(-1); /* Face right */
+        }
+        
+        .dragon-right {
+            filter: drop-shadow(0 0 30px var(--neon-blue));
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) scaleX(var(--scale-dir, 1)); }
+            50% { transform: translateY(-20px) scaleX(var(--scale-dir, 1)); }
+        }
+
+        .tower {
+            width: 120px;
+            background: linear-gradient(180deg, rgba(0, 243, 255, 0.2) 0%, rgba(5, 10, 20, 0.9) 100%);
+            border: 1px solid var(--neon-blue);
+            border-bottom: none;
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            overflow: hidden;
+            transition: height 1s;
+        }
+
+        .tower-window {
+            width: 100%;
+            height: 4px;
+            background: rgba(0, 243, 255, 0.3);
+            margin-top: 8px;
+            box-shadow: 0 0 5px var(--neon-blue);
+        }
+
+        .energy-bar-container {
+            position: absolute;
+            bottom: 20px;
+            left: -40px;
+            height: 300px;
+            width: 20px;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid #333;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .energy-fill {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background: var(--neon-blue);
+            box-shadow: 0 0 10px var(--neon-blue);
+            transition: height 0.3s linear, background 0.3s;
+        }
+
+        /* Center HUD */
+        .center-hud {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            background: linear-gradient(90deg, var(--neon-purple), var(--neon-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 20px rgba(0, 243, 255, 0.5);
+        }
+
+        .status-panel {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            padding: 1.5rem;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 300px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        .user-avatar {
+            font-size: 3rem;
+            margin-top: auto;
+            margin-bottom: 2rem;
+            filter: drop-shadow(0 0 10px white);
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .user-avatar:hover {
+            transform: scale(1.1);
+        }
+
+        /* Particles */
+        .particle {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: white;
+            border-radius: 50%;
+            pointer-events: none;
+            box-shadow: 0 0 10px white;
+            z-index: 100;
+        }
+
+        /* Scanlines */
+        .scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1));
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        /* Game Over Overlay */
+        #overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 200;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s;
+        }
+        
+        #overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .btn {
+            background: transparent;
+            border: 1px solid var(--neon-blue);
+            color: var(--neon-blue);
+            padding: 10px 30px;
+            font-family: 'Orbitron';
+            font-size: 1.2rem;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: 0.3s;
+        }
+
+        .btn:hover {
+            background: var(--neon-blue);
+            color: black;
+            box-shadow: 0 0 20px var(--neon-blue);
+        }
+
+        .tooltip {
+            position: absolute;
+            background: rgba(0,0,0,0.8);
+            border: 1px solid var(--neon-blue);
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="matrix-canvas"></canvas>
+    <div class="scanlines"></div>
+
+    <div id="ui-layer">
+        <!-- Left Dragon (Alpha) -->
+        <div class="tower-container">
+            <div class="energy-bar-container" style="left: auto; right: 20px;">
+                <div id="fill-alpha" class="energy-fill" style="height: 50%; background: var(--neon-purple);"></div>
+            </div>
+            <div class="dragon-avatar dragon-left" id="dragon-alpha" style="--scale-dir: -1">🐉</div>
+            <div class="tower" style="height: 60vh; border-color: var(--neon-purple); box-shadow: 0 0 15px rgba(188, 19, 254, 0.2);">
+                <!-- Windows generated by JS -->
+            </div>
+        </div>
+
+        <!-- Center Control -->
+        <div class="center-hud">
+            <div>
+                <h1 class="title">NEON WYVERN</h1>
+                <div class="text-xs text-gray-400 tracking-widest mb-4">SYSTEM STABILIZER PROTOCOL</div>
+            </div>
+
+            <div class="status-panel">
+                <div class="flex justify-between mb-2">
+                    <span class="text-gray-400">SYNC RATE</span>
+                    <span id="score-display" class="text-white font-bold font-mono">0%</span>
+                </div>
+                <div class="flex justify-between mb-2">
+                    <span class="text-gray-400">STATUS</span>
+                    <span id="status-text" class="text-green-400 font-bold">STABLE</span>
+                </div>
+                <div class="w-full bg-gray-800 h-1 mt-2">
+                    <div id="sync-bar" class="h-full bg-white w-0 transition-all duration-300"></div>
+                </div>
+                <p class="text-xs text-gray-500 mt-4 text-left">
+                    > INSTRUCTIONS:<br>
+                    > Click Dragons to feed DATA.<br>
+                    > Keep energy between 30% and 80%.<br>
+                    > Don't let them starve or overload.
+                </p>
+            </div>
+
+            <div class="user-avatar" id="user-avatar">👤</div>
+        </div>
+
+        <!-- Right Dragon (Omega) -->
+        <div class="tower-container">
+            <div class="energy-bar-container" style="left: 20px;">
+                <div id="fill-omega" class="energy-fill" style="height: 50%;"></div>
+            </div>
+            <div class="dragon-avatar dragon-right" id="dragon-omega" style="--scale-dir: 1">🐉</div>
+            <div class="tower" style="height: 55vh;">
+                <!-- Windows generated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <div id="overlay">
+        <h1 class="title" style="font-size: 4rem; color: red;">SYSTEM FAILURE</h1>
+        <p id="death-reason" class="text-xl text-gray-300 mt-4">CONNECTION LOST</p>
+        <p class="text-gray-500 mt-2">Final Sync Score: <span id="final-score">0</span></p>
+        <button class="btn" onclick="resetGame()">REBOOT SYSTEM</button>
+    </div>
+
+    <script>
+        // --- Matrix Background Effect ---
+        const canvas = document.getElementById('matrix-canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width = canvas.width = window.innerWidth;
+        let height = canvas.height = window.innerHeight;
+
+        const cols = Math.floor(width / 20);
+        const ypos = Array(cols).fill(0);
+
+        function matrix() {
+            ctx.fillStyle = '#0001';
+            ctx.fillRect(0, 0, width, height);
+
+            ctx.fillStyle = '#00f3ff';
+            ctx.font = '15pt monospace';
+
+            ypos.forEach((y, ind) => {
+                const text = String.fromCharCode(Math.random() * 128);
+                const x = ind * 20;
+                ctx.fillText(text, x, y);
+                if (y > 100 + Math.random() * 10000) ypos[ind] = 0;
+                else ypos[ind] = y + 20;
+            });
+        }
+        setInterval(matrix, 50);
+
+        window.addEventListener('resize', () => {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        });
+
+        // --- Game Logic ---
+
+        const state = {
+            alpha: 50, // Left Dragon Energy
+            omega: 50, // Right Dragon Energy
+            score: 0,
+            active: true,
+            difficulty: 0.2
+        };
+
+        const els = {
+            alphaFill: document.getElementById('fill-alpha'),
+            omegaFill: document.getElementById('fill-omega'),
+            score: document.getElementById('score-display'),
+            status: document.getElementById('status-text'),
+            overlay: document.getElementById('overlay'),
+            reason: document.getElementById('death-reason'),
+            finalScore: document.getElementById('final-score'),
+            alphaDragon: document.getElementById('dragon-alpha'),
+            omegaDragon: document.getElementById('dragon-omega'),
+            user: document.getElementById('user-avatar')
+        };
+
+        // Generate Tower Windows
+        document.querySelectorAll('.tower').forEach(tower => {
+            for(let i=0; i<20; i++) {
+                const win = document.createElement('div');
+                win.className = 'tower-window';
+                win.style.opacity = Math.random();
+                tower.appendChild(win);
+            }
+        });
+
+        function updateUI() {
+            els.alphaFill.style.height = `${state.alpha}%`;
+            els.omegaFill.style.height = `${state.omega}%`;
+            els.score.innerText = Math.floor(state.score);
+
+            // Color feedback based on danger levels
+            updateDragonStatus(els.alphaDragon, els.alphaFill, state.alpha);
+            updateDragonStatus(els.omegaDragon, els.omegaFill, state.omega);
+        }
+
+        function updateDragonStatus(dragonEl, fillEl, value) {
+            if (value > 80) {
+                fillEl.style.background = '#ff0055'; // Danger Red
+                fillEl.style.boxShadow = '0 0 20px #ff0055';
+                dragonEl.style.filter = 'drop-shadow(0 0 20px #ff0055) hue-rotate(0deg)';
+            } else if (value < 30) {
+                fillEl.style.background = '#ffa500'; // Warning Orange
+                fillEl.style.boxShadow = '0 0 10px #ffa500';
+                dragonEl.style.filter = 'drop-shadow(0 0 10px #ffa500) grayscale(100%)';
+            } else {
+                // Normal
+                const color = dragonEl.id.includes('alpha') ? 'var(--neon-purple)' : 'var(--neon-blue)';
+                fillEl.style.background = color;
+                fillEl.style.boxShadow = `0 0 10px ${color}`;
+                dragonEl.style.filter = dragonEl.id.includes('alpha') 
+                    ? 'drop-shadow(0 0 30px var(--neon-purple)) hue-rotate(45deg)' 
+                    : 'drop-shadow(0 0 30px var(--neon-blue))';
+            }
+        }
+
+        function spawnParticle(targetEl) {
+            const rectStart = els.user.getBoundingClientRect();
+            const rectEnd = targetEl.getBoundingClientRect();
+
+            const p = document.createElement('div');
+            p.className = 'particle';
+            document.body.appendChild(p);
+
+            // Start position (center of user)
+            const startX = rectStart.left + rectStart.width/2;
+            const startY = rectStart.top + rectStart.height/2;
+            
+            p.style.left = startX + 'px';
+            p.style.top = startY + 'px';
+
+            // Animate
+            const anim = p.animate([
+                { transform: 'translate(0,0) scale(1)', opacity: 1 },
+                { transform: `translate(${rectEnd.left + rectEnd.width/2 - startX}px, ${rectEnd.top + rectEnd.height/2 - startY}px) scale(0.5)`, opacity: 0 }
+            ], {
+                duration: 400,
+                easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
+            });
+
+            anim.onfinish = () => p.remove();
+        }
+
+        function clickDragon(type) {
+            if (!state.active) return;
+            
+            if (type === 'alpha') {
+                state.alpha += 10;
+                spawnParticle(els.alphaDragon);
+            } else {
+                state.omega += 10;
+                spawnParticle(els.omegaDragon);
+            }
+            state.score += 10;
+            updateUI();
+        }
+
+        els.alphaDragon.addEventListener('click', () => clickDragon('alpha'));
+        els.omegaDragon.addEventListener('click', () => clickDragon('omega'));
+
+        // Keyboard controls
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'a') clickDragon('alpha');
+            if (e.key === 'ArrowRight' || e.key === 'd') clickDragon('omega');
+        });
+
+        function gameOver(reason) {
+            state.active = false;
+            els.overlay.classList.add('active');
+            els.reason.innerText = reason;
+            els.finalScore.innerText = Math.floor(state.score);
+        }
+
+        function resetGame() {
+            state.alpha = 50;
+            state.omega = 50;
+            state.score = 0;
+            state.difficulty = 0.2;
+            state.active = true;
+            els.overlay.classList.remove('active');
+            updateUI();
+            gameLoop();
+        }
+
+        function gameLoop() {
+            if (!state.active) return;
+
+            // Decay
+            state.alpha -= state.difficulty;
+            state.omega -= state.difficulty;
+
+            // Difficulty ramp up
+            state.difficulty += 0.0005;
+
+            // Passive score
+            state.score += 0.1;
+
+            // Check conditions
+            if (state.alpha <= 0) gameOver("ALPHA CORE DEPLETED");
+            else if (state.alpha >= 100) gameOver("ALPHA CORE OVERLOAD");
+            else if (state.omega <= 0) gameOver("OMEGA CORE DEPLETED");
+            else if (state.omega >= 100) gameOver("OMEGA CORE OVERLOAD");
+
+            updateUI();
+
+            if (state.active) requestAnimationFrame(gameLoop);
+        }
+
+        // Start
+        gameLoop();
+
+    </script>
+</body>
+</html>

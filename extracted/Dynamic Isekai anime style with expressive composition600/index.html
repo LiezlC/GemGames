@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spirit Sky Arena</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;600&display=swap');
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            background-color: #1a1a1a;
+            color: white;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* --- Dynamic Background Layer --- */
+        .scene-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(180deg, #2e1065 0%, #7c3aed 40%, #f472b6 70%, #fbbf24 100%);
+            z-index: -2;
+            overflow: hidden;
+        }
+
+        .moon {
+            position: absolute;
+            top: 15%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, #fffbeb 20%, #fcd34d 60%, transparent 100%);
+            border-radius: 50%;
+            box-shadow: 0 0 60px 20px rgba(251, 191, 36, 0.4);
+            z-index: -1;
+            animation: pulseMoon 4s infinite alternate;
+        }
+
+        @keyframes pulseMoon {
+            0% { box-shadow: 0 0 60px 20px rgba(251, 191, 36, 0.4); }
+            100% { box-shadow: 0 0 80px 30px rgba(251, 191, 36, 0.6); }
+        }
+
+        /* --- Clouds --- */
+        .cloud {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50px;
+            filter: blur(15px);
+            animation: floatCloud 60s linear infinite;
+        }
+        .cloud:nth-child(1) { top: 10%; left: -10%; width: 200px; height: 60px; animation-duration: 45s; }
+        .cloud:nth-child(2) { top: 20%; left: 110%; width: 300px; height: 80px; animation-duration: 55s; animation-direction: reverse; }
+        .cloud:nth-child(3) { top: 5%; left: 40%; width: 150px; height: 40px; opacity: 0.5; }
+
+        @keyframes floatCloud {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(120vw); }
+        }
+
+        /* --- Floating Temples (CSS Shapes) --- */
+        .temple {
+            position: absolute;
+            opacity: 0.8;
+            filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));
+        }
+        .temple-roof {
+            width: 0;
+            height: 0;
+            border-left: 60px solid transparent;
+            border-right: 60px solid transparent;
+            border-bottom: 40px solid #4c1d95;
+            position: relative;
+        }
+        .temple-roof::after {
+            content: '';
+            position: absolute;
+            top: 40px;
+            left: -40px;
+            width: 80px;
+            height: 60px;
+            background: #2e1065;
+        }
+        .temple-left { top: 20%; left: 10%; transform: scale(0.8) rotate(-5deg); animation: floatTemple 6s ease-in-out infinite; }
+        .temple-right { top: 25%; right: 10%; transform: scale(0.9) rotate(5deg); animation: floatTemple 7s ease-in-out infinite reverse; }
+
+        @keyframes floatTemple {
+            0%, 100% { transform: translateY(0) rotate(var(--r, 0deg)); }
+            50% { transform: translateY(-20px) rotate(var(--r, 0deg)); }
+        }
+
+        /* --- Foreground Rocks --- */
+        .ground-layer {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 30%;
+            z-index: 0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+        }
+        .rock {
+            background: linear-gradient(to bottom, #4b5563, #1f2937);
+            border-radius: 20px 20px 0 0;
+            box-shadow: inset 0 10px 20px rgba(255,255,255,0.1);
+            position: relative;
+        }
+        .rock-left { width: 300px; height: 150px; margin-right: 50px; transform: skewX(-10deg); }
+        .rock-right { width: 300px; height: 180px; margin-left: 50px; transform: skewX(10deg); }
+
+        /* --- Characters --- */
+        .character {
+            position: absolute;
+            bottom: 140px;
+            width: 100px;
+            height: 150px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+        .char-avatar {
+            font-size: 80px;
+            filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.4));
+            animation: breathe 3s ease-in-out infinite;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .char-avatar:hover { transform: scale(1.1); }
+        
+        .player-pos { left: calc(50% - 250px); }
+        .enemy-pos { left: calc(50% + 150px); }
+
+        @keyframes breathe {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* --- UI Overlay --- */
+        .ui-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 50;
+            pointer-events: none; /* Let clicks pass through to game */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+        }
+
+        .hud-top {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 1000px;
+            margin: 0 auto;
+            pointer-events: auto;
+        }
+
+        .stat-card {
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 12px;
+            width: 300px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .health-bar-bg {
+            width: 100%;
+            height: 10px;
+            background: #374151;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        .health-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ef4444, #f87171);
+            width: 100%;
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .mana-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #60a5fa);
+            width: 100%;
+            transition: width 0.5s ease;
+        }
+
+        .action-panel {
+            pointer-events: auto;
+            background: rgba(23, 23, 23, 0.85);
+            backdrop-filter: blur(12px);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto 20px;
+            border-radius: 20px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+        }
+
+        .dialogue-box {
+            font-family: 'Cinzel', serif;
+            color: #e5e7eb;
+            font-size: 1.1rem;
+            text-align: center;
+            min-height: 1.5em;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .btn-action {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: 'Inter', sans-serif;
+        }
+        .btn-action:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+            box-shadow: 0 0 15px rgba(124, 58, 237, 0.4);
+            border-color: rgba(124, 58, 237, 0.5);
+        }
+        .btn-action:active { transform: translateY(0); }
+
+        /* Effects */
+        .damage-text {
+            position: absolute;
+            font-weight: bold;
+            font-size: 24px;
+            color: #ff4d4d;
+            animation: floatUp 1s forwards;
+            pointer-events: none;
+            text-shadow: 0 2px 4px black;
+        }
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-50px) scale(1.5); }
+        }
+
+        .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+
+        .particle {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: particleAnim 0.8s ease-out forwards;
+        }
+        @keyframes particleAnim {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Background Scene -->
+    <div class="scene-container">
+        <div class="moon"></div>
+        <div class="cloud"></div>
+        <div class="cloud"></div>
+        <div class="cloud"></div>
+        
+        <!-- Floating Temples -->
+        <div class="temple temple-left" style="--r: -5deg">
+            <div class="temple-roof"></div>
+        </div>
+        <div class="temple temple-right" style="--r: 5deg">
+            <div class="temple-roof"></div>
+        </div>
+
+        <!-- Ground -->
+        <div class="ground-layer">
+            <div class="rock rock-left"></div>
+            <div class="rock rock-right"></div>
+        </div>
+    </div>
+
+    <!-- Characters -->
+    <div id="player" class="character player-pos">
+        <div class="char-avatar">🧑‍🎤</div>
+        <div class="mt-2 text-sm font-bold text-purple-200 bg-black/50 px-2 rounded">Wind Disciple</div>
+    </div>
+
+    <div id="enemy" class="character enemy-pos">
+        <div class="char-avatar">🧙‍♀️</div>
+        <div class="mt-2 text-sm font-bold text-red-200 bg-black/50 px-2 rounded">Crimson Mage</div>
+    </div>
+
+    <!-- UI Layer -->
+    <div class="ui-overlay">
+        
+        <!-- HUD -->
+        <div class="hud-top">
+            <!-- Player Stats -->
+            <div class="stat-card">
+                <div class="flex justify-between text-sm mb-1">
+                    <span class="font-bold text-purple-300">PLAYER</span>
+                    <span id="player-hp-text">100/100</span>
+                </div>
+                <div class="health-bar-bg">
+                    <div id="player-hp-bar" class="health-bar-fill"></div>
+                </div>
+                <div class="health-bar-bg mt-1" style="height: 4px; background: #1e3a8a;">
+                    <div id="player-mp-bar" class="mana-bar-fill"></div>
+                </div>
+            </div>
+
+            <!-- Enemy Stats -->
+            <div class="stat-card text-right">
+                <div class="flex justify-between text-sm mb-1">
+                    <span id="enemy-hp-text">100/100</span>
+                    <span class="font-bold text-red-300">OPPONENT</span>
+                </div>
+                <div class="health-bar-bg">
+                    <div id="enemy-hp-bar" class="health-bar-fill" style="background: linear-gradient(90deg, #f87171, #ef4444); float: right;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Menu -->
+        <div class="action-panel">
+            <div class="dialogue-box" id="dialogue">
+                The duel begins! Choose your move...
+            </div>
+            <div class="controls">
+                <button class="btn-action" onclick="playerAction('attack')">
+                    <span>⚔️</span> Strike
+                </button>
+                <button class="btn-action" onclick="playerAction('magic')">
+                    <span>✨</span> Spirit Blast
+                </button>
+                <button class="btn-action" onclick="playerAction('heal')">
+                    <span>🌿</span> Meditate
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game State
+        const state = {
+            player: { hp: 100, maxHp: 100, mp: 50, maxMp: 50 },
+            enemy: { hp: 100, maxHp: 100 },
+            turn: 'player',
+            gameOver: false
+        };
+
+        // DOM Elements
+        const els = {
+            playerHpBar: document.getElementById('player-hp-bar'),
+            playerMpBar: document.getElementById('player-mp-bar'),
+            playerHpText: document.getElementById('player-hp-text'),
+            enemyHpBar: document.getElementById('enemy-hp-bar'),
+            enemyHpText: document.getElementById('enemy-hp-text'),
+            dialogue: document.getElementById('dialogue'),
+            playerSprite: document.getElementById('player'),
+            enemySprite: document.getElementById('enemy')
+        };
+
+        // Utility: Random Number
+        const rng = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+        // Update UI
+        function updateUI() {
+            const pHpPct = (state.player.hp / state.player.maxHp) * 100;
+            const pMpPct = (state.player.mp / state.player.maxMp) * 100;
+            const eHpPct = (state.enemy.hp / state.enemy.maxHp) * 100;
+
+            els.playerHpBar.style.width = `${Math.max(0, pHpPct)}%`;
+            els.playerMpBar.style.width = `${Math.max(0, pMpPct)}%`;
+            els.playerHpText.innerText = `${Math.max(0, state.player.hp)}/${state.player.maxHp}`;
+
+            els.enemyHpBar.style.width = `${Math.max(0, eHpPct)}%`;
+            els.enemyHpText.innerText = `${Math.max(0, state.enemy.hp)}/${state.enemy.maxHp}`;
+        }
+
+        // Create Floating Damage Text
+        function showDamage(targetEl, amount, color = '#ff4d4d') {
+            const rect = targetEl.getBoundingClientRect();
+            const el = document.createElement('div');
+            el.className = 'damage-text';
+            el.innerText = amount;
+            el.style.color = color;
+            el.style.left = (rect.left + rect.width / 2) + 'px';
+            el.style.top = (rect.top) + 'px';
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 1000);
+        }
+
+        // Particle Effect
+        function createParticles(x, y, color) {
+            for(let i=0; i<10; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                p.style.background = color;
+                p.style.left = x + 'px';
+                p.style.top = y + 'px';
+                p.style.setProperty('--tx', (Math.random() - 0.5) * 100 + 'px');
+                p.style.setProperty('--ty', (Math.random() - 0.5) * 100 + 'px');
+                document.body.appendChild(p);
+                setTimeout(() => p.remove(), 800);
+            }
+        }
+
+        // Player Actions
+        function playerAction(type) {
+            if (state.turn !== 'player' || state.gameOver) return;
+
+            let dmg = 0;
+            let text = "";
+
+            if (type === 'attack') {
+                dmg = rng(8, 15);
+                text = `You strike with your blade!`;
+                animateAttack(els.playerSprite, els.enemySprite);
+                dealDamage('enemy', dmg);
+            } else if (type === 'magic') {
+                if (state.player.mp >= 10) {
+                    state.player.mp -= 10;
+                    dmg = rng(18, 25);
+                    text = `You cast a Spirit Blast!`;
+                    animateMagic(els.playerSprite, els.enemySprite);
+                    dealDamage('enemy', dmg);
+                } else {
+                    els.dialogue.innerText = "Not enough Mana!";
+                    return;
+                }
+            } else if (type === 'heal') {
+                const heal = rng(15, 25);
+                state.player.hp = Math.min(state.player.maxHp, state.player.hp + heal);
+                state.player.mp = Math.min(state.player.maxMp, state.player.mp + 5);
+                text = `You meditate and recover ${heal} HP.`;
+                showDamage(els.playerSprite, `+${heal}`, '#4ade80');
+                createParticles(els.playerSprite.getBoundingClientRect().left + 50, els.playerSprite.getBoundingClientRect().top + 50, '#4ade80');
+            }
+
+            els.dialogue.innerText = text;
+            updateUI();
+
+            if (state.enemy.hp <= 0) {
+                endGame(true);
+            } else {
+                state.turn = 'enemy';
+                setTimeout(enemyTurn, 1500);
+            }
+        }
+
+        // Enemy AI
+        function enemyTurn() {
+            if (state.gameOver) return;
+
+            const action = Math.random();
+            let dmg = 0;
+            let text = "";
+
+            if (action < 0.7) {
+                // Attack
+                dmg = rng(10, 18);
+                text = "Crimson Mage casts Fireball!";
+                animateMagic(els.enemySprite, els.playerSprite, '#ef4444');
+                dealDamage('player', dmg);
+            } else {
+                // Strong Attack
+                dmg = rng(5, 10);
+                text = "Crimson Mage throws a dagger!";
+                animateAttack(els.enemySprite, els.playerSprite);
+                dealDamage('player', dmg);
+            }
+
+            els.dialogue.innerText = text;
+            updateUI();
+
+            if (state.player.hp <= 0) {
+                endGame(false);
+            } else {
+                state.turn = 'player';
+            }
+        }
+
+        function dealDamage(target, amount) {
+            const targetObj = target === 'player' ? state.player : state.enemy;
+            const targetEl = target === 'player' ? els.playerSprite : els.enemySprite;
+            
+            targetObj.hp -= amount;
+            
+            // Visuals
+            setTimeout(() => {
+                targetEl.classList.add('shake');
+                showDamage(targetEl, `-${amount}`);
+                const rect = targetEl.getBoundingClientRect();
+                createParticles(rect.left + 50, rect.top + 50, '#ffffff');
+                setTimeout(() => targetEl.classList.remove('shake'), 500);
+            }, 300);
+        }
+
+        // Animations
+        function animateAttack(attacker, defender) {
+            const startX = attacker.offsetLeft;
+            const targetX = defender.offsetLeft;
+            
+            attacker.style.transition = "transform 0.2s cubic-bezier(0.4, 0, 1, 1)";
+            const dist = (targetX - startX) / 2; // Move halfway
+            
+            attacker.style.transform = `translateX(${dist}px) scale(1.2)`;
+            
+            setTimeout(() => {
+                attacker.style.transform = `translateX(0) scale(1)`;
+            }, 200);
+        }
+
+        function animateMagic(attacker, defender, color='#60a5fa') {
+            const rect = attacker.getBoundingClientRect();
+            const orb = document.createElement('div');
+            orb.style.position = 'absolute';
+            orb.style.width = '30px';
+            orb.style.height = '30px';
+            orb.style.background = color;
+            orb.style.borderRadius = '50%';
+            orb.style.left = (rect.left + 35) + 'px';
+            orb.style.top = (rect.top + 30) + 'px';
+            orb.style.boxShadow = `0 0 20px ${color}`;
+            orb.style.zIndex = 100;
+            orb.style.transition = 'all 0.5s ease-in';
+            document.body.appendChild(orb);
+
+            const targetRect = defender.getBoundingClientRect();
+
+            setTimeout(() => {
+                orb.style.left = (targetRect.left + 35) + 'px';
+                orb.style.top = (targetRect.top + 30) + 'px';
+                orb.style.transform = 'scale(2)';
+                orb.style.opacity = '0';
+            }, 50);
+
+            setTimeout(() => orb.remove(), 550);
+        }
+
+        function endGame(win) {
+            state.gameOver = true;
+            const msg = win ? "Victory! The skies are yours." : "Defeat... Try again.";
+            els.dialogue.innerHTML = `<span style="color: ${win ? '#4ade80' : '#ef4444'}; font-weight:bold; font-size: 1.2em;">${msg}</span> <br><button onclick="location.reload()" class="mt-2 underline text-sm cursor-pointer">Play Again</button>`;
+        }
+
+        // Init
+        updateUI();
+
+    </script>
+</body>
+</html>

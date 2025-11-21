@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Chrono-Jester's Library</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Dancing+Script:wght@700&family=Inter:wght@300;600&display=swap');
+
+        :root {
+            --gold: #d4af37;
+            --paper: #fdfbf7;
+            --dark-wood: #3e2723;
+            --glow: rgba(255, 223, 186, 0.6);
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: radial-gradient(circle at 50% 20%, #2c3e50, #0f172a, #000000);
+            color: white;
+            font-family: 'Inter', sans-serif;
+            height: 100vh;
+            width: 100vw;
+            user-select: none;
+        }
+
+        /* --- SCENE ATMOSPHERE --- */
+        .vignette {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(transparent 40%, black 100%);
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .dust-particle {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: floatDust linear infinite;
+        }
+
+        @keyframes floatDust {
+            0% { transform: translateY(0) translateX(0); opacity: 0; }
+            50% { opacity: 0.8; }
+            100% { transform: translateY(-100vh) translateX(20px); opacity: 0; }
+        }
+
+        /* --- BOOKSHELVES --- */
+        .bookshelf {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 150px;
+            background: #1a1a1a;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            padding: 10px;
+            box-shadow: 10px 0 20px rgba(0,0,0,0.8);
+            z-index: 1;
+        }
+        .bookshelf.left { left: 0; border-right: 5px solid #000; }
+        .bookshelf.right { right: 0; border-left: 5px solid #000; align-items: flex-end; }
+
+        .shelf-row {
+            height: 120px;
+            width: 100%;
+            border-bottom: 8px solid #2a1a10;
+            display: flex;
+            align-items: flex-end;
+            gap: 2px;
+            position: relative;
+        }
+
+        .book {
+            width: 15px;
+            border-radius: 2px 2px 0 0;
+            opacity: 0.6;
+            transition: height 0.3s;
+        }
+        .book:hover { opacity: 1; transform: translateY(-5px); }
+
+        /* --- HANGING LAMP --- */
+        .lamp-container {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 5;
+            animation: swing 6s ease-in-out infinite alternate;
+            transform-origin: top center;
+        }
+
+        .chain {
+            width: 4px;
+            height: 100px;
+            background: repeating-linear-gradient(to bottom, #333, #333 5px, #111 5px, #111 10px);
+        }
+
+        .lampshade {
+            width: 120px;
+            height: 40px;
+            background: #222;
+            border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+            border-bottom: 2px solid var(--gold);
+            box-shadow: 0 10px 50px var(--glow);
+        }
+
+        .bulb {
+            width: 30px;
+            height: 30px;
+            background: #fff;
+            border-radius: 50%;
+            margin-top: -10px;
+            box-shadow: 0 0 60px 20px rgba(255, 220, 150, 0.5);
+            animation: flicker 4s infinite;
+        }
+
+        @keyframes swing {
+            from { transform: translateX(-50%) rotate(-2deg); }
+            to { transform: translateX(-50%) rotate(2deg); }
+        }
+
+        @keyframes flicker {
+            0%, 100% { opacity: 1; }
+            95% { opacity: 1; }
+            96% { opacity: 0.8; }
+            97% { opacity: 1; }
+            98% { opacity: 0.5; }
+            99% { opacity: 1; }
+        }
+
+        /* --- THE CLOCK (GAME CONTROLLER) --- */
+        .clock-container {
+            position: absolute;
+            top: 180px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 20;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .clock-container:active { transform: translateX(-50%) scale(0.95); }
+
+        .pocket-watch {
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, #fffef0 60%, #dcdcdc 100%);
+            border-radius: 50%;
+            border: 8px solid #4a4a4a;
+            box-shadow: 
+                0 0 0 4px var(--gold),
+                inset 0 0 20px rgba(0,0,0,0.5),
+                0 20px 50px rgba(0,0,0,0.8);
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .clock-top-ring {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 30px;
+            border: 4px solid var(--gold);
+            border-radius: 50%;
+            z-index: -1;
+        }
+
+        .clock-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+        }
+
+        .number {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            text-align: center;
+            font-family: 'Cinzel', serif;
+            font-weight: bold;
+            color: #111;
+            font-size: 18px;
+            line-height: 20px;
+        }
+
+        .hand {
+            position: absolute;
+            bottom: 50%;
+            left: 50%;
+            transform-origin: bottom center;
+            background: #000;
+            border-radius: 4px;
+            z-index: 10;
+        }
+        .hand.hour { height: 50px; width: 4px; }
+        .hand.minute { height: 70px; width: 3px; background: #333; }
+        .hand.second { height: 80px; width: 1px; background: #d00; }
+
+        .center-pin {
+            width: 10px;
+            height: 10px;
+            background: var(--gold);
+            border-radius: 50%;
+            position: absolute;
+            z-index: 11;
+        }
+
+        /* The "Smile" crack */
+        .crack-smile {
+            position: absolute;
+            width: 80px;
+            height: 40px;
+            border-bottom: 2px solid rgba(0,0,0,0.6);
+            border-radius: 50%;
+            top: 55%;
+            left: 50%;
+            transform: translateX(-50%) rotate(-5deg);
+            opacity: 0.7;
+        }
+        .crack-eye-left {
+            position: absolute;
+            top: 45%; left: 35%;
+            width: 10px; height: 10px;
+            border-left: 1px solid rgba(0,0,0,0.5);
+            transform: rotate(-45deg);
+        }
+        .crack-eye-right {
+            position: absolute;
+            top: 45%; right: 35%;
+            width: 10px; height: 10px;
+            border-right: 1px solid rgba(0,0,0,0.5);
+            transform: rotate(45deg);
+        }
+
+        /* --- FLOATING ITEMS --- */
+        .floating-item {
+            position: absolute;
+            cursor: pointer;
+            transition: transform 0.1s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            user-select: none;
+        }
+        .floating-item:hover {
+            transform: scale(1.1) !important;
+            filter: drop-shadow(0 0 10px white);
+        }
+
+        .paper-scrap {
+            width: 100px;
+            height: 80px;
+            background: var(--paper);
+            color: #222;
+            font-family: 'Dancing Script', cursive;
+            font-size: 1.2rem;
+            padding: 10px;
+            box-shadow: 2px 5px 15px rgba(0,0,0,0.5);
+            transform: rotate(10deg);
+            clip-path: polygon(0 0, 100% 2%, 98% 100%, 2% 95%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            line-height: 1;
+        }
+
+        .film-reel {
+            width: 80px;
+            height: 80px;
+            border: 8px dashed #444;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: spinReel 4s linear infinite;
+        }
+        .film-reel::before {
+            content: '🎬';
+            font-size: 30px;
+        }
+
+        @keyframes spinReel { 100% { transform: rotate(360deg); } }
+
+        /* --- UI --- */
+        .ui-panel {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px);
+            padding: 20px 40px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+            text-align: center;
+            z-index: 100;
+            width: 80%;
+            max-width: 600px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #333;
+            border-radius: 3px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--gold), #fff);
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .collected-words {
+            min-height: 40px;
+            font-family: 'Dancing Script', cursive;
+            font-size: 2rem;
+            color: var(--gold);
+            text-shadow: 0 2px 4px black;
+            margin-bottom: 10px;
+        }
+
+        .status-text {
+            font-size: 0.9rem;
+            color: #aaa;
+            margin-top: 5px;
+        }
+
+        .time-dilation-effect {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 255, 255, 0.1);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.5s;
+            z-index: 50;
+            mix-blend-mode: overlay;
+        }
+        
+        .win-screen {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 1s;
+        }
+        .win-screen.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Atmospheric Elements -->
+    <div class="vignette"></div>
+    <div class="time-dilation-effect" id="timeFx"></div>
+    <div id="dustContainer"></div>
+
+    <!-- Bookshelves -->
+    <div class="bookshelf left" id="shelfLeft"></div>
+    <div class="bookshelf right" id="shelfRight"></div>
+
+    <!-- Hanging Lamp -->
+    <div class="lamp-container">
+        <div class="chain"></div>
+        <div class="lampshade"></div>
+        <div class="bulb"></div>
+    </div>
+
+    <!-- The Clock -->
+    <div class="clock-container" id="clockBtn">
+        <div class="clock-top-ring"></div>
+        <div class="pocket-watch">
+            <div class="clock-face" id="clockFace">
+                <!-- Numbers generated by JS -->
+            </div>
+            <div class="crack-eye-left"></div>
+            <div class="crack-eye-right"></div>
+            <div class="crack-smile"></div>
+            <div class="hand hour" id="hourHand"></div>
+            <div class="hand minute" id="minuteHand"></div>
+            <div class="hand second" id="secondHand"></div>
+            <div class="center-pin"></div>
+        </div>
+    </div>
+
+    <!-- Floating Game Area -->
+    <div id="gameArea" style="position: absolute; inset: 0; overflow: hidden; pointer-events: none;">
+        <!-- Items spawn here -->
+    </div>
+
+    <!-- UI -->
+    <div class="ui-panel">
+        <div class="collected-words" id="wordDisplay">...</div>
+        <div class="status-text">Click the Clock to Slow Time • Catch the Floating Scraps</div>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressBar"></div>
+        </div>
+    </div>
+
+    <!-- Win Screen -->
+    <div class="win-screen" id="winScreen">
+        <h1 style="font-family: 'Cinzel'; font-size: 4rem; color: var(--gold); margin-bottom: 20px;">Story Complete</h1>
+        <p id="finalStory" style="font-family: 'Dancing Script'; font-size: 2rem; color: white; max-width: 600px; text-align: center;">
+            "Just a joke in the library of time."
+        </p>
+        <button onclick="location.reload()" class="mt-8 px-6 py-2 bg-white text-black rounded-full hover:bg-gray-200 font-bold">Play Again</button>
+    </div>
+
+    <script>
+        /* --- INITIALIZATION --- */
+        const gameArea = document.getElementById('gameArea');
+        const wordDisplay = document.getElementById('wordDisplay');
+        const progressBar = document.getElementById('progressBar');
+        const clockBtn = document.getElementById('clockBtn');
+        const timeFx = document.getElementById('timeFx');
+        
+        // Game State
+        let collectedWords = [];
+        const targetPhrase = ["Just", "Just", "A", "Joke", "In", "Time"];
+        const fillerWords = ["Mystery", "Shadow", "Echo", "Dust", "Silence", "Tick", "Tock", "Film", "Noir"];
+        let isSlowMotion = false;
+        let gameSpeed = 1;
+        let score = 0;
+        
+        // Generate Books
+        function fillShelf(id) {
+            const shelf = document.getElementById(id);
+            const colors = ['#5d4037', '#3e2723', '#4e342e', '#263238', '#1b5e20', '#880e4f'];
+            for(let i=0; i<5; i++) {
+                const row = document.createElement('div');
+                row.className = 'shelf-row';
+                const bookCount = 8 + Math.random() * 5;
+                for(let j=0; j<bookCount; j++) {
+                    const book = document.createElement('div');
+                    book.className = 'book';
+                    book.style.height = (60 + Math.random() * 40) + '%';
+                    book.style.width = (10 + Math.random() * 15) + 'px';
+                    book.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                    row.appendChild(book);
+                }
+                shelf.appendChild(row);
+            }
+        }
+        fillShelf('shelfLeft');
+        fillShelf('shelfRight');
+
+        // Generate Clock Numbers
+        const clockFace = document.getElementById('clockFace');
+        for(let i=1; i<=12; i++) {
+            const num = document.createElement('div');
+            num.className = 'number';
+            num.innerText = i;
+            const angle = (i * 30) * (Math.PI / 180);
+            const r = 75; // radius
+            const x = 100 + r * Math.sin(angle) - 10; // center offset
+            const y = 100 - r * Math.cos(angle) - 10;
+            num.style.left = x + 'px';
+            num.style.top = y + 'px';
+            clockFace.appendChild(num);
+        }
+
+        // Dust Particles
+        const dustContainer = document.getElementById('dustContainer');
+        for(let i=0; i<50; i++) {
+            const d = document.createElement('div');
+            d.className = 'dust-particle';
+            d.style.left = Math.random() * 100 + 'vw';
+            d.style.top = Math.random() * 100 + 'vh';
+            d.style.width = Math.random() * 4 + 'px';
+            d.style.height = d.style.width;
+            d.style.animationDuration = (10 + Math.random() * 20) + 's';
+            d.style.animationDelay = -(Math.random() * 20) + 's';
+            dustContainer.appendChild(d);
+        }
+
+        /* --- GAME LOOP & ANIMATION --- */
+        
+        // Clock Animation
+        const hourHand = document.getElementById('hourHand');
+        const minuteHand = document.getElementById('minuteHand');
+        const secondHand = document.getElementById('secondHand');
+        let timeVal = 0;
+
+        function updateClock() {
+            // In game, time moves fast unless slow motion
+            const speed = isSlowMotion ? 0.2 : 5;
+            timeVal += speed;
+            
+            secondHand.style.transform = `rotate(${timeVal * 6}deg)`;
+            minuteHand.style.transform = `rotate(${timeVal * 0.1}deg)`;
+            hourHand.style.transform = `rotate(${timeVal * 0.008}deg)`;
+            
+            requestAnimationFrame(updateClock);
+        }
+        requestAnimationFrame(updateClock);
+
+        // Spawning Items
+        function spawnItem() {
+            if (collectedWords.length >= targetPhrase.length) return;
+
+            const item = document.createElement('div');
+            item.className = 'floating-item';
+            
+            // Determine type
+            const isTarget = Math.random() > 0.6;
+            const word = isTarget 
+                ? targetPhrase[collectedWords.length] // Next needed word
+                : fillerWords[Math.floor(Math.random() * fillerWords.length)];
+            
+            const type = Math.random() > 0.8 ? 'reel' : 'paper';
+
+            if (type === 'paper') {
+                const paper = document.createElement('div');
+                paper.className = 'paper-scrap';
+                paper.innerText = word;
+                item.appendChild(paper);
+            } else {
+                const reel = document.createElement('div');
+                reel.className = 'film-reel';
+                item.appendChild(reel);
+                // Reels give bonus points or random words
+            }
+
+            // Position
+            const startY = Math.random() * (window.innerHeight - 200) + 100;
+            item.style.top = startY + 'px';
+            item.style.left = '-150px';
+            item.style.pointerEvents = 'auto'; // Enable clicking
+
+            // Movement Data
+            const speed = (2 + Math.random() * 3) * (isSlowMotion ? 0.2 : 1);
+            item.dataset.speed = speed;
+            item.dataset.word = word;
+            item.dataset.x = -150;
+            item.dataset.y = startY;
+            item.dataset.vy = (Math.random() - 0.5) * 2;
+
+            // Click Handler
+            item.onclick = (e) => {
+                e.stopPropagation();
+                collectItem(item, word);
+            };
+
+            gameArea.appendChild(item);
+        }
+
+        // Move Items
+        function gameLoop() {
+            const items = document.querySelectorAll('.floating-item');
+            items.forEach(item => {
+                let x = parseFloat(item.dataset.x);
+                let y = parseFloat(item.dataset.y);
+                let vy = parseFloat(item.dataset.vy);
+                let baseSpeed = parseFloat(item.dataset.speed);
+
+                // Apply Slow Motion Factor
+                const currentSpeed = isSlowMotion ? baseSpeed * 0.2 : baseSpeed;
+                
+                x += currentSpeed;
+                y += vy * (isSlowMotion ? 0.2 : 1);
+
+                item.dataset.x = x;
+                item.dataset.y = y;
+                item.style.transform = `translate(${x}px, ${y - parseFloat(item.style.top)}px) rotate(${x * 0.1}deg)`;
+
+                // Remove if off screen
+                if (x > window.innerWidth + 100) {
+                    item.remove();
+                }
+            });
+            
+            requestAnimationFrame(gameLoop);
+        }
+        requestAnimationFrame(gameLoop);
+
+        // Spawn Interval
+        setInterval(() => {
+            if(!document.hidden) spawnItem();
+        }, 1500);
+
+        /* --- INTERACTION --- */
+
+        function collectItem(element, word) {
+            // Visual feedback
+            element.style.transform = 'scale(1.5) rotate(360deg)';
+            element.style.opacity = '0';
+            setTimeout(() => element.remove(), 300);
+
+            // Logic
+            if (targetPhrase.includes(word) && !collectedWords.includes(word)) {
+                // Simple logic: just collect words in order for this demo, or allow any order
+                // Let's just append valid words
+                collectedWords.push(word);
+                updateUI();
+            } else if (!targetPhrase.includes(word)) {
+                // Filler word - maybe shake screen or funny noise
+                wordDisplay.style.color = '#ff6b6b';
+                setTimeout(() => wordDisplay.style.color = 'var(--gold)', 200);
+            }
+        }
+
+        function updateUI() {
+            wordDisplay.innerText = collectedWords.join(" ") + "...";
+            const pct = (collectedWords.length / targetPhrase.length) * 100;
+            progressBar.style.width = pct + '%';
+
+            if (collectedWords.length >= targetPhrase.length) {
+                winGame();
+            }
+        }
+
+        clockBtn.addEventListener('click', () => {
+            if (isSlowMotion) return; // Cooldown or already active
+            
+            isSlowMotion = true;
+            timeFx.style.opacity = 1;
+            clockBtn.style.transform = "translateX(-50%) scale(1.1)";
+            
+            // Sound effect visualization (shake)
+            document.body.style.transform = "scale(1.01)";
+            setTimeout(() => document.body.style.transform = "scale(1)", 100);
+
+            setTimeout(() => {
+                isSlowMotion = false;
+                timeFx.style.opacity = 0;
+                clockBtn.style.transform = "translateX(-50%) scale(1)";
+            }, 3000); // 3 seconds of slow mo
+        });
+
+        function winGame() {
+            const winScreen = document.getElementById('winScreen');
+            const finalStory = document.getElementById('finalStory');
+            finalStory.innerText = `"${collectedWords.join(" ")}!"`;
+            winScreen.classList.add('active');
+        }
+
+    </script>
+</body>
+</html>

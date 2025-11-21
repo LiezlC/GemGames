@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Singularity Reactor Control</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;600&display=swap');
+
+        :root {
+            --core-hue: 0; /* Dynamic */
+            --core-speed: 10s; /* Dynamic */
+            --wobble: 0px; /* Dynamic */
+            --glow-intensity: 1;
+            --primary: #ff3333;
+            --secondary: #33ccff;
+            --bg-dark: #050505;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: white;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* --- The Reactor Visuals --- */
+        .scene {
+            position: relative;
+            width: 600px;
+            height: 600px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 1000px;
+            transform: translate(var(--wobble), var(--wobble));
+            transition: transform 0.1s;
+        }
+
+        /* The Accretion Disk (The flat swirling plane) */
+        .accretion-disk {
+            position: absolute;
+            width: 800px;
+            height: 800px;
+            border-radius: 50%;
+            background: 
+                radial-gradient(transparent 30%, rgba(255, 50, 50, 0.8) 40%, transparent 70%),
+                conic-gradient(from 0deg, transparent, #ff4500, #8b0000, transparent, #ff4500, transparent);
+            transform: rotateX(75deg) rotateZ(0deg);
+            animation: diskSpin var(--core-speed) linear infinite;
+            filter: blur(4px);
+            opacity: 0.8;
+            z-index: 1;
+            box-shadow: 0 0 50px rgba(255, 0, 0, 0.3);
+        }
+
+        /* The Outer Plasma Shell */
+        .plasma-shell {
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, rgba(255, 100, 50, 0.9), rgba(100, 0, 0, 1));
+            box-shadow: 
+                inset -20px -20px 60px rgba(0,0,0,0.8),
+                0 0 60px calc(20px * var(--glow-intensity)) rgba(255, 50, 0, 0.6);
+            z-index: 10;
+            overflow: hidden;
+        }
+
+        /* Texture inside the shell */
+        .plasma-texture {
+            position: absolute;
+            inset: -50%;
+            width: 200%;
+            height: 200%;
+            background: repeating-conic-gradient(#ff0000 0deg, #500000 10deg, #ff4500 20deg);
+            mix-blend-mode: overlay;
+            animation: spinTexture 20s linear infinite;
+            opacity: 0.6;
+        }
+
+        /* The Rainbow Arc (Key feature from image) */
+        .rainbow-arc {
+            position: absolute;
+            width: 240px;
+            height: 240px;
+            border-radius: 50%;
+            z-index: 12;
+            /* Create the rainbow gradient ring */
+            background: conic-gradient(
+                from 180deg, 
+                transparent 0%, 
+                #0000ff 20%, 
+                #00ff00 35%, 
+                #ffff00 50%, 
+                #ff0000 65%, 
+                transparent 80%
+            );
+            filter: blur(8px);
+            opacity: 0.9;
+            transform: rotate(180deg);
+            mix-blend-mode: screen;
+            animation: arcPulse 4s ease-in-out infinite alternate;
+        }
+
+        /* The Central Singularity (The Eye) */
+        .singularity {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            background: black;
+            border-radius: 50%;
+            z-index: 20;
+            box-shadow: 
+                0 0 20px #ff0000,
+                inset 0 0 20px #ff0000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .singularity::after {
+            content: '';
+            width: 10px;
+            height: 10px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 0 10px white;
+            animation: blink 0.1s infinite;
+            opacity: 0;
+        }
+
+        /* --- UI Elements --- */
+        .hud-panel {
+            background: rgba(10, 10, 15, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .data-text {
+            font-family: 'Space Mono', monospace;
+            color: #aaddff;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+        }
+
+        .slider-track {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            background: #333;
+            border-radius: 3px;
+            outline: none;
+            margin-top: 10px;
+        }
+        .slider-track::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: white;
+            cursor: pointer;
+            box-shadow: 0 0 10px white;
+        }
+
+        .status-bar {
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+        .status-fill {
+            height: 100%;
+            background: #00ff00;
+            width: 50%;
+            transition: width 0.2s, background-color 0.2s;
+        }
+
+        /* --- Animations --- */
+        @keyframes diskSpin {
+            0% { transform: rotateX(75deg) rotateZ(0deg); }
+            100% { transform: rotateX(75deg) rotateZ(360deg); }
+        }
+        @keyframes spinTexture {
+            0% { transform: rotate(0deg) scale(1.5); }
+            100% { transform: rotate(360deg) scale(1.5); }
+        }
+        @keyframes arcPulse {
+            0% { opacity: 0.6; transform: rotate(170deg) scale(0.95); }
+            100% { opacity: 1; transform: rotate(190deg) scale(1.05); }
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+        @keyframes alertFlash {
+            0%, 100% { background-color: transparent; }
+            50% { background-color: rgba(255, 0, 0, 0.1); }
+        }
+
+        .critical-alert {
+            animation: alertFlash 0.5s infinite;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Background Starfield -->
+    <div class="fixed inset-0 z-[-1]" style="background: radial-gradient(circle at center, #1a0505 0%, #000000 70%);"></div>
+    
+    <!-- Top HUD -->
+    <div class="absolute top-6 w-full max-w-4xl flex justify-between px-6">
+        <div class="hud-panel flex flex-col gap-1">
+            <span class="text-xs text-gray-400 uppercase tracking-widest">Reactor Output</span>
+            <span class="text-3xl font-bold text-white tabular-nums" id="output-display">0.00 PW</span>
+            <div class="flex items-center gap-2 mt-1">
+                <div class="w-2 h-2 rounded-full bg-green-500" id="status-light"></div>
+                <span class="text-xs text-green-400" id="status-text">STABLE</span>
+            </div>
+        </div>
+        
+        <div class="hud-panel text-right">
+            <span class="text-xs text-gray-400 uppercase tracking-widest">Mission Time</span>
+            <div class="text-xl font-mono text-white" id="timer">00:00:00</div>
+        </div>
+    </div>
+
+    <!-- The Reactor Visual -->
+    <div class="scene" id="scene">
+        <!-- The swirling disk -->
+        <div class="accretion-disk"></div>
+        
+        <!-- The Core -->
+        <div class="plasma-shell">
+            <div class="plasma-texture"></div>
+        </div>
+        
+        <!-- The Rainbow Arc -->
+        <div class="rainbow-arc"></div>
+        
+        <!-- The Center -->
+        <div class="singularity"></div>
+    </div>
+
+    <!-- Controls -->
+    <div class="absolute bottom-8 w-full max-w-2xl px-4">
+        <div class="hud-panel">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-sm font-bold uppercase tracking-widest text-white">Containment Controls</h2>
+                <button id="stabilize-btn" class="px-4 py-1 bg-blue-600 hover:bg-blue-500 text-xs font-bold rounded shadow-lg transition-all hidden">EMERGENCY FLUSH</button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Control 1 -->
+                <div>
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-gray-400">Magnetic Field</span>
+                        <span class="font-mono text-blue-300" id="mag-val">50%</span>
+                    </div>
+                    <input type="range" min="0" max="100" value="50" class="slider-track" id="mag-slider">
+                    <div class="status-bar"><div class="status-fill" id="mag-bar"></div></div>
+                </div>
+
+                <!-- Control 2 -->
+                <div>
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-gray-400">Injection Rate</span>
+                        <span class="font-mono text-orange-300" id="inj-val">50%</span>
+                    </div>
+                    <input type="range" min="0" max="100" value="50" class="slider-track" id="inj-slider">
+                    <div class="status-bar"><div class="status-fill bg-orange-500" id="inj-bar"></div></div>
+                </div>
+
+                <!-- Control 3 -->
+                <div>
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-gray-400">Coolant Flow</span>
+                        <span class="font-mono text-cyan-300" id="cool-val">50%</span>
+                    </div>
+                    <input type="range" min="0" max="100" value="50" class="slider-track" id="cool-slider">
+                    <div class="status-bar"><div class="status-fill bg-cyan-500" id="cool-bar"></div></div>
+                </div>
+            </div>
+            
+            <div class="mt-4 pt-4 border-t border-white/10">
+                <div class="flex justify-between text-xs text-gray-500 uppercase mb-1">
+                    <span>Core Instability</span>
+                    <span id="instability-val">0%</span>
+                </div>
+                <div class="w-full h-2 bg-gray-800 rounded-full overflow-hidden">
+                    <div class="h-full bg-gradient-to-r from-green-500 via-yellow-500 to-red-600 w-0 transition-all duration-300" id="instability-bar"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Logic -->
+    <script>
+        // Game State
+        const state = {
+            magneticField: 50,
+            injectionRate: 50,
+            coolantFlow: 50,
+            instability: 0, // 0 to 100
+            output: 0,
+            time: 0,
+            active: true,
+            target: { // The "sweet spot" moves over time
+                mag: 50,
+                inj: 50,
+                cool: 50
+            }
+        };
+
+        // DOM Elements
+        const els = {
+            scene: document.getElementById('scene'),
+            output: document.getElementById('output-display'),
+            statusLight: document.getElementById('status-light'),
+            statusText: document.getElementById('status-text'),
+            timer: document.getElementById('timer'),
+            instabilityBar: document.getElementById('instability-bar'),
+            instabilityVal: document.getElementById('instability-val'),
+            sliders: {
+                mag: document.getElementById('mag-slider'),
+                inj: document.getElementById('inj-slider'),
+                cool: document.getElementById('cool-slider')
+            },
+            vals: {
+                mag: document.getElementById('mag-val'),
+                inj: document.getElementById('inj-val'),
+                cool: document.getElementById('cool-val')
+            },
+            bars: {
+                mag: document.getElementById('mag-bar'),
+                inj: document.getElementById('inj-bar'),
+                cool: document.getElementById('cool-bar')
+            },
+            emergencyBtn: document.getElementById('stabilize-btn'),
+            body: document.body
+        };
+
+        // Helpers
+        const clamp = (num, min, max) => Math.min(Math.max(num, min), max);
+        const formatTime = (s) => {
+            const m = Math.floor(s / 60).toString().padStart(2, '0');
+            const sec = (s % 60).toString().padStart(2, '0');
+            return `00:${m}:${sec}`;
+        };
+
+        // Input Handling
+        Object.keys(els.sliders).forEach(key => {
+            els.sliders[key].addEventListener('input', (e) => {
+                state[key === 'mag' ? 'magneticField' : key === 'inj' ? 'injectionRate' : 'coolantFlow'] = parseInt(e.target.value);
+                els.vals[key].innerText = e.target.value + '%';
+                els.bars[key].style.width = e.target.value + '%';
+            });
+        });
+
+        els.emergencyBtn.addEventListener('click', () => {
+            state.instability = Math.max(0, state.instability - 30);
+            els.emergencyBtn.classList.add('hidden');
+        });
+
+        // Game Loop
+        setInterval(() => {
+            if (!state.active) return;
+
+            // 1. Drift Targets (Simulate chaotic system)
+            if (Math.random() < 0.05) state.target.mag = clamp(state.target.mag + (Math.random() - 0.5) * 20, 10, 90);
+            if (Math.random() < 0.05) state.target.inj = clamp(state.target.inj + (Math.random() - 0.5) * 20, 10, 90);
+            if (Math.random() < 0.05) state.target.cool = clamp(state.target.cool + (Math.random() - 0.5) * 20, 10, 90);
+
+            // 2. Calculate Deviation
+            const devMag = Math.abs(state.magneticField - state.target.mag);
+            const devInj = Math.abs(state.injectionRate - state.target.inj);
+            const devCool = Math.abs(state.coolantFlow - state.target.cool);
+            
+            const totalDeviation = (devMag + devInj + devCool) / 3;
+
+            // 3. Update Instability
+            if (totalDeviation > 15) {
+                state.instability += 0.5;
+            } else {
+                state.instability = Math.max(0, state.instability - 0.8);
+            }
+
+            // 4. Update Output (Higher injection = more power, but harder to control)
+            if (state.instability < 90) {
+                const efficiency = 100 - totalDeviation;
+                const rawPower = (state.injectionRate * efficiency) / 1000;
+                state.output += rawPower;
+            }
+
+            // 5. Update Visuals
+            updateVisuals();
+
+            // 6. Time
+            state.time++;
+            els.timer.innerText = formatTime(state.time);
+
+        }, 100); // 10 ticks per second
+
+        function updateVisuals() {
+            // Instability Bar
+            els.instabilityBar.style.width = state.instability + '%';
+            els.instabilityVal.innerText = Math.floor(state.instability) + '%';
+            
+            // Output
+            els.output.innerText = state.output.toFixed(2) + ' PW';
+
+            // Status Check
+            if (state.instability >= 100) {
+                // Game Over state (simplified for this demo)
+                els.statusText.innerText = "MELTDOWN";
+                els.statusText.className = "text-xs text-red-500 font-bold blink";
+                els.statusLight.className = "w-2 h-2 rounded-full bg-red-600 animate-ping";
+                els.scene.style.filter = "hue-rotate(140deg) contrast(200%)"; // Turn everything angry red/purple
+            } else if (state.instability > 70) {
+                els.statusText.innerText = "CRITICAL";
+                els.statusText.className = "text-xs text-red-400 font-bold";
+                els.statusLight.className = "w-2 h-2 rounded-full bg-red-500";
+                els.body.classList.add('critical-alert');
+                els.emergencyBtn.classList.remove('hidden');
+            } else if (state.instability > 40) {
+                els.statusText.innerText = "WARNING";
+                els.statusText.className = "text-xs text-yellow-400";
+                els.statusLight.className = "w-2 h-2 rounded-full bg-yellow-500";
+                els.body.classList.remove('critical-alert');
+                els.emergencyBtn.classList.add('hidden');
+            } else {
+                els.statusText.innerText = "STABLE";
+                els.statusText.className = "text-xs text-green-400";
+                els.statusLight.className = "w-2 h-2 rounded-full bg-green-500";
+                els.body.classList.remove('critical-alert');
+            }
+
+            // CSS Variable Updates for Animation
+            const shake = Math.max(0, (state.instability - 20) / 5); // Only shake after 20%
+            const x = (Math.random() - 0.5) * shake;
+            const y = (Math.random() - 0.5) * shake;
+            
+            document.documentElement.style.setProperty('--wobble', `${x}px`);
+            
+            // Glow intensity based on injection
+            const glow = 0.5 + (state.injectionRate / 100);
+            document.documentElement.style.setProperty('--glow-intensity', glow);
+
+            // Speed based on magnetic field
+            const speed = 20 - (state.magneticField / 100 * 18); // 20s down to 2s
+            document.documentElement.style.setProperty('--core-speed', `${speed}s`);
+        }
+    </script>
+</body>
+</html>

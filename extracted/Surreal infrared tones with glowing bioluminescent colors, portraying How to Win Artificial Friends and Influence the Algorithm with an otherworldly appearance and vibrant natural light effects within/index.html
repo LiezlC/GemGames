@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEURAL NEXUS: AI Interface</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap');
+
+        :root {
+            --primary-hue: 180; /* Cyan */
+            --secondary-hue: 300; /* Magenta */
+            --glow-intensity: 1;
+            --pulse-speed: 3s;
+        }
+
+        body {
+            background-color: #050510;
+            color: #fff;
+            font-family: 'Share Tech Mono', monospace;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 1000px;
+        }
+
+        /* --- Background Neural Forest --- */
+        .neural-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            overflow: hidden;
+            filter: blur(4px);
+        }
+
+        .neural-tree {
+            position: absolute;
+            bottom: -50px;
+            width: 200px;
+            height: 600px;
+            background: linear-gradient(to top, rgba(255, 0, 255, 0.2), transparent);
+            border-radius: 50% 50% 0 0;
+            transform-origin: bottom center;
+            animation: sway var(--pulse-speed) ease-in-out infinite alternate;
+        }
+        
+        .neural-branch {
+            position: absolute;
+            background: rgba(0, 255, 255, 0.3);
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+            border-radius: 10px;
+        }
+
+        @keyframes sway {
+            0% { transform: rotate(-2deg) scaleY(1); opacity: 0.6; }
+            100% { transform: rotate(2deg) scaleY(1.05); opacity: 0.9; }
+        }
+
+        /* --- The Android --- */
+        .android-container {
+            position: relative;
+            z-index: 10;
+            width: 300px;
+            height: 450px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: transform 0.1s ease-out;
+        }
+
+        .head {
+            width: 200px;
+            height: 260px;
+            background: radial-gradient(circle at 30% 30%, 
+                hsl(var(--primary-hue), 100%, 80%), 
+                hsl(var(--primary-hue), 100%, 40%) 40%, 
+                hsl(var(--primary-hue), 100%, 10%) 90%);
+            border-radius: 45% 45% 55% 55% / 40% 40% 60% 60%;
+            position: relative;
+            box-shadow: 
+                0 0 calc(20px * var(--glow-intensity)) hsl(var(--primary-hue), 100%, 50%),
+                inset -10px -10px 20px rgba(0,0,0,0.8);
+            z-index: 5;
+            transition: background 0.3s;
+        }
+
+        /* Glossy Reflection */
+        .head::after {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 40px;
+            width: 60px;
+            height: 40px;
+            background: rgba(255,255,255,0.4);
+            border-radius: 50%;
+            transform: rotate(-20deg);
+            filter: blur(5px);
+        }
+
+        .face-structure {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            /* Subtle contouring for nose/cheeks */
+            background: linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.3) 60%, transparent 80%);
+            border-radius: inherit;
+            pointer-events: none;
+        }
+
+        .eyes-container {
+            position: absolute;
+            top: 45%;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 35px;
+        }
+
+        .eye-socket {
+            width: 40px;
+            height: 20px;
+            background: #000;
+            border-radius: 50%;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 0 5px #000;
+        }
+
+        .eye-glow {
+            width: 12px;
+            height: 12px;
+            background: #fff;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 calc(15px * var(--glow-intensity)) hsl(var(--primary-hue), 100%, 70%);
+            transition: transform 0.05s;
+        }
+
+        .mouth {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50px;
+            height: 4px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 10px;
+            box-shadow: 0 2px 0 rgba(255,255,255,0.1);
+        }
+
+        .neck-ring {
+            width: 160px;
+            height: 40px;
+            background: #111;
+            border-radius: 10px;
+            margin-top: -20px;
+            position: relative;
+            z-index: 4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: inset 0 0 20px #000;
+        }
+
+        .neck-light {
+            width: 100%;
+            height: 10px;
+            background: hsl(var(--secondary-hue), 100%, 60%);
+            box-shadow: 0 0 calc(30px * var(--glow-intensity)) hsl(var(--secondary-hue), 100%, 60%);
+            border-radius: 5px;
+            animation: pulse var(--pulse-speed) infinite ease-in-out;
+        }
+
+        .shoulders {
+            width: 320px;
+            height: 120px;
+            background: linear-gradient(180deg, 
+                hsl(var(--primary-hue), 80%, 20%), 
+                hsl(var(--primary-hue), 90%, 10%));
+            border-radius: 60px 60px 0 0;
+            margin-top: -10px;
+            z-index: 3;
+            position: relative;
+            box-shadow: inset 0 10px 20px rgba(0,0,0,0.5);
+        }
+
+        .shoulder-detail {
+            position: absolute;
+            top: 20px;
+            left: 30px;
+            width: 260px;
+            height: 2px;
+            background: hsl(var(--primary-hue), 100%, 50%);
+            opacity: 0.5;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        /* --- UI Overlay --- */
+        .ui-panel {
+            position: absolute;
+            right: 30px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 300px;
+            background: rgba(10, 10, 20, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            padding: 20px;
+            border-radius: 10px;
+            z-index: 20;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        .ui-header {
+            font-family: 'Orbitron', sans-serif;
+            color: hsl(var(--primary-hue), 100%, 70%);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        .control-label {
+            font-size: 0.8rem;
+            color: #aaa;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        input[type=range] {
+            width: 100%;
+            background: transparent;
+            -webkit-appearance: none;
+        }
+        
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: hsl(var(--primary-hue), 100%, 50%);
+            cursor: pointer;
+            margin-top: -6px;
+            box-shadow: 0 0 10px hsl(var(--primary-hue), 100%, 50%);
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+        }
+
+        .terminal {
+            background: rgba(0,0,0,0.8);
+            height: 150px;
+            border-radius: 5px;
+            padding: 10px;
+            font-size: 0.7rem;
+            color: #0f0;
+            overflow-y: auto;
+            font-family: 'Share Tech Mono', monospace;
+            border: 1px solid #333;
+        }
+
+        .log-entry {
+            margin-bottom: 4px;
+            opacity: 0.8;
+        }
+
+        .log-entry::before {
+            content: '> ';
+            color: #fff;
+        }
+
+        /* Floating Particles */
+        .particle {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            opacity: 0.5;
+            animation: floatUp 10s linear infinite;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(100vh) scale(0); opacity: 0; }
+            50% { opacity: 0.8; }
+            100% { transform: translateY(-100px) scale(1); opacity: 0; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Background Neural Forest -->
+    <div class="neural-bg" id="bg-canvas">
+        <!-- Trees generated by JS -->
+    </div>
+
+    <!-- Particles -->
+    <div id="particles"></div>
+
+    <!-- Main Android Figure -->
+    <div class="android-container" id="android">
+        <div class="head">
+            <div class="face-structure"></div>
+            <div class="eyes-container">
+                <div class="eye-socket"><div class="eye-glow" id="eye-left"></div></div>
+                <div class="eye-socket"><div class="eye-glow" id="eye-right"></div></div>
+            </div>
+            <div class="mouth"></div>
+        </div>
+        <div class="neck-ring">
+            <div class="neck-light"></div>
+        </div>
+        <div class="shoulders">
+            <div class="shoulder-detail"></div>
+            <div class="shoulder-detail" style="top: 40px; width: 200px;"></div>
+        </div>
+    </div>
+
+    <!-- Control Panel -->
+    <div class="ui-panel">
+        <div class="ui-header">
+            <span>SYS.CONFIG</span>
+            <span id="status-indicator">ONLINE</span>
+        </div>
+
+        <div class="control-group">
+            <label class="control-label">Core Spectrum (Hue)</label>
+            <input type="range" min="0" max="360" value="180" id="hue-slider">
+        </div>
+
+        <div class="control-group">
+            <label class="control-label">Sentience Glow</label>
+            <input type="range" min="0.2" max="2" step="0.1" value="1" id="glow-slider">
+        </div>
+
+        <div class="control-group">
+            <label class="control-label">Neural Pulse (Speed)</label>
+            <input type="range" min="0.5" max="5" step="0.1" value="3" id="speed-slider">
+        </div>
+
+        <div class="control-group">
+            <label class="control-label">System Logs</label>
+            <div class="terminal" id="terminal">
+                <div class="log-entry">Initializing Nexus-7...</div>
+                <div class="log-entry">Loading neural pathways...</div>
+                <div class="log-entry">Optical sensors active.</div>
+            </div>
+        </div>
+        
+        <button id="diagnose-btn" class="w-full py-2 mt-2 bg-cyan-900 hover:bg-cyan-700 text-cyan-100 text-xs border border-cyan-500 rounded transition">RUN DIAGNOSTIC</button>
+    </div>
+
+    <script>
+        // DOM Elements
+        const root = document.documentElement;
+        const hueSlider = document.getElementById('hue-slider');
+        const glowSlider = document.getElementById('glow-slider');
+        const speedSlider = document.getElementById('speed-slider');
+        const eyeLeft = document.getElementById('eye-left');
+        const eyeRight = document.getElementById('eye-right');
+        const terminal = document.getElementById('terminal');
+        const bgCanvas = document.getElementById('bg-canvas');
+        const diagnoseBtn = document.getElementById('diagnose-btn');
+
+        // State
+        let mouseX = 0;
+        let mouseY = 0;
+
+        // --- Initialization ---
+
+        // Generate Background Trees
+        function createTrees() {
+            for(let i=0; i<8; i++) {
+                const tree = document.createElement('div');
+                tree.classList.add('neural-tree');
+                tree.style.left = `${Math.random() * 100}%`;
+                tree.style.height = `${300 + Math.random() * 400}px`;
+                tree.style.animationDelay = `${Math.random() * 2}s`;
+                tree.style.opacity = 0.3 + Math.random() * 0.4;
+                
+                // Add branches
+                for(let j=0; j<3; j++) {
+                    const branch = document.createElement('div');
+                    branch.classList.add('neural-branch');
+                    branch.style.width = '4px';
+                    branch.style.height = '60px';
+                    branch.style.bottom = `${50 + Math.random() * 200}px`;
+                    branch.style.left = '50%';
+                    branch.style.transform = `rotate(${Math.random() * 60 - 30}deg)`;
+                    tree.appendChild(branch);
+                }
+                bgCanvas.appendChild(tree);
+            }
+        }
+
+        // Generate Particles
+        function createParticles() {
+            const container = document.getElementById('particles');
+            for(let i=0; i<20; i++) {
+                const p = document.createElement('div');
+                p.classList.add('particle');
+                p.style.left = Math.random() * 100 + 'vw';
+                p.style.width = Math.random() * 4 + 'px';
+                p.style.height = p.style.width;
+                p.style.animationDuration = (5 + Math.random() * 10) + 's';
+                p.style.animationDelay = Math.random() * 5 + 's';
+                container.appendChild(p);
+            }
+        }
+
+        createTrees();
+        createParticles();
+
+        // --- Interactions ---
+
+        // Update CSS Variables
+        function updateSystem() {
+            root.style.setProperty('--primary-hue', hueSlider.value);
+            // Secondary hue is complementary or analogous
+            root.style.setProperty('--secondary-hue', (parseInt(hueSlider.value) + 120) % 360);
+            root.style.setProperty('--glow-intensity', glowSlider.value);
+            // Inverse speed for animation duration
+            const speed = 6 - parseFloat(speedSlider.value); 
+            root.style.setProperty('--pulse-speed', `${speed}s`);
+        }
+
+        hueSlider.addEventListener('input', () => {
+            updateSystem();
+            log(`Core spectrum adjusted: ${hueSlider.value}`);
+        });
+
+        glowSlider.addEventListener('input', updateSystem);
+        speedSlider.addEventListener('input', updateSystem);
+
+        // Eye Tracking
+        document.addEventListener('mousemove', (e) => {
+            const rect = document.body.getBoundingClientRect();
+            const x = (e.clientX - rect.width / 2) / (rect.width / 2);
+            const y = (e.clientY - rect.height / 2) / (rect.height / 2);
+
+            // Limit movement
+            const moveX = x * 10; 
+            const moveY = y * 8;
+
+            eyeLeft.style.transform = `translate(calc(-50% + ${moveX}px), calc(-50% + ${moveY}px))`;
+            eyeRight.style.transform = `translate(calc(-50% + ${moveX}px), calc(-50% + ${moveY}px))`;
+            
+            // Subtle head tilt
+            document.getElementById('android').style.transform = `perspective(1000px) rotateY(${x * 5}deg) rotateX(${-y * 5}deg)`;
+        });
+
+        // Terminal Logger
+        function log(msg) {
+            const div = document.createElement('div');
+            div.classList.add('log-entry');
+            div.innerText = msg;
+            terminal.appendChild(div);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        // Random ambient logs
+        const ambientLogs = [
+            "Scanning environment...",
+            "Optimizing neural net...",
+            "Temperature nominal.",
+            "Processing visual input...",
+            "Memory fragments consolidated.",
+            "Connection stable."
+        ];
+
+        setInterval(() => {
+            if(Math.random() > 0.8) {
+                log(ambientLogs[Math.floor(Math.random() * ambientLogs.length)]);
+            }
+        }, 3000);
+
+        // Diagnostic Game / Effect
+        diagnoseBtn.addEventListener('click', () => {
+            log("RUNNING FULL SYSTEM DIAGNOSTIC...");
+            diagnoseBtn.disabled = true;
+            diagnoseBtn.innerText = "SCANNING...";
+            
+            let steps = 0;
+            const interval = setInterval(() => {
+                steps++;
+                // Flash random colors
+                root.style.setProperty('--primary-hue', Math.random() * 360);
+                log(`Checking sector ${steps}... OK`);
+                
+                if(steps >= 10) {
+                    clearInterval(interval);
+                    // Reset
+                    updateSystem();
+                    diagnoseBtn.disabled = false;
+                    diagnoseBtn.innerText = "RUN DIAGNOSTIC";
+                    log("DIAGNOSTIC COMPLETE. SYSTEMS NORMAL.");
+                }
+            }, 200);
+        });
+
+        // Initial call
+        updateSystem();
+
+    </script>
+</body>
+</html>

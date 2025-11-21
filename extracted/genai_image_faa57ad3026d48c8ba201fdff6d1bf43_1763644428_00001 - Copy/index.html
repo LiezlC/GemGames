@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Habitat 734B: Stasis Control</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Share+Tech+Mono&display=swap');
+
+        :root {
+            --neon-blue: #00f3ff;
+            --neon-green: #0aff0a;
+            --alert-red: #ff2a2a;
+            --glass-bg: rgba(10, 20, 30, 0.65);
+            --glass-border: rgba(0, 243, 255, 0.3);
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #050810;
+            font-family: 'Rajdhani', sans-serif;
+            color: var(--neon-blue);
+            height: 100vh;
+            width: 100vw;
+            user-select: none;
+        }
+
+        /* Background Ambience representing the Dome */
+        #dome-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 50% 20%, #1a2e2e 0%, #050810 80%);
+            z-index: -2;
+        }
+
+        /* CSS Trees/Foliage placeholders */
+        .foliage {
+            position: absolute;
+            filter: blur(4px);
+            opacity: 0.4;
+            font-size: 10rem;
+            z-index: -1;
+            animation: sway 10s ease-in-out infinite alternate;
+        }
+
+        @keyframes sway {
+            from { transform: rotate(-2deg); }
+            to { transform: rotate(2deg); }
+        }
+
+        /* Holographic Scanlines */
+        .scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.2));
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 10;
+            opacity: 0.3;
+        }
+
+        /* Main HUD Container */
+        .hud-container {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 1000px;
+            height: 300px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.15), inset 0 0 20px rgba(0, 243, 255, 0.05);
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            gap: 20px;
+            padding: 20px;
+            clip-path: polygon(5% 0, 95% 0, 100% 15%, 100% 100%, 0 100%, 0 15%);
+        }
+
+        /* HUD Sections */
+        .hud-panel {
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+            position: relative;
+            background: rgba(0,0,0,0.3);
+        }
+
+        .hud-title {
+            position: absolute;
+            top: -10px;
+            left: 10px;
+            background: #050810;
+            padding: 0 5px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--neon-blue);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Central Hologram Figure */
+        #holo-figure {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            height: 300px;
+            width: 100px;
+            z-index: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            filter: drop-shadow(0 0 10px var(--neon-blue));
+        }
+        
+        .humanoid-shape {
+            width: 60px;
+            height: 180px;
+            border: 2px solid var(--neon-blue);
+            border-radius: 30px;
+            position: relative;
+            box-shadow: 0 0 15px var(--neon-blue), inset 0 0 10px var(--neon-blue);
+            animation: pulseHolo 3s infinite;
+        }
+        
+        .humanoid-head {
+            width: 40px;
+            height: 50px;
+            border: 2px solid var(--neon-blue);
+            border-radius: 50%;
+            position: absolute;
+            top: -40px;
+            left: 8px;
+            box-shadow: 0 0 15px var(--neon-blue), inset 0 0 5px var(--neon-blue);
+        }
+
+        .humanoid-grid {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-image: linear-gradient(var(--neon-blue) 1px, transparent 1px),
+            linear-gradient(90deg, var(--neon-blue) 1px, transparent 1px);
+            background-size: 10px 10px;
+            opacity: 0.3;
+            border-radius: 28px;
+        }
+
+        @keyframes pulseHolo {
+            0%, 100% { opacity: 0.8; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.98); }
+        }
+
+        /* Controls */
+        .slider-group {
+            margin-bottom: 15px;
+        }
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+            font-family: 'Share Tech Mono', monospace;
+        }
+        input[type="range"] {
+            width: 100%;
+            -webkit-appearance: none;
+            background: rgba(0, 243, 255, 0.1);
+            height: 4px;
+            border-radius: 2px;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            background: var(--neon-blue);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--neon-blue);
+        }
+
+        /* Gauges */
+        .gauge-container {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            height: 100%;
+        }
+        .gauge {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 4px solid rgba(0, 243, 255, 0.1);
+            border-top: 4px solid var(--neon-blue);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            animation: spinGauge 4s infinite linear;
+        }
+        .gauge-inner {
+            animation: spinGaugeReverse 4s infinite linear;
+            text-align: center;
+        }
+        .gauge-val {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        .gauge-label {
+            font-size: 0.6rem;
+            opacity: 0.7;
+        }
+
+        @keyframes spinGauge { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes spinGaugeReverse { 0% { transform: rotate(360deg); } 100% { transform: rotate(0deg); } }
+
+        /* Inhabitants */
+        .inhabitant {
+            position: absolute;
+            font-size: 2rem;
+            cursor: pointer;
+            transition: transform 0.3s;
+            text-shadow: 0 0 10px rgba(255,255,255,0.5);
+        }
+        .inhabitant:hover {
+            transform: scale(1.2);
+        }
+        .inhabitant .status-dot {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            width: 8px;
+            height: 8px;
+            background: var(--neon-green);
+            border-radius: 50%;
+            box-shadow: 0 0 5px var(--neon-green);
+        }
+
+        /* Canvas for Sky Network */
+        #sky-network {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 60%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* Top Header */
+        .top-header {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            z-index: 5;
+            text-shadow: 0 0 10px var(--neon-blue);
+        }
+        .top-header h1 {
+            font-size: 1.5rem;
+            letter-spacing: 4px;
+            margin: 0;
+            border-bottom: 1px solid var(--neon-blue);
+            padding-bottom: 10px;
+            display: inline-block;
+        }
+        .top-header p {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.8rem;
+            margin-top: 5px;
+            opacity: 0.8;
+        }
+
+        /* Modal for Inhabitant Details */
+        #detail-modal {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            background: rgba(5, 8, 16, 0.95);
+            border: 1px solid var(--neon-blue);
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+            z-index: 100;
+            box-shadow: 0 0 50px rgba(0, 243, 255, 0.2);
+        }
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+            color: var(--alert-red);
+        }
+
+        /* Alert State */
+        .alert-mode {
+            --neon-blue: #ff2a2a;
+            --glass-border: rgba(255, 42, 42, 0.5);
+            animation: alertPulse 1s infinite;
+        }
+        @keyframes alertPulse {
+            0% { box-shadow: inset 0 0 0 rgba(255,0,0,0); }
+            50% { box-shadow: inset 0 0 50px rgba(255,0,0,0.2); }
+            100% { box-shadow: inset 0 0 0 rgba(255,0,0,0); }
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Background Elements -->
+    <div id="dome-bg"></div>
+    <div class="foliage" style="top: 20%; left: 10%;">🌿</div>
+    <div class="foliage" style="top: 15%; right: 15%;">🌳</div>
+    <div class="foliage" style="top: 40%; left: -5%;">🌴</div>
+    <div class="foliage" style="top: 35%; right: -5%;">🌿</div>
+    <canvas id="sky-network"></canvas>
+    <div class="scanlines"></div>
+
+    <!-- Header -->
+    <div class="top-header">
+        <h1>HABITAT 734B</h1>
+        <p>HUMAN PRESERVATION ZONE // OPTIMAL STASIS ACHIEVED</p>
+    </div>
+
+    <!-- Central Hologram -->
+    <div id="holo-figure">
+        <div class="humanoid-shape">
+            <div class="humanoid-head"></div>
+            <div class="humanoid-grid"></div>
+        </div>
+        <!-- Particles around hologram -->
+        <div style="position: absolute; width: 200px; height: 200px; border: 1px dashed var(--neon-blue); border-radius: 50%; animation: spinGauge 10s linear infinite; opacity: 0.3;"></div>
+        <div style="position: absolute; width: 250px; height: 250px; border: 1px dotted var(--neon-blue); border-radius: 50%; animation: spinGaugeReverse 15s linear infinite; opacity: 0.2;"></div>
+    </div>
+
+    <!-- Inhabitants Container (Populated by JS) -->
+    <div id="inhabitants-layer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;">
+        <!-- JS will inject inhabitants here -->
+    </div>
+
+    <!-- HUD Interface -->
+    <div class="hud-container">
+        <!-- Left Panel: System Log -->
+        <div class="hud-panel flex flex-col justify-between">
+            <div class="hud-title">SYSTEM LOG</div>
+            <div id="system-log" class="font-mono text-xs opacity-80 overflow-hidden h-full flex flex-col justify-end space-y-1 text-green-400">
+                <div>> Initializing Bio-Dome...</div>
+                <div>> Stasis Field: Stable</div>
+                <div>> Network: Connected</div>
+            </div>
+            <div class="mt-2 pt-2 border-t border-gray-700">
+                <div class="text-xs text-gray-400">CPU LOAD</div>
+                <div class="w-full bg-gray-800 h-1 mt-1">
+                    <div class="bg-blue-400 h-1 w-1/3 animate-pulse"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center Panel: Environment Controls -->
+        <div class="hud-panel">
+            <div class="hud-title">ENVIRONMENTAL CONTROLS</div>
+            <div class="h-full flex flex-col justify-center pt-4">
+                
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>TEMPERATURE</span>
+                        <span id="val-temp">22.0°C</span>
+                    </div>
+                    <input type="range" min="15" max="35" step="0.1" value="22" id="rng-temp">
+                </div>
+
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>OXYGEN LEV</span>
+                        <span id="val-oxy">98%</span>
+                    </div>
+                    <input type="range" min="80" max="100" step="0.5" value="98" id="rng-oxy">
+                </div>
+
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>HUMIDITY</span>
+                        <span id="val-hum">45%</span>
+                    </div>
+                    <input type="range" min="20" max="80" step="1" value="45" id="rng-hum">
+                </div>
+
+                <div class="mt-auto flex justify-center">
+                    <button id="btn-optimize" class="bg-blue-900/50 hover:bg-blue-800/80 border border-blue-500 text-blue-200 px-6 py-2 rounded text-sm font-bold tracking-widest transition-all">
+                        RE-CALIBRATE STASIS
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel: Vitals -->
+        <div class="hud-panel">
+            <div class="hud-title">BIO-METRICS</div>
+            <div class="gauge-container">
+                <div class="gauge">
+                    <div class="gauge-inner">
+                        <div class="gauge-val" id="gauge-pop">12</div>
+                        <div class="gauge-label">POPULATION</div>
+                    </div>
+                </div>
+                <div class="gauge" style="border-top-color: var(--neon-green);">
+                    <div class="gauge-inner">
+                        <div class="gauge-val" id="gauge-health">100%</div>
+                        <div class="gauge-label">INTEGRITY</div>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4 text-center">
+                <div class="text-xs tracking-widest mb-1">ZONE STATUS</div>
+                <div id="zone-status-text" class="text-lg font-bold text-green-400">OPTIMAL</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detail Modal -->
+    <div id="detail-modal">
+        <div class="close-btn" onclick="closeModal()">✕</div>
+        <h3 class="text-xl font-bold mb-2 border-b border-blue-500 pb-1">SUBJECT #<span id="modal-id">001</span></h3>
+        <div class="space-y-2 font-mono text-sm">
+            <div class="flex justify-between"><span>Heart Rate:</span> <span id="modal-hr" class="text-green-400">60 BPM</span></div>
+            <div class="flex justify-between"><span>Brain Activity:</span> <span id="modal-brain" class="text-blue-400">Delta Waves</span></div>
+            <div class="flex justify-between"><span>Stasis Depth:</span> <span id="modal-stasis">98.4%</span></div>
+            <div class="mt-4 p-2 bg-blue-900/30 rounded border border-blue-500/30 text-xs">
+                Subject is currently in REM cycle. Dopamine levels nominal. No intervention required.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Canvas Sky Network Animation ---
+        const canvas = document.getElementById('sky-network');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        let nodes = [];
+
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight * 0.6;
+            canvas.width = width;
+            canvas.height = height;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        class Node {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.vx = (Math.random() - 0.5) * 0.5;
+                this.vy = (Math.random() - 0.5) * 0.5;
+                this.size = Math.random() * 2 + 1;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                if (this.x < 0 || this.x > width) this.vx *= -1;
+                if (this.y < 0 || this.y > height) this.vy *= -1;
+            }
+            draw() {
+                ctx.fillStyle = '#00f3ff';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        for (let i = 0; i < 40; i++) nodes.push(new Node());
+
+        function animateNetwork() {
+            ctx.clearRect(0, 0, width, height);
+            ctx.strokeStyle = 'rgba(0, 243, 255, 0.15)';
+            ctx.lineWidth = 1;
+
+            for (let i = 0; i < nodes.length; i++) {
+                nodes[i].update();
+                nodes[i].draw();
+                for (let j = i + 1; j < nodes.length; j++) {
+                    let dx = nodes[i].x - nodes[j].x;
+                    let dy = nodes[i].y - nodes[j].y;
+                    let dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < 150) {
+                        ctx.beginPath();
+                        ctx.moveTo(nodes[i].x, nodes[i].y);
+                        ctx.lineTo(nodes[j].x, nodes[j].y);
+                        ctx.stroke();
+                    }
+                }
+            }
+            requestAnimationFrame(animateNetwork);
+        }
+        animateNetwork();
+
+        // --- Game Logic & UI ---
+
+        // State
+        const state = {
+            temp: 22.0,
+            oxygen: 98.0,
+            humidity: 45,
+            integrity: 100,
+            alert: false
+        };
+
+        // DOM Elements
+        const elTemp = document.getElementById('val-temp');
+        const rngTemp = document.getElementById('rng-temp');
+        const elOxy = document.getElementById('val-oxy');
+        const rngOxy = document.getElementById('rng-oxy');
+        const elHum = document.getElementById('val-hum');
+        const rngHum = document.getElementById('rng-hum');
+        const elIntegrity = document.getElementById('gauge-health');
+        const logContainer = document.getElementById('system-log');
+        const statusText = document.getElementById('zone-status-text');
+        const body = document.body;
+
+        // Helper: Add Log
+        function addLog(msg, type="normal") {
+            const div = document.createElement('div');
+            div.textContent = `> ${msg}`;
+            if(type === "alert") div.className = "text-red-500 font-bold";
+            else if(type === "warn") div.className = "text-yellow-400";
+            logContainer.appendChild(div);
+            logContainer.scrollTop = logContainer.scrollHeight;
+            // Keep log short
+            if(logContainer.children.length > 10) logContainer.removeChild(logContainer.firstChild);
+        }
+
+        // Inhabitants Generation
+        const inhabitantsLayer = document.getElementById('inhabitants-layer');
+        const emojis = ['🧘', '🛌', '🧍', '🧘‍♂️', '🛌'];
+        const inhabitantData = [];
+
+        for(let i=0; i<12; i++) {
+            const el = document.createElement('div');
+            el.className = 'inhabitant';
+            el.style.left = (10 + Math.random() * 80) + '%';
+            el.style.top = (50 + Math.random() * 20) + '%'; // Floor area
+            el.style.pointerEvents = 'auto';
+            el.innerHTML = `${emojis[Math.floor(Math.random()*emojis.length)]}<div class="status-dot"></div>`;
+            
+            // Data
+            const id = 7340 + i;
+            inhabitantData.push({ id, hr: 60, stress: 0 });
+
+            // Click Event
+            el.onclick = () => openModal(i);
+            
+            inhabitantsLayer.appendChild(el);
+        }
+
+        // Modal Logic
+        const modal = document.getElementById('detail-modal');
+        function openModal(index) {
+            const data = inhabitantData[index];
+            document.getElementById('modal-id').textContent = data.id;
+            document.getElementById('modal-hr').textContent = data.hr + " BPM";
+            document.getElementById('modal-stasis').textContent = (95 + Math.random()*5).toFixed(1) + "%";
+            modal.style.display = 'block';
+        }
+        function closeModal() {
+            modal.style.display = 'none';
+        }
+
+        // Simulation Loop
+        setInterval(() => {
+            // Drift values
+            state.temp += (Math.random() - 0.5) * 0.2;
+            state.oxygen += (Math.random() - 0.5) * 0.1;
+            state.humidity += (Math.random() - 0.5) * 1;
+
+            // Update Inputs (visual only, user fights this)
+            // We won't auto-move sliders to annoy user, but we update the display values if they drift too far from slider pos
+            // Actually, let's make the sliders control the target, and the actual value drift.
+            // For simplicity in this UI, Sliders = Current Value.
+            
+            // Check Bounds
+            let warnings = 0;
+            if(state.temp > 30 || state.temp < 18) warnings++;
+            if(state.oxygen < 90) warnings++;
+            if(state.humidity > 70 || state.humidity < 30) warnings++;
+
+            // Update Integrity
+            if(warnings > 0) {
+                state.integrity -= 0.5;
+                if(!state.alert) {
+                    state.alert = true;
+                    body.classList.add('alert-mode');
+                    statusText.textContent = "CRITICAL";
+                    statusText.className = "text-lg font-bold text-red-500";
+                    addLog("WARNING: Environmental Deviation", "alert");
+                }
+            } else {
+                if(state.integrity < 100) state.integrity += 0.2;
+                if(state.alert) {
+                    state.alert = false;
+                    body.classList.remove('alert-mode');
+                    statusText.textContent = "OPTIMAL";
+                    statusText.className = "text-lg font-bold text-green-400";
+                    addLog("Stasis Normalized", "normal");
+                }
+            }
+            state.integrity = Math.max(0, Math.min(100, state.integrity));
+
+            // Update UI
+            elTemp.textContent = state.temp.toFixed(1) + "°C";
+            elOxy.textContent = state.oxygen.toFixed(1) + "%";
+            elHum.textContent = Math.floor(state.humidity) + "%";
+            elIntegrity.textContent = Math.floor(state.integrity) + "%";
+
+            // Random Log
+            if(Math.random() < 0.05) {
+                const logs = ["Scanning bio-signs...", "Adjusting light refraction...", "Drone #4 returning to dock", "Network latency: 4ms"];
+                addLog(logs[Math.floor(Math.random()*logs.length)]);
+            }
+
+        }, 1000);
+
+        // Input Listeners
+        rngTemp.addEventListener('input', (e) => {
+            state.temp = parseFloat(e.target.value);
+            elTemp.textContent = state.temp.toFixed(1) + "°C";
+        });
+        rngOxy.addEventListener('input', (e) => {
+            state.oxygen = parseFloat(e.target.value);
+            elOxy.textContent = state.oxygen.toFixed(1) + "%";
+        });
+        rngHum.addEventListener('input', (e) => {
+            state.humidity = parseFloat(e.target.value);
+            elHum.textContent = state.humidity + "%";
+        });
+
+        // Optimize Button
+        document.getElementById('btn-optimize').addEventListener('click', () => {
+            // Reset values to ideal
+            state.temp = 22.0;
+            state.oxygen = 98.0;
+            state.humidity = 45.0;
+            
+            rngTemp.value = 22;
+            rngOxy.value = 98;
+            rngHum.value = 45;
+
+            elTemp.textContent = "22.0°C";
+            elOxy.textContent = "98.0%";
+            elHum.textContent = "45%";
+
+            addLog("Manual Override: Systems Optimized", "normal");
+            
+            // Visual feedback
+            const btn = document.getElementById('btn-optimize');
+            const originalText = btn.textContent;
+            btn.textContent = "PROCESSING...";
+            setTimeout(() => btn.textContent = originalText, 1000);
+        });
+
+    </script>
+</body>
+</html>

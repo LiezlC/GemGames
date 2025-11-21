@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Futures: Alignment vs Convergence</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Space+Mono:wght@400;700&display=swap');
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #050508;
+            font-family: 'Inter', sans-serif;
+            color: white;
+        }
+
+        /* Cosmic Background & Effects */
+        #cosmos {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        /* The Orbs */
+        .orb-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 800px;
+            height: 500px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1;
+            pointer-events: none; /* Let clicks pass through to canvas nodes if needed, but we'll use UI overlay */
+        }
+
+        .orb {
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            position: absolute;
+            filter: blur(40px);
+            opacity: 0.6;
+            transition: all 1s ease-in-out;
+            mix-blend-mode: screen;
+        }
+
+        .orb-human {
+            background: radial-gradient(circle, #ff8c42, #ff3c00);
+            left: 100px;
+            animation: pulse-warm 6s infinite alternate;
+        }
+
+        .orb-ai {
+            background: radial-gradient(circle, #00d2ff, #3a7bd5);
+            right: 100px;
+            animation: pulse-cool 7s infinite alternate;
+        }
+
+        @keyframes pulse-warm {
+            0% { transform: scale(1); opacity: 0.5; }
+            100% { transform: scale(1.1); opacity: 0.7; }
+        }
+        @keyframes pulse-cool {
+            0% { transform: scale(1); opacity: 0.5; }
+            100% { transform: scale(1.1); opacity: 0.7; }
+        }
+
+        /* UI Overlay */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            pointer-events: none;
+        }
+
+        .interactive-zone {
+            pointer-events: auto;
+        }
+
+        .node {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+            z-index: 20;
+        }
+        
+        .node:hover {
+            transform: scale(1.5);
+            box-shadow: 0 0 15px white;
+        }
+
+        .node-label {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Space Mono', monospace;
+            font-size: 10px;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            background: rgba(0,0,0,0.8);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .node:hover .node-label {
+            opacity: 1;
+        }
+
+        /* Modal */
+        #decision-modal {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            width: 400px;
+            padding: 2rem;
+            border-radius: 16px;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s ease;
+            z-index: 100;
+            background: rgba(10, 10, 15, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        #decision-modal.active {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+            margin: 20px 0;
+        }
+        
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #ffffff;
+            cursor: pointer;
+            margin-top: -8px;
+            box-shadow: 0 0 10px rgba(255,255,255,0.8);
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: linear-gradient(90deg, #ff8c42 0%, #00d2ff 100%);
+            border-radius: 2px;
+        }
+
+        .hud-text {
+            font-family: 'Space Mono', monospace;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .scanline {
+            width: 100%;
+            height: 100px;
+            z-index: 999;
+            background: linear-gradient(0deg, rgba(0,0,0,0) 0%, rgba(255, 255, 255, 0.02) 50%, rgba(0,0,0,0) 100%);
+            opacity: 0.1;
+            position: absolute;
+            bottom: 100%;
+            animation: scanline 10s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes scanline {
+            0% { bottom: 100%; }
+            100% { bottom: -100px; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Background Canvas for Particles -->
+    <canvas id="cosmos"></canvas>
+
+    <!-- The Glowing Orbs Visual -->
+    <div class="orb-container">
+        <div id="orb-human" class="orb orb-human"></div>
+        <div id="orb-ai" class="orb orb-ai"></div>
+    </div>
+
+    <!-- Scanline Effect -->
+    <div class="scanline"></div>
+
+    <!-- UI Layer -->
+    <div id="ui-layer" class="p-8">
+        <!-- Header -->
+        <div class="flex justify-between items-start w-full interactive-zone">
+            <div class="glass-panel p-4 rounded-lg max-w-xs">
+                <h1 class="text-xl font-bold tracking-widest mb-1 text-orange-400">HUMAN VALUES</h1>
+                <p class="text-xs text-gray-400 hud-text">Preservation Protocol</p>
+                <div class="mt-2 h-1 w-full bg-gray-800 rounded-full overflow-hidden">
+                    <div id="bar-human" class="h-full bg-orange-500 w-1/2 transition-all duration-500"></div>
+                </div>
+                <p class="text-[10px] mt-2 text-gray-500">"Assume separation & control"</p>
+            </div>
+
+            <div class="text-center mt-4">
+                <div class="text-2xl font-bold text-white tracking-[0.5em] opacity-80">SYNTHESIS</div>
+                <div id="status-text" class="text-xs text-purple-300 mt-1 hud-text">AWAITING INPUT</div>
+            </div>
+
+            <div class="glass-panel p-4 rounded-lg max-w-xs text-right">
+                <h1 class="text-xl font-bold tracking-widest mb-1 text-cyan-400">CONVERGENCE</h1>
+                <p class="text-xs text-gray-400 hud-text">Merger Protocol</p>
+                <div class="mt-2 h-1 w-full bg-gray-800 rounded-full overflow-hidden">
+                    <div id="bar-ai" class="h-full bg-cyan-500 w-1/2 ml-auto transition-all duration-500"></div>
+                </div>
+                <p class="text-[10px] mt-2 text-gray-500">"Embrace interconnection"</p>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="flex justify-center items-end w-full pb-8 interactive-zone">
+            <button id="reset-btn" class="glass-panel px-6 py-2 rounded-full text-xs hover:bg-white/10 transition hud-text text-gray-400">
+                Reset Simulation
+            </button>
+        </div>
+    </div>
+
+    <!-- Interactive Nodes Container (Injected via JS) -->
+    <div id="nodes-container" class="absolute inset-0 pointer-events-none"></div>
+
+    <!-- Decision Modal -->
+    <div id="decision-modal" class="glass-panel">
+        <h2 id="modal-title" class="text-lg font-bold mb-2 text-white">Node Detected</h2>
+        <p id="modal-desc" class="text-sm text-gray-300 mb-6 leading-relaxed">Analyze the ethical implications of this trajectory.</p>
+        
+        <div class="flex justify-between text-[10px] text-gray-500 uppercase tracking-wider mb-1">
+            <span class="text-orange-400">Preserve Human Agency</span>
+            <span class="text-cyan-400">Accelerate Merger</span>
+        </div>
+        
+        <input type="range" id="decision-slider" min="0" max="100" value="50">
+        
+        <div class="flex justify-center mt-4">
+            <button id="confirm-btn" class="bg-white text-black px-6 py-2 rounded-md text-sm font-bold hover:bg-gray-200 transition">
+                EXECUTE
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- Configuration & Data ---
+        const questions = [
+            { 
+                id: 1, 
+                text: "How to keep AI aligned to human values?", 
+                type: "human", 
+                desc: "Strict alignment protocols may limit AI potential, but ensure safety. Loosening them risks divergence." 
+            },
+            { 
+                id: 2, 
+                text: "How to ensure AI benefits everyone?", 
+                type: "human", 
+                desc: "Distributing benefits requires control structures. Pure acceleration tends to favor elites initially." 
+            },
+            { 
+                id: 3, 
+                text: "How to prevent existential risk?", 
+                type: "human", 
+                desc: "Risk prevention often requires slowing down progress (The 'Stop Button' problem)." 
+            },
+            { 
+                id: 4, 
+                text: "How to maintain human agency?", 
+                type: "human", 
+                desc: "Should humans always be in the loop, or do we trust the machine to act faster and better?" 
+            },
+            { 
+                id: 5, 
+                text: "How to navigate consciousness merger ethically?", 
+                type: "ai", 
+                desc: "Merging minds with machines blurs the line of 'self'. Is this evolution or erasure?" 
+            },
+            { 
+                id: 6, 
+                text: "Substrate transitions", 
+                type: "ai", 
+                desc: "Moving human consciousness to digital substrates. A copy or a continuation?" 
+            },
+            { 
+                id: 7, 
+                text: "Ensure enhancement isn't elite-only", 
+                type: "ai", 
+                desc: "If we merge, who gets to merge first? The rich or the worthy?" 
+            },
+            { 
+                id: 8, 
+                text: "Build for convergence rather than fight it", 
+                type: "ai", 
+                desc: "Accepting that humanity is a bootloader for digital superintelligence." 
+            }
+        ];
+
+        // --- State ---
+        let state = {
+            humanScore: 50,
+            aiScore: 50,
+            resolvedNodes: new Set()
+        };
+
+        // --- Canvas Setup (Cosmic Background) ---
+        const canvas = document.getElementById('cosmos');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        let particles = [];
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        class Particle {
+            constructor() {
+                this.reset();
+            }
+            reset() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.vx = (Math.random() - 0.5) * 0.5;
+                this.vy = (Math.random() - 0.5) * 0.5;
+                this.size = Math.random() * 2;
+                this.alpha = Math.random() * 0.5 + 0.1;
+                this.color = Math.random() > 0.5 ? '255, 140, 66' : '0, 210, 255'; // Orange or Cyan
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                if (this.x < 0 || this.x > width || this.y < 0 || this.y > height) this.reset();
+            }
+            draw() {
+                ctx.fillStyle = `rgba(${this.color}, ${this.alpha})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // Initialize Particles
+        for (let i = 0; i < 150; i++) particles.push(new Particle());
+
+        // Animation Loop
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+            
+            // Draw connecting lines for a "network" feel
+            ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < particles.length; i++) {
+                particles[i].update();
+                particles[i].draw();
+                for (let j = i + 1; j < particles.length; j++) {
+                    let dx = particles[i].x - particles[j].x;
+                    let dy = particles[i].y - particles[j].y;
+                    let dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist < 100) {
+                        ctx.beginPath();
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.stroke();
+                    }
+                }
+            }
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        // --- UI Logic ---
+        const nodesContainer = document.getElementById('nodes-container');
+        const modal = document.getElementById('decision-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalDesc = document.getElementById('modal-desc');
+        const slider = document.getElementById('decision-slider');
+        const confirmBtn = document.getElementById('confirm-btn');
+        const orbHuman = document.getElementById('orb-human');
+        const orbAi = document.getElementById('orb-ai');
+        const barHuman = document.getElementById('bar-human');
+        const barAi = document.getElementById('bar-ai');
+        const statusText = document.getElementById('status-text');
+
+        let currentNodeId = null;
+
+        // Create Nodes
+        function initNodes() {
+            nodesContainer.innerHTML = '';
+            questions.forEach((q, index) => {
+                const node = document.createElement('div');
+                node.className = 'node interactive-zone';
+                
+                // Position nodes in two clusters
+                let cx, cy;
+                if (q.type === 'human') {
+                    cx = window.innerWidth / 2 - 150 + (Math.random() * 100 - 50);
+                    cy = window.innerHeight / 2 + (Math.random() * 200 - 100);
+                    node.style.backgroundColor = '#ff8c42';
+                    node.style.boxShadow = '0 0 10px #ff8c42';
+                } else {
+                    cx = window.innerWidth / 2 + 150 + (Math.random() * 100 - 50);
+                    cy = window.innerHeight / 2 + (Math.random() * 200 - 100);
+                    node.style.backgroundColor = '#00d2ff';
+                    node.style.boxShadow = '0 0 10px #00d2ff';
+                }
+
+                node.style.left = `${cx}px`;
+                node.style.top = `${cy}px`;
+
+                // Label
+                const label = document.createElement('div');
+                label.className = 'node-label';
+                label.innerText = q.text;
+                node.appendChild(label);
+
+                // Click Event
+                node.addEventListener('click', () => openModal(q));
+                
+                nodesContainer.appendChild(node);
+            });
+        }
+
+        function openModal(q) {
+            if (state.resolvedNodes.has(q.id)) return;
+            currentNodeId = q.id;
+            modalTitle.innerText = q.text;
+            modalDesc.innerText = q.desc;
+            slider.value = 50; // Reset slider
+            modal.classList.add('active');
+        }
+
+        function closeModal() {
+            modal.classList.remove('active');
+            currentNodeId = null;
+        }
+
+        confirmBtn.addEventListener('click', () => {
+            if (currentNodeId === null) return;
+            
+            const val = parseInt(slider.value);
+            // Logic: < 50 favors Human, > 50 favors AI
+            const humanImpact = (100 - val) / 20; // 0-5 pts
+            const aiImpact = val / 20; // 0-5 pts
+
+            state.humanScore = Math.max(10, Math.min(100, state.humanScore + (humanImpact - aiImpact)));
+            state.aiScore = Math.max(10, Math.min(100, state.aiScore + (aiImpact - humanImpact)));
+
+            state.resolvedNodes.add(currentNodeId);
+            
+            // Mark node as resolved visually
+            const nodes = document.querySelectorAll('.node');
+            // Find the node by index logic is tricky since DOM order matches array order
+            const nodeIndex = questions.findIndex(q => q.id === currentNodeId);
+            if(nodes[nodeIndex]) {
+                nodes[nodeIndex].style.opacity = '0.2';
+                nodes[nodeIndex].style.pointerEvents = 'none';
+            }
+
+            updateVisuals();
+            closeModal();
+            checkEndGame();
+        });
+
+        function updateVisuals() {
+            // Update Bars
+            barHuman.style.width = `${state.humanScore}%`;
+            barAi.style.width = `${state.aiScore}%`;
+
+            // Update Orbs Scale
+            const humanScale = 0.5 + (state.humanScore / 100);
+            const aiScale = 0.5 + (state.aiScore / 100);
+            
+            orbHuman.style.transform = `scale(${humanScale})`;
+            orbAi.style.transform = `scale(${aiScale})`;
+            
+            // Update Orb Opacity based on dominance
+            orbHuman.style.opacity = state.humanScore / 100;
+            orbAi.style.opacity = state.aiScore / 100;
+
+            // Move Orbs closer if scores are balanced (Convergence)
+            const gap = Math.abs(state.humanScore - state.aiScore) * 2;
+            orbHuman.style.left = `${100 + gap}px`;
+            orbAi.style.right = `${100 + gap}px`;
+
+            // Status Text
+            if (Math.abs(state.humanScore - state.aiScore) < 10) {
+                statusText.innerText = "STATE: HARMONIC CONVERGENCE";
+                statusText.className = "text-xs text-white mt-1 hud-text glow";
+            } else if (state.humanScore > state.aiScore) {
+                statusText.innerText = "STATE: ANTHROPOCENTRIC STABILITY";
+                statusText.className = "text-xs text-orange-400 mt-1 hud-text";
+            } else {
+                statusText.innerText = "STATE: POST-HUMAN ACCELERATION";
+                statusText.className = "text-xs text-cyan-400 mt-1 hud-text";
+            }
+        }
+
+        function checkEndGame() {
+            if (state.resolvedNodes.size === questions.length) {
+                setTimeout(() => {
+                    let msg = "";
+                    if (Math.abs(state.humanScore - state.aiScore) < 15) {
+                        msg = "SYMBIOSIS ACHIEVED. The future is shared.";
+                    } else if (state.humanScore > state.aiScore) {
+                        msg = "HUMAN AGENCY PRESERVED. AI remains a tool.";
+                    } else {
+                        msg = "SINGULARITY REACHED. Humanity has evolved beyond biology.";
+                    }
+                    alert(msg);
+                }, 500);
+            }
+        }
+
+        document.getElementById('reset-btn').addEventListener('click', () => {
+            state.humanScore = 50;
+            state.aiScore = 50;
+            state.resolvedNodes.clear();
+            initNodes();
+            updateVisuals();
+        });
+
+        // Initial Setup
+        initNodes();
+        updateVisuals();
+
+    </script>
+</body>
+</html>

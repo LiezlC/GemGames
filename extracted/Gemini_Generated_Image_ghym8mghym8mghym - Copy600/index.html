@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nebula Forge: Galactic Simulator</title>
+    <style>
+        :root {
+            --bg-color: #050508;
+            --panel-bg: rgba(20, 20, 30, 0.6);
+            --accent: #ff4d4d;
+            --text: #ffffff;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--bg-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--text);
+        }
+
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* UI Overlay */
+        #ui-layer {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 300px;
+            z-index: 10;
+            pointer-events: none; /* Let clicks pass through to canvas where not on controls */
+        }
+
+        .panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            pointer-events: auto;
+            margin-bottom: 15px;
+            transition: opacity 0.3s;
+        }
+
+        h1 {
+            font-size: 1.2rem;
+            margin: 0 0 10px 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            background: linear-gradient(to right, #ffafbd, #ffc3a0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            margin-bottom: 5px;
+            color: #aaa;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            height: 4px;
+            border-radius: 2px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--accent);
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background: linear-gradient(45deg, #ff416c, #ff4b2b);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: transform 0.1s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(255, 75, 43, 0.4);
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        .stats {
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 10px;
+        }
+
+        /* Tooltip/Hint */
+        .hint {
+            position: absolute;
+            bottom: 30px;
+            width: 100%;
+            text-align: center;
+            pointer-events: none;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.9rem;
+            animation: pulse 2s infinite;
+            z-index: 5;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.3; }
+            50% { opacity: 0.8; }
+            100% { opacity: 0.3; }
+        }
+
+        /* SVG Icons */
+        .icon {
+            width: 24px;
+            height: 24px;
+            fill: currentColor;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="canvas-container">
+        <canvas id="galaxyCanvas"></canvas>
+    </div>
+
+    <div id="ui-layer">
+        <div class="panel">
+            <h1>Nebula Forge</h1>
+            <p style="font-size: 0.8rem; color: #ccc; margin-bottom: 15px;">
+                Interactive Galaxy Simulation based on input imagery.
+            </p>
+
+            <div class="control-group">
+                <label>Core Gravity <span id="val-gravity">1.0</span></label>
+                <input type="range" id="gravity" min="0.1" max="3.0" step="0.1" value="1.0">
+            </div>
+
+            <div class="control-group">
+                <label>Rotation Speed <span id="val-speed">1.0</span></label>
+                <input type="range" id="speed" min="-2.0" max="2.0" step="0.1" value="0.5">
+            </div>
+
+            <div class="control-group">
+                <label>Star Density <span id="val-density">2000</span></label>
+                <input type="range" id="density" min="500" max="5000" step="100" value="2000">
+            </div>
+
+            <div class="control-group">
+                <label>Color Shift (Spectrum)</label>
+                <input type="range" id="hue" min="0" max="360" step="1" value="0">
+            </div>
+
+            <button id="btn-bigbang">
+                <span>💥 Trigger Supernova</span>
+            </button>
+
+            <div class="stats">
+                Particles: <span id="stat-particles">0</span><br>
+                Universe Age: <span id="stat-time">0</span> cycles
+            </div>
+        </div>
+    </div>
+
+    <div class="hint">
+        Click & Drag to create Black Holes • Scroll to Zoom
+    </div>
+
+    <script>
+        const canvas = document.getElementById('galaxyCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // UI Elements
+        const uiGravity = document.getElementById('gravity');
+        const uiSpeed = document.getElementById('speed');
+        const uiDensity = document.getElementById('density');
+        const uiHue = document.getElementById('hue');
+        const btnBigBang = document.getElementById('btn-bigbang');
+        const statParticles = document.getElementById('stat-particles');
+        const statTime = document.getElementById('stat-time');
+
+        // State
+        let width, height;
+        let particles = [];
+        let mouse = { x: 0, y: 0, active: false };
+        let time = 0;
+        let zoom = 1;
+        
+        // Configuration
+        const config = {
+            particleCount: 2000,
+            baseSpeed: 0.5,
+            gravity: 1.0,
+            hueOffset: 0,
+            coreColor: { h: 200, s: 80, l: 60 }, // Blueish core
+            armColor: { h: 10, s: 90, l: 60 }    // Reddish arms
+        };
+
+        // Resize Handler
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Particle Class
+        class Particle {
+            constructor(isCore = false) {
+                this.reset(isCore);
+            }
+
+            reset(isCore = false) {
+                // Initialize in a spiral pattern
+                const angle = Math.random() * Math.PI * 2;
+                // Logarithmic distribution for density near center
+                const distance = Math.pow(Math.random(), 2) * (Math.min(width, height) / 2) * 1.5; 
+                
+                // Spiral offset
+                const spiralOffset = distance * 0.01; 
+                
+                this.x = width / 2 + Math.cos(angle + spiralOffset) * distance;
+                this.y = height / 2 + Math.sin(angle + spiralOffset) * distance;
+                
+                // Physics properties
+                this.vx = (Math.random() - 0.5) * 0.5;
+                this.vy = (Math.random() - 0.5) * 0.5;
+                
+                this.size = Math.random() * 2 + 0.5;
+                this.mass = this.size;
+                
+                // Color determination based on distance from center
+                const distToCenter = Math.sqrt(Math.pow(this.x - width/2, 2) + Math.pow(this.y - height/2, 2));
+                const maxDist = Math.min(width, height) / 2;
+                const normalizedDist = Math.min(distToCenter / maxDist, 1);
+
+                // Interpolate between core color (blue/white) and arm color (red/orange)
+                // Input image has blue center, red arms
+                let h, s, l, a;
+                
+                if (Math.random() < 0.1) {
+                    // Bright spark
+                    h = 60; s = 100; l = 90; a = 1;
+                } else {
+                    // Mix colors based on distance
+                    // Center (Blue/White) -> Edge (Red/Orange/Dark)
+                    const baseH = normalizedDist < 0.2 ? 210 : (normalizedDist < 0.6 ? 20 : 0); 
+                    h = baseH + config.hueOffset + (Math.random() * 40 - 20);
+                    s = 70 + Math.random() * 30;
+                    l = normalizedDist < 0.2 ? 80 : 50;
+                    a = 0.6 + Math.random() * 0.4;
+                }
+
+                this.color = `hsla(${h}, ${s}%, ${l}%, ${a})`;
+                this.isCore = isCore;
+            }
+
+            update() {
+                const cx = width / 2;
+                const cy = height / 2;
+                
+                // Distance to center
+                const dx = cx - this.x;
+                const dy = cy - this.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                
+                // Gravity Force (pull to center)
+                if (dist > 10) {
+                    const force = (config.gravity * 50) / dist;
+                    const angle = Math.atan2(dy, dx);
+                    this.vx += Math.cos(angle) * force * 0.05;
+                    this.vy += Math.sin(angle) * force * 0.05;
+                }
+
+                // Rotation Force (Perpendicular to gravity)
+                // This creates the swirl
+                const rotAngle = Math.atan2(dy, dx) + (Math.PI / 2);
+                const rotForce = config.baseSpeed * 0.1;
+                this.vx += Math.cos(rotAngle) * rotForce;
+                this.vy += Math.sin(rotAngle) * rotForce;
+
+                // Mouse Interaction (Black Hole / Repulsor)
+                if (mouse.active) {
+                    const mdx = mouse.x - this.x;
+                    const mdy = mouse.y - this.y;
+                    const mDist = Math.sqrt(mdx*mdx + mdy*mdy);
+                    if (mDist < 300 && mDist > 5) {
+                        const mForce = 200 / mDist;
+                        const mAngle = Math.atan2(mdy, mdx);
+                        // Pull towards mouse
+                        this.vx += Math.cos(mAngle) * mForce * 0.5;
+                        this.vy += Math.sin(mAngle) * mForce * 0.5;
+                    }
+                }
+
+                // Friction
+                this.vx *= 0.96;
+                this.vy *= 0.96;
+
+                // Update Position
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Bounds check (wrap around or reset if too far)
+                if (this.x < -100 || this.x > width + 100 || this.y < -100 || this.y > height + 100) {
+                    this.reset();
+                }
+            }
+
+            draw() {
+                ctx.beginPath();
+                // Parallax effect based on size
+                const drawX = (this.x - width/2) * zoom + width/2;
+                const drawY = (this.y - height/2) * zoom + height/2;
+                
+                ctx.arc(drawX, drawY, this.size * zoom, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+            }
+        }
+
+        // Initialization
+        function initParticles() {
+            particles = [];
+            for (let i = 0; i < config.particleCount; i++) {
+                particles.push(new Particle());
+            }
+            statParticles.innerText = config.particleCount;
+        }
+
+        // Animation Loop
+        function animate() {
+            // Create trails
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.fillStyle = 'rgba(5, 5, 8, 0.2)'; // Fade out effect
+            ctx.fillRect(0, 0, width, height);
+
+            // Glowing effect
+            ctx.globalCompositeOperation = 'lighter';
+
+            // Draw Core Glow (The bright center in the input image)
+            const cx = width / 2;
+            const cy = height / 2;
+            const gradient = ctx.createRadialGradient(cx, cy, 10 * zoom, cx, cy, 150 * zoom);
+            gradient.addColorStop(0, `hsla(${200 + config.hueOffset}, 100%, 90%, 0.8)`);
+            gradient.addColorStop(0.4, `hsla(${20 + config.hueOffset}, 100%, 50%, 0.2)`);
+            gradient.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(cx, cy, 300 * zoom, 0, Math.PI*2);
+            ctx.fill();
+
+            // Update and Draw Particles
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+
+            time++;
+            statTime.innerText = time;
+            requestAnimationFrame(animate);
+        }
+
+        // Event Listeners
+        uiGravity.addEventListener('input', (e) => {
+            config.gravity = parseFloat(e.target.value);
+            document.getElementById('val-gravity').innerText = config.gravity;
+        });
+
+        uiSpeed.addEventListener('input', (e) => {
+            config.baseSpeed = parseFloat(e.target.value);
+            document.getElementById('val-speed').innerText = config.baseSpeed;
+        });
+
+        uiDensity.addEventListener('input', (e) => {
+            const newCount = parseInt(e.target.value);
+            const diff = newCount - particles.length;
+            
+            if (diff > 0) {
+                for(let i=0; i<diff; i++) particles.push(new Particle());
+            } else {
+                particles.splice(0, -diff);
+            }
+            
+            config.particleCount = newCount;
+            document.getElementById('val-density').innerText = newCount;
+            statParticles.innerText = newCount;
+        });
+
+        uiHue.addEventListener('input', (e) => {
+            config.hueOffset = parseInt(e.target.value);
+            // Update existing particles slightly to reflect change immediately
+            particles.forEach(p => {
+                // Simple regex replacement to update hue in hsla string
+                // This is a bit hacky but fast for visual feedback
+                let parts = p.color.match(/hsla\((\d+(\.\d+)?),\s*(\d+)%,\s*(\d+)%,\s*(\d+(\.\d+)?)\)/);
+                if(parts) {
+                    let h = parseFloat(parts[1]) + 5; // slight shift
+                    p.color = `hsla(${h}, ${parts[3]}%, ${parts[4]}%, ${parts[5]})`;
+                }
+            });
+        });
+
+        btnBigBang.addEventListener('click', () => {
+            // Explosion effect
+            particles.forEach(p => {
+                const dx = p.x - width/2;
+                const dy = p.y - height/2;
+                const angle = Math.atan2(dy, dx);
+                const force = 20 + Math.random() * 30;
+                p.vx = Math.cos(angle) * force;
+                p.vy = Math.sin(angle) * force;
+            });
+        });
+
+        // Mouse Interaction
+        canvas.addEventListener('mousedown', (e) => {
+            mouse.active = true;
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+        });
+        window.addEventListener('mouseup', () => {
+            mouse.active = false;
+        });
+        canvas.addEventListener('mousemove', (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+        });
+
+        // Scroll to Zoom
+        window.addEventListener('wheel', (e) => {
+            zoom += e.deltaY * -0.001;
+            zoom = Math.min(Math.max(.5, zoom), 3);
+        });
+
+        // Start
+        initParticles();
+        animate();
+
+    </script>
+</body>
+</html>

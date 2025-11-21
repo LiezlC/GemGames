@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Artifact 001: The Void Resonator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;600&display=swap');
+
+        :root {
+            --primary-hue: 260;
+            --glow-intensity: 1;
+            --rotation-speed: 10s;
+            --fold-spread: 20px;
+            --core-brightness: 1;
+        }
+
+        body {
+            background-color: #050508;
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Dynamic Background */
+        .space-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, #1a1a2e 0%, #000000 100%);
+            z-index: -2;
+        }
+
+        .stars {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(white, rgba(255,255,255,.2) 2px, transparent 3px),
+                radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 2px),
+                radial-gradient(white, rgba(255,255,255,.1) 2px, transparent 3px);
+            background-size: 550px 550px, 350px 350px, 250px 250px;
+            background-position: 0 0, 40px 60px, 130px 270px;
+            opacity: 0.6;
+            z-index: -1;
+            animation: starMove 100s linear infinite;
+        }
+
+        @keyframes starMove {
+            from { transform: translateY(0); }
+            to { transform: translateY(-550px); }
+        }
+
+        /* The Artifact Container */
+        .artifact-stage {
+            perspective: 1000px;
+            width: 100%;
+            height: 60vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .artifact {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            transform-style: preserve-3d;
+            transition: transform 0.1s ease-out;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        /* The Glowing Core (God Rays) */
+        .core-light {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle, 
+                hsla(var(--primary-hue), 100%, 90%, var(--core-brightness)) 0%, 
+                hsla(var(--primary-hue), 100%, 50%, 0.5) 40%, 
+                transparent 80%);
+            filter: blur(20px);
+            z-index: 0;
+            animation: pulseLight 3s infinite alternate;
+        }
+
+        .god-rays {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 600px;
+            height: 600px;
+            background: conic-gradient(
+                from 0deg, 
+                transparent 0deg, 
+                hsla(var(--primary-hue), 80%, 60%, 0.1) 20deg, 
+                transparent 40deg,
+                hsla(var(--primary-hue), 80%, 60%, 0.2) 60deg,
+                transparent 90deg,
+                hsla(var(--primary-hue), 80%, 60%, 0.1) 140deg,
+                transparent 180deg,
+                hsla(var(--primary-hue), 80%, 60%, 0.1) 220deg,
+                transparent 260deg,
+                hsla(var(--primary-hue), 80%, 60%, 0.2) 300deg,
+                transparent 360deg
+            );
+            filter: blur(30px);
+            animation: spinRays 20s linear infinite;
+            z-index: -1;
+            opacity: calc(var(--glow-intensity) * 0.8);
+        }
+
+        /* The Geometric Layers */
+        .geo-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 2px solid hsla(var(--primary-hue), 20%, 30%, 0.8);
+            background: linear-gradient(135deg, hsla(var(--primary-hue), 10%, 10%, 0.4), transparent);
+            box-shadow: 0 0 15px hsla(var(--primary-hue), 50%, 50%, 0.1);
+            transform-style: preserve-3d;
+            /* Clip path to make it jagged/alien */
+            clip-path: polygon(50% 0%, 80% 10%, 100% 35%, 100% 70%, 80% 90%, 50% 100%, 20% 90%, 0% 70%, 0% 35%, 20% 10%);
+        }
+
+        /* UI Panel */
+        .control-panel {
+            background: rgba(10, 10, 15, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 24px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            z-index: 10;
+            font-family: 'Space Mono', monospace;
+            transform: translateY(20px);
+            opacity: 0;
+            animation: slideUp 0.8s ease-out forwards 0.5s;
+        }
+
+        @keyframes slideUp {
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        @keyframes spinRays {
+            from { transform: translate(-50%, -50%) rotate(0deg); }
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        @keyframes pulseLight {
+            from { transform: translate(-50%, -50%) scale(0.8); opacity: 0.7; }
+            to { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotateX(10deg); }
+            50% { transform: translateY(-20px) rotateX(15deg); }
+        }
+
+        /* Custom Range Slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+            margin: 10px 0;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #fff;
+            cursor: pointer;
+            margin-top: -6px;
+            box-shadow: 0 0 10px rgba(255,255,255,0.8);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: rgba(255,255,255,0.2);
+            border-radius: 2px;
+        }
+        
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            background-color: #ef4444;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+            box-shadow: 0 0 5px #ef4444;
+            transition: all 0.3s ease;
+        }
+        
+        .status-indicator.active {
+            background-color: #22c55e;
+            box-shadow: 0 0 8px #22c55e;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="space-bg"></div>
+    <div class="stars"></div>
+
+    <div class="artifact-stage" id="stage">
+        <div class="artifact" id="artifact">
+            <div class="god-rays"></div>
+            <div class="core-light"></div>
+            <!-- Layers generated by JS -->
+        </div>
+    </div>
+
+    <div class="control-panel">
+        <div class="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
+            <div>
+                <h1 class="text-lg font-bold text-white tracking-widest uppercase">Artifact 001</h1>
+                <p class="text-xs text-gray-400">Void Resonator Interface</p>
+            </div>
+            <div class="text-right">
+                <div class="text-xs text-gray-400 mb-1">STATUS</div>
+                <div class="flex items-center justify-end text-xs font-mono text-white">
+                    <span class="status-indicator" id="status-light"></span>
+                    <span id="status-text">UNSTABLE</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="space-y-5">
+            <!-- Control 1: Spectrum -->
+            <div>
+                <div class="flex justify-between text-xs font-mono text-gray-400 mb-1">
+                    <label>SPECTRUM FREQUENCY</label>
+                    <span id="val-spectrum">260nm</span>
+                </div>
+                <input type="range" min="0" max="360" value="260" class="w-full" id="input-spectrum">
+            </div>
+
+            <!-- Control 2: Dimensional Fold -->
+            <div>
+                <div class="flex justify-between text-xs font-mono text-gray-400 mb-1">
+                    <label>DIMENSIONAL FOLD</label>
+                    <span id="val-fold">20%</span>
+                </div>
+                <input type="range" min="0" max="100" value="20" class="w-full" id="input-fold">
+            </div>
+
+            <!-- Control 3: Flux Speed -->
+            <div>
+                <div class="flex justify-between text-xs font-mono text-gray-400 mb-1">
+                    <label>TEMPORAL FLUX</label>
+                    <span id="val-flux">10%</span>
+                </div>
+                <input type="range" min="1" max="50" value="10" class="w-full" id="input-flux">
+            </div>
+
+            <!-- Control 4: Intensity -->
+            <div>
+                <div class="flex justify-between text-xs font-mono text-gray-400 mb-1">
+                    <label>CORE INTENSITY</label>
+                    <span id="val-intensity">50%</span>
+                </div>
+                <input type="range" min="0" max="200" value="100" class="w-full" id="input-intensity">
+            </div>
+        </div>
+
+        <div class="mt-6 pt-4 border-t border-white/10 flex justify-between items-center">
+            <div class="text-xs text-gray-500 font-mono">
+                COORD: <span id="coords">0, 0</span>
+            </div>
+            <button id="stabilize-btn" class="px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded text-xs font-mono text-white transition-all active:scale-95">
+                INITIATE HARMONIC SYNC
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const artifact = document.getElementById('artifact');
+        const stage = document.getElementById('stage');
+        const root = document.documentElement;
+        
+        // Inputs
+        const inputSpectrum = document.getElementById('input-spectrum');
+        const inputFold = document.getElementById('input-fold');
+        const inputFlux = document.getElementById('input-flux');
+        const inputIntensity = document.getElementById('input-intensity');
+        const btnStabilize = document.getElementById('stabilize-btn');
+
+        // Value Displays
+        const valSpectrum = document.getElementById('val-spectrum');
+        const valFold = document.getElementById('val-fold');
+        const valFlux = document.getElementById('val-flux');
+        const valIntensity = document.getElementById('val-intensity');
+        const statusLight = document.getElementById('status-light');
+        const statusText = document.getElementById('status-text');
+        const coordsDisplay = document.getElementById('coords');
+
+        // Generate Geometric Layers
+        const layerCount = 12;
+        for (let i = 0; i < layerCount; i++) {
+            const layer = document.createElement('div');
+            layer.classList.add('geo-layer');
+            // Initial offset
+            layer.style.transform = `rotateZ(${i * 5}deg) translateZ(${i * 2}px)`;
+            layer.style.zIndex = layerCount - i;
+            layer.dataset.index = i;
+            artifact.appendChild(layer);
+        }
+
+        const layers = document.querySelectorAll('.geo-layer');
+
+        // State
+        let state = {
+            hue: 260,
+            fold: 20,
+            flux: 10,
+            intensity: 100,
+            mouseX: 0,
+            mouseY: 0
+        };
+
+        // Update Function
+        function updateArtifact() {
+            // CSS Variables
+            root.style.setProperty('--primary-hue', state.hue);
+            root.style.setProperty('--glow-intensity', state.intensity / 100);
+            root.style.setProperty('--core-brightness', 0.5 + (state.intensity/200));
+
+            // Update Layers Logic
+            layers.forEach((layer, i) => {
+                const index = parseInt(layer.dataset.index);
+                
+                // Calculate rotation based on flux and fold
+                // The fold creates a spiral effect
+                const rotationBase = index * (360 / layerCount); 
+                const spiralOffset = (state.fold / 2) * index; 
+                
+                // Animation rotation
+                const time = Date.now() * (state.flux * 0.0001);
+                const dynamicRot = Math.sin(time + index) * (state.flux);
+
+                // 3D Transform
+                const zDist = index * (state.fold * 0.5);
+                const scale = 1 - (index * 0.05);
+
+                layer.style.transform = `
+                    rotateZ(${rotationBase + spiralOffset + dynamicRot}deg) 
+                    translateZ(${zDist}px) 
+                    scale(${scale})
+                `;
+                
+                // Opacity based on intensity
+                layer.style.opacity = 0.3 + (state.intensity / 400);
+                layer.style.borderColor = `hsla(${state.hue}, 60%, ${50 + (index*2)}%, ${0.5 + (state.intensity/400)})`;
+            });
+
+            // Update Text
+            valSpectrum.innerText = `${state.hue}nm`;
+            valFold.innerText = `${state.fold}%`;
+            valFlux.innerText = `${state.flux}%`;
+            valIntensity.innerText = `${state.intensity}%`;
+
+            // Game Logic: "Resonance"
+            // Target: Hue ~200-220, Fold ~50, Flux ~25
+            const isResonant = (state.hue > 190 && state.hue < 230) && 
+                               (state.fold > 40 && state.fold < 60) &&
+                               (state.flux > 20 && state.flux < 30);
+            
+            if (isResonant) {
+                statusLight.classList.add('active');
+                statusText.innerText = "RESONANCE ACHIEVED";
+                statusText.style.color = "#22c55e";
+                btnStabilize.innerText = "HARVEST ENERGY";
+                btnStabilize.classList.add('bg-green-500/20', 'border-green-500/50');
+            } else {
+                statusLight.classList.remove('active');
+                statusText.innerText = "UNSTABLE";
+                statusText.style.color = "#ef4444";
+                btnStabilize.innerText = "INITIATE HARMONIC SYNC";
+                btnStabilize.classList.remove('bg-green-500/20', 'border-green-500/50');
+            }
+
+            requestAnimationFrame(updateArtifact);
+        }
+
+        // Event Listeners
+        inputSpectrum.addEventListener('input', (e) => state.hue = parseInt(e.target.value));
+        inputFold.addEventListener('input', (e) => state.fold = parseInt(e.target.value));
+        inputFlux.addEventListener('input', (e) => state.flux = parseInt(e.target.value));
+        inputIntensity.addEventListener('input', (e) => state.intensity = parseInt(e.target.value));
+
+        // Mouse Parallax
+        document.addEventListener('mousemove', (e) => {
+            const x = (e.clientX / window.innerWidth) - 0.5;
+            const y = (e.clientY / window.innerHeight) - 0.5;
+            
+            state.mouseX = x;
+            state.mouseY = y;
+
+            coordsDisplay.innerText = `${x.toFixed(2)}, ${y.toFixed(2)}`;
+
+            // Rotate the whole artifact container
+            artifact.style.transform = `
+                rotateY(${x * 40}deg) 
+                rotateX(${-y * 40}deg)
+            `;
+        });
+
+        // Button Action
+        btnStabilize.addEventListener('click', () => {
+            if (statusText.innerText === "RESONANCE ACHIEVED") {
+                // Success Animation
+                root.style.setProperty('--core-brightness', 5);
+                root.style.setProperty('--glow-intensity', 3);
+                artifact.style.transition = "transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
+                artifact.style.transform = "scale(1.5) rotateZ(180deg)";
+                
+                setTimeout(() => {
+                    alert("ARTIFACT HARVESTED. ENERGY COLLECTED.");
+                    // Reset slightly
+                    inputFold.value = 20; state.fold = 20;
+                    inputFlux.value = 10; state.flux = 10;
+                    artifact.style.transition = "transform 0.1s ease-out";
+                }, 500);
+            } else {
+                // Failure / Randomize
+                state.hue = Math.floor(Math.random() * 360);
+                inputSpectrum.value = state.hue;
+                
+                // Shake effect
+                artifact.style.transform = `translate(${Math.random()*10}px, ${Math.random()*10}px)`;
+            }
+        });
+
+        // Init
+        updateArtifact();
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyber-Shepherd OS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;700&display=swap');
+
+        :root {
+            --neon-purple: #d946ef;
+            --neon-blue: #3b82f6;
+            --neon-gold: #eab308;
+            --glass-bg: rgba(15, 23, 42, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            background-color: #0f172a;
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            margin: 0;
+            height: 100vh;
+            width: 100vw;
+            background: radial-gradient(circle at 50% 50%, #2e1065 0%, #0f172a 70%);
+        }
+
+        /* Matrix Rain Canvas behind everything */
+        #matrix-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            opacity: 0.3;
+        }
+
+        /* Glassmorphism Utilities */
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .circuit-border {
+            position: relative;
+        }
+        .circuit-border::before {
+            content: '';
+            position: absolute;
+            top: -2px; left: -2px; right: -2px; bottom: -2px;
+            background: linear-gradient(45deg, var(--neon-purple), transparent, var(--neon-blue));
+            z-index: -1;
+            border-radius: inherit;
+            animation: border-pulse 4s linear infinite;
+        }
+
+        @keyframes border-pulse {
+            0% { opacity: 0.5; }
+            50% { opacity: 1; }
+            100% { opacity: 0.5; }
+        }
+
+        /* Animal Floating Animation */
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+
+        .animal-entity {
+            animation: float 6s ease-in-out infinite;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .animal-entity:hover {
+            transform: scale(1.1) translateY(-5px);
+            filter: drop-shadow(0 0 10px var(--neon-purple));
+        }
+        .animal-entity:active {
+            transform: scale(0.95);
+        }
+
+        /* Glitch Effect for "Desync" */
+        .glitch {
+            animation: glitch-anim 0.3s infinite;
+        }
+        @keyframes glitch-anim {
+            0% { transform: translate(0) }
+            20% { transform: translate(-2px, 2px) }
+            40% { transform: translate(-2px, -2px) }
+            60% { transform: translate(2px, 2px) }
+            80% { transform: translate(2px, -2px) }
+            100% { transform: translate(0) }
+        }
+
+        /* Terminal Text */
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Custom Scrollbar for Terminal */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.3);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--neon-blue);
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="relative selection:bg-purple-500 selection:text-white">
+
+    <!-- Matrix Rain Background -->
+    <canvas id="matrix-canvas"></canvas>
+
+    <!-- Main UI Container -->
+    <div class="relative z-10 h-full flex flex-col p-4 md:p-8 max-w-7xl mx-auto">
+        
+        <!-- Header -->
+        <header class="flex justify-between items-center mb-6 glass-panel p-4 rounded-xl circuit-border">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-600 to-blue-500 flex items-center justify-center text-xl shadow-lg shadow-purple-500/50">
+                    👩‍💻
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400">CYBER-SHEPHERD OS</h1>
+                    <p class="text-xs text-slate-400 font-mono">v2.4.0 // SYSTEM: STABLE</p>
+                </div>
+            </div>
+            <div class="flex gap-6 text-right">
+                <div>
+                    <p class="text-xs text-slate-400 uppercase tracking-widest">Data Bytes</p>
+                    <p id="score-display" class="text-2xl font-mono font-bold text-blue-400">0 TB</p>
+                </div>
+                <div>
+                    <p class="text-xs text-slate-400 uppercase tracking-widest">Sync Rate</p>
+                    <p id="sync-rate" class="text-2xl font-mono font-bold text-green-400">100%</p>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Game Area (The Pasture) -->
+        <main id="pasture" class="flex-grow relative rounded-2xl border border-slate-700/50 bg-slate-900/40 backdrop-blur-sm overflow-hidden mb-6 group">
+            <!-- Decoration: Circuit Lines -->
+            <svg class="absolute inset-0 w-full h-full opacity-20 pointer-events-none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                        <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#64748b" stroke-width="0.5"/>
+                    </pattern>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#grid)" />
+                <path d="M0 100 Q 250 50 500 100 T 1000 100" stroke="url(#grad1)" stroke-width="2" fill="none" />
+                <defs>
+                    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" style="stop-color:#8b5cf6;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:1" />
+                    </linearGradient>
+                </defs>
+            </svg>
+
+            <!-- Central Figure (Abstract Representation) -->
+            <div class="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-64 h-64 opacity-20 pointer-events-none">
+                <div class="w-full h-full bg-gradient-to-t from-purple-900 to-transparent rounded-t-full blur-2xl"></div>
+            </div>
+
+            <!-- Animals Container -->
+            <div id="animal-container" class="absolute inset-0">
+                <!-- Animals injected via JS -->
+            </div>
+
+            <!-- Floating Instructions -->
+            <div class="absolute top-4 left-1/2 transform -translate-x-1/2 glass-panel px-4 py-2 rounded-full text-xs text-slate-300 pointer-events-none opacity-70">
+                Click animals to harvest data. Keep them synced.
+            </div>
+        </main>
+
+        <!-- Control Deck (The Desk) -->
+        <div class="h-48 grid grid-cols-1 md:grid-cols-3 gap-4">
+            
+            <!-- Left: Environment / Plants -->
+            <div class="glass-panel rounded-xl p-4 flex flex-col justify-between relative overflow-hidden">
+                <div class="absolute -right-4 -bottom-4 text-8xl opacity-10 pointer-events-none">🌿</div>
+                <h3 class="text-sm font-bold text-slate-300 uppercase tracking-wider border-b border-slate-700 pb-2 mb-2">Bio-Synthesizer</h3>
+                
+                <div class="flex items-center gap-4">
+                    <div class="text-4xl cursor-pointer hover:scale-110 transition-transform" onclick="game.waterPlants()">
+                        🪴
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex justify-between text-xs mb-1">
+                            <span>Growth Cycle</span>
+                            <span id="plant-status">Idle</span>
+                        </div>
+                        <div class="w-full bg-slate-700 h-2 rounded-full overflow-hidden">
+                            <div id="plant-bar" class="bg-green-500 h-full w-0 transition-all duration-500"></div>
+                        </div>
+                    </div>
+                </div>
+                <button onclick="game.harvestPlants()" id="harvest-btn" class="mt-2 w-full py-2 bg-slate-700 hover:bg-green-600 text-slate-300 hover:text-white rounded text-xs font-mono transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                    HARVEST BIO-DATA
+                </button>
+            </div>
+
+            <!-- Center: The Bucket (Feeder) -->
+            <div class="glass-panel rounded-xl p-4 flex flex-col items-center justify-center relative">
+                <h3 class="absolute top-4 left-4 text-sm font-bold text-slate-300 uppercase tracking-wider">Algorithm Feed</h3>
+                
+                <div class="relative group cursor-pointer" onclick="game.refillFeed()">
+                    <div class="text-6xl transition-transform group-hover:rotate-12">🪣</div>
+                    <div id="feed-level" class="absolute bottom-2 left-1/2 -translate-x-1/2 w-8 h-1 bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.8)]"></div>
+                </div>
+                <p class="mt-2 text-xs text-slate-400 text-center">Click bucket to compile feed.<br>Drag feed to animals (Auto-Distribute).</p>
+                
+                <button onclick="game.distributeFeed()" class="mt-3 px-6 py-2 bg-gradient-to-r from-yellow-600 to-orange-600 rounded-full text-white text-xs font-bold shadow-lg hover:shadow-yellow-500/20 transition-all active:scale-95">
+                    BROADCAST FEED PACKETS
+                </button>
+            </div>
+
+            <!-- Right: The Laptop (Terminal) -->
+            <div class="glass-panel rounded-xl p-0 flex flex-col overflow-hidden border-l-4 border-l-purple-500 bg-black">
+                <div class="bg-slate-800 px-3 py-1 flex justify-between items-center">
+                    <span class="text-[10px] text-slate-400 font-mono">TERMINAL://LOGS</span>
+                    <div class="flex gap-1">
+                        <div class="w-2 h-2 rounded-full bg-red-500"></div>
+                        <div class="w-2 h-2 rounded-full bg-yellow-500"></div>
+                        <div class="w-2 h-2 rounded-full bg-green-500"></div>
+                    </div>
+                </div>
+                <div id="console-output" class="flex-grow p-3 font-mono text-xs text-green-400 overflow-y-auto space-y-1">
+                    <div class="opacity-50">> Initializing Cyber-Shepherd Protocol...</div>
+                    <div class="opacity-50">> Loading Neural-Goats... Done.</div>
+                    <div class="opacity-50">> Connecting to Bio-Grid... Done.</div>
+                    <div class="text-white">> System Ready. Waiting for input.</div>
+                </div>
+                <div class="p-2 bg-slate-900 border-t border-slate-800 flex">
+                    <span class="text-green-500 mr-2">></span>
+                    <input type="text" id="cmd-input" placeholder="Type 'help'..." class="bg-transparent border-none outline-none text-xs text-white w-full font-mono">
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        /* --- MATRIX RAIN EFFECT --- */
+        const canvas = document.getElementById('matrix-canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width = canvas.width = window.innerWidth;
+        let height = canvas.height = window.innerHeight;
+
+        const cols = Math.floor(width / 20);
+        const ypos = Array(cols).fill(0);
+
+        window.addEventListener('resize', () => {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        });
+
+        function matrix() {
+            ctx.fillStyle = '#0f172a10'; // Fade effect
+            ctx.fillRect(0, 0, width, height);
+
+            ctx.fillStyle = '#4c1d95'; // Purple rain
+            ctx.font = '15px monospace';
+
+            ypos.forEach((y, ind) => {
+                const text = String.fromCharCode(Math.random() * 128);
+                const x = ind * 20;
+                ctx.fillText(text, x, y);
+                if (y > 100 + Math.random() * 10000) ypos[ind] = 0;
+                else ypos[ind] = y + 20;
+            });
+        }
+        setInterval(matrix, 50);
+
+        /* --- GAME LOGIC --- */
+        
+        class Animal {
+            constructor(id, type, emoji, x, y) {
+                this.id = id;
+                this.type = type;
+                this.emoji = emoji;
+                this.x = x;
+                this.y = y;
+                this.hunger = 100; // 0 = starving, 100 = full
+                this.dataValue = 10; // Base value per click
+                this.element = null;
+                this.createDOM();
+            }
+
+            createDOM() {
+                const el = document.createElement('div');
+                el.className = 'animal-entity absolute text-4xl select-none transition-colors duration-300';
+                el.innerHTML = this.emoji;
+                el.style.left = `${this.x}%`;
+                el.style.top = `${this.y}%`;
+                
+                // Status indicator ring
+                const ring = document.createElement('div');
+                ring.className = 'absolute -inset-2 border-2 border-transparent rounded-full transition-all duration-300';
+                el.appendChild(ring);
+                this.ring = ring;
+
+                el.addEventListener('click', () => game.interact(this));
+                
+                document.getElementById('animal-container').appendChild(el);
+                this.element = el;
+            }
+
+            update() {
+                // Decrease hunger
+                this.hunger -= 0.05;
+                if (this.hunger < 0) this.hunger = 0;
+
+                // Visual updates
+                if (this.hunger < 30) {
+                    this.element.classList.add('glitch');
+                    this.element.style.filter = 'grayscale(100%)';
+                    this.ring.style.borderColor = 'red';
+                } else {
+                    this.element.classList.remove('glitch');
+                    this.element.style.filter = 'none';
+                    this.ring.style.borderColor = this.hunger > 80 ? '#4ade80' : 'transparent';
+                }
+
+                // Random movement drift
+                if (Math.random() < 0.01) {
+                    this.x += (Math.random() - 0.5) * 5;
+                    this.y += (Math.random() - 0.5) * 5;
+                    // Bounds check
+                    this.x = Math.max(5, Math.min(95, this.x));
+                    this.y = Math.max(10, Math.min(80, this.y));
+                    this.element.style.left = `${this.x}%`;
+                    this.element.style.top = `${this.y}%`;
+                }
+            }
+
+            feed() {
+                this.hunger = Math.min(100, this.hunger + 40);
+                this.createFloater("❤️ Synced", "text-green-400");
+            }
+
+            createFloater(text, colorClass) {
+                const float = document.createElement('div');
+                float.className = `absolute -top-8 left-1/2 -translate-x-1/2 text-xs font-bold ${colorClass} animate-bounce`;
+                float.innerText = text;
+                this.element.appendChild(float);
+                setTimeout(() => float.remove(), 1000);
+            }
+        }
+
+        const game = {
+            score: 0,
+            animals: [],
+            plantProgress: 0,
+            feedStock: 100,
+
+            init() {
+                // Spawn initial herd based on image
+                this.spawnAnimal('goat', '🐐', 20, 40);
+                this.spawnAnimal('goat', '🐐', 30, 50); // The big one
+                this.spawnAnimal('horse', '🐎', 70, 35);
+                this.spawnAnimal('pig', '🐖', 80, 60);
+                this.spawnAnimal('sheep', '🐑', 15, 70);
+                this.spawnAnimal('sheep', '🐑', 60, 65);
+                this.spawnAnimal('chicken', '🐓', 10, 55);
+
+                this.log("System initialized. Herd online.");
+                this.loop();
+
+                // Input listener
+                document.getElementById('cmd-input').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.handleCommand(e.target.value);
+                });
+            },
+
+            spawnAnimal(type, emoji, x, y) {
+                const animal = new Animal(this.animals.length, type, emoji, x, y);
+                this.animals.push(animal);
+            },
+
+            interact(animal) {
+                if (animal.hunger < 30) {
+                    this.log(`ERROR: ${animal.type.toUpperCase()} desynced! Feed required.`);
+                    animal.createFloater("⚠️ FEED ME", "text-red-500");
+                    return;
+                }
+
+                const gain = Math.floor(animal.dataValue * (animal.hunger / 50));
+                this.score += gain;
+                this.updateUI();
+                
+                // Visual feedback
+                animal.createFloater(`+${gain} TB`, "text-blue-300");
+                this.createParticles(animal.element);
+                
+                if(Math.random() > 0.8) this.log(`Harvested ${gain}TB from ${animal.type}.`);
+            },
+
+            waterPlants() {
+                if (this.plantProgress >= 100) return;
+                this.plantProgress += 20;
+                if (this.plantProgress > 100) this.plantProgress = 100;
+                
+                document.getElementById('plant-bar').style.width = `${this.plantProgress}%`;
+                
+                if (this.plantProgress === 100) {
+                    document.getElementById('plant-status').innerText = "READY";
+                    document.getElementById('plant-status').classList.add('text-green-400');
+                    document.getElementById('harvest-btn').disabled = false;
+                    this.log("Bio-Synthesizer ready for harvest.");
+                }
+            },
+
+            harvestPlants() {
+                const bonus = 500;
+                this.score += bonus;
+                this.plantProgress = 0;
+                document.getElementById('plant-bar').style.width = `0%`;
+                document.getElementById('plant-status').innerText = "Growing...";
+                document.getElementById('plant-status').classList.remove('text-green-400');
+                document.getElementById('harvest-btn').disabled = true;
+                this.log(`Bio-Data harvested: +${bonus}TB`);
+                this.updateUI();
+            },
+
+            refillFeed() {
+                this.feedStock = 100;
+                document.getElementById('feed-level').style.width = '100%';
+                this.log("Feed bucket compiled.");
+            },
+
+            distributeFeed() {
+                if (this.feedStock <= 0) {
+                    this.log("ERROR: Feed buffer empty. Click bucket to compile.");
+                    return;
+                }
+
+                this.feedStock = 0;
+                document.getElementById('feed-level').style.width = '0%';
+                
+                this.animals.forEach(a => a.feed());
+                this.log("Broadcasting feed packets to all nodes.");
+            },
+
+            updateUI() {
+                document.getElementById('score-display').innerText = `${this.score} TB`;
+                
+                // Calculate average hunger for sync rate
+                const avgHunger = this.animals.reduce((acc, curr) => acc + curr.hunger, 0) / this.animals.length;
+                document.getElementById('sync-rate').innerText = `${Math.floor(avgHunger)}%`;
+                document.getElementById('sync-rate').style.color = avgHunger > 50 ? '#4ade80' : '#ef4444';
+            },
+
+            log(msg) {
+                const consoleEl = document.getElementById('console-output');
+                const line = document.createElement('div');
+                line.innerHTML = `<span class="text-purple-400">[${new Date().toLocaleTimeString()}]</span> ${msg}`;
+                consoleEl.appendChild(line);
+                consoleEl.scrollTop = consoleEl.scrollHeight;
+            },
+
+            handleCommand(cmd) {
+                const input = document.getElementById('cmd-input');
+                input.value = '';
+                this.log(`> ${cmd}`);
+
+                const command = cmd.toLowerCase().trim();
+
+                if (command === 'help') {
+                    this.log("Available commands: status, feed, clear, harvest");
+                } else if (command === 'status') {
+                    this.log(`Herd Size: ${this.animals.length} | Data: ${this.score}TB`);
+                } else if (command === 'feed') {
+                    this.refillFeed();
+                    this.distributeFeed();
+                } else if (command === 'harvest') {
+                     this.animals.forEach(a => this.interact(a));
+                } else if (command === 'clear') {
+                    document.getElementById('console-output').innerHTML = '';
+                } else {
+                    this.log("Unknown command.");
+                }
+            },
+
+            createParticles(target) {
+                // Simple CSS particle effect
+                const rect = target.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+
+                for(let i=0; i<5; i++) {
+                    const p = document.createElement('div');
+                    p.className = 'fixed w-1 h-1 bg-blue-400 rounded-full pointer-events-none z-50';
+                    p.style.left = centerX + 'px';
+                    p.style.top = centerY + 'px';
+                    document.body.appendChild(p);
+
+                    const angle = Math.random() * Math.PI * 2;
+                    const velocity = 50 + Math.random() * 50;
+                    const tx = Math.cos(angle) * velocity;
+                    const ty = Math.sin(angle) * velocity;
+
+                    p.animate([
+                        { transform: 'translate(0,0) scale(1)', opacity: 1 },
+                        { transform: `translate(${tx}px, ${ty}px) scale(0)`, opacity: 0 }
+                    ], {
+                        duration: 800,
+                        easing: 'ease-out'
+                    }).onfinish = () => p.remove();
+                }
+            },
+
+            loop() {
+                this.animals.forEach(a => a.update());
+                this.updateUI();
+                requestAnimationFrame(() => this.loop());
+            }
+        };
+
+        // Start Game
+        window.onload = () => game.init();
+
+    </script>
+</body>
+</html>

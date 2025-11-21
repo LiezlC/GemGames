@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tactical Command Interface</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-blue: #00f3ff;
+            --neon-pink: #ff00ff;
+            --neon-purple: #bd00ff;
+            --neon-green: #00ff9d;
+            --bg-dark: #050a14;
+            --glass: rgba(0, 243, 255, 0.05);
+            --border: 1px solid rgba(0, 243, 255, 0.3);
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-dark);
+            color: var(--neon-blue);
+            font-family: 'Share Tech Mono', monospace;
+            overflow: hidden;
+            height: 100vh;
+            display: grid;
+            grid-template-rows: 60px 1fr 200px;
+            background-image: 
+                radial-gradient(circle at 50% 50%, #1a233a 0%, #050a14 100%);
+        }
+
+        /* Scanlines Overlay */
+        body::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+            z-index: 999;
+            opacity: 0.6;
+        }
+
+        /* Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            border-bottom: var(--border);
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+            z-index: 10;
+        }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 24px;
+            text-shadow: 0 0 10px var(--neon-blue);
+            margin: 0;
+            letter-spacing: 2px;
+        }
+
+        .status-bar {
+            display: flex;
+            gap: 20px;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--neon-green);
+            box-shadow: 0 0 10px var(--neon-green);
+            animation: blink 2s infinite;
+        }
+
+        /* Main Layout */
+        main {
+            display: grid;
+            grid-template-columns: 300px 1fr 300px;
+            gap: 10px;
+            padding: 10px;
+            position: relative;
+        }
+
+        /* Panels */
+        .panel {
+            background: var(--glass);
+            border: var(--border);
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .panel::before {
+            content: '';
+            position: absolute;
+            top: -1px; left: -1px;
+            width: 10px; height: 10px;
+            border-top: 2px solid var(--neon-blue);
+            border-left: 2px solid var(--neon-blue);
+        }
+        .panel::after {
+            content: '';
+            position: absolute;
+            bottom: -1px; right: -1px;
+            width: 10px; height: 10px;
+            border-bottom: 2px solid var(--neon-blue);
+            border-right: 2px solid var(--neon-blue);
+        }
+
+        .panel-title {
+            font-family: 'Orbitron';
+            color: var(--neon-pink);
+            margin-bottom: 10px;
+            font-size: 14px;
+            text-transform: uppercase;
+            border-bottom: 1px solid rgba(255, 0, 255, 0.3);
+            padding-bottom: 5px;
+        }
+
+        /* Left Panel: Personnel / Units */
+        .unit-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow-y: auto;
+        }
+
+        .unit {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            background: rgba(0,0,0,0.3);
+            border-left: 3px solid var(--neon-blue);
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .unit:hover {
+            background: rgba(0, 243, 255, 0.1);
+            border-left-color: var(--neon-pink);
+        }
+        .unit-avatar {
+            width: 30px; height: 30px;
+            background: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 12px;
+        }
+
+        /* Center: The Map */
+        .map-container {
+            position: relative;
+            flex: 1;
+            background: radial-gradient(circle, rgba(0,20,40,0.8) 0%, rgba(0,0,0,0.9) 100%);
+            border: var(--border);
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .grid-lines {
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background-image: 
+                linear-gradient(var(--glass) 1px, transparent 1px),
+                linear-gradient(90deg, var(--glass) 1px, transparent 1px);
+            background-size: 50px 50px;
+            transform: perspective(500px) rotateX(60deg) translateY(-100px) translateZ(-200px);
+            animation: gridMove 20s linear infinite;
+            opacity: 0.3;
+        }
+
+        /* SVG Map */
+        #world-map {
+            width: 90%;
+            height: 90%;
+            filter: drop-shadow(0 0 10px var(--neon-blue));
+            z-index: 2;
+        }
+        .land {
+            fill: rgba(0, 243, 255, 0.1);
+            stroke: var(--neon-blue);
+            stroke-width: 1;
+            cursor: crosshair;
+            transition: 0.3s;
+        }
+        .land:hover {
+            fill: rgba(0, 243, 255, 0.3);
+        }
+        .target-point {
+            fill: var(--neon-pink);
+            animation: pulse 1.5s infinite;
+        }
+
+        /* Waveform Overlay */
+        #waveform {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 100px;
+            pointer-events: none;
+            z-index: 3;
+            opacity: 0.7;
+        }
+
+        /* Right Panel: Analytics */
+        .chart-container {
+            display: flex;
+            align-items: flex-end;
+            gap: 5px;
+            height: 100px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 5px;
+        }
+        .bar {
+            flex: 1;
+            background: var(--neon-blue);
+            transition: height 0.5s ease;
+            opacity: 0.7;
+        }
+        .bar:nth-child(even) { background: var(--neon-purple); }
+
+        .log-feed {
+            font-size: 10px;
+            color: #aaa;
+            overflow: hidden;
+            font-family: monospace;
+        }
+        .log-entry { margin-bottom: 4px; }
+        .log-time { color: var(--neon-green); margin-right: 5px; }
+
+        /* Bottom: Holographic Table */
+        .holo-deck {
+            grid-column: 1 / -1;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8), rgba(20,20,40,0.9));
+            border-top: var(--border);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 40px;
+            position: relative;
+            perspective: 1000px;
+        }
+
+        /* Hologram Items */
+        .holo-item {
+            width: 80px;
+            height: 80px;
+            position: relative;
+            cursor: pointer;
+            transform-style: preserve-3d;
+            transition: transform 0.3s;
+        }
+        
+        .holo-item:hover {
+            transform: scale(1.1) translateY(-10px);
+        }
+
+        .holo-base {
+            position: absolute;
+            bottom: -20px;
+            left: 10px;
+            width: 60px;
+            height: 20px;
+            background: radial-gradient(ellipse at center, var(--neon-blue) 0%, transparent 70%);
+            opacity: 0.5;
+            transform: rotateX(60deg);
+        }
+
+        .holo-shape {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 40px;
+            animation: float 3s ease-in-out infinite;
+            filter: drop-shadow(0 0 10px currentColor);
+        }
+
+        /* Specific Hologram Colors */
+        .h-vr { color: #fff; }
+        .h-star { color: var(--neon-purple); }
+        .h-shield { color: var(--neon-green); }
+        .h-head { color: var(--neon-blue); }
+
+        /* Active Selection Highlight */
+        .holo-item.active .holo-base {
+            background: radial-gradient(ellipse at center, var(--neon-pink) 0%, transparent 70%);
+            opacity: 1;
+        }
+        .holo-item.active .holo-shape {
+            animation: spinY 4s linear infinite;
+        }
+
+        /* Animations */
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+        @keyframes pulse { 0% { r: 2; opacity: 1; } 100% { r: 10; opacity: 0; } }
+        @keyframes gridMove { 0% { background-position: 0 0; } 100% { background-position: 0 50px; } }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        @keyframes spinY { 0% { transform: rotateY(0deg); } 100% { transform: rotateY(360deg); } }
+
+        /* Modal/Overlay for VR Mode */
+        #vr-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 2000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            color: var(--neon-green);
+        }
+        .vr-text {
+            font-family: 'Orbitron';
+            font-size: 40px;
+            animation: blink 0.5s infinite;
+        }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <div style="display:flex; align-items:center; gap:10px;">
+            <span style="font-size:24px;">🌐</span>
+            <h1>TACTICAL COMMAND <span style="font-size:12px; color:var(--neon-pink);">v.9.0</span></h1>
+        </div>
+        <div class="status-bar">
+            <div class="status-item">
+                <div class="indicator"></div> SYSTEM ONLINE
+            </div>
+            <div class="status-item" style="color:var(--neon-pink)">
+                DEFCON 3
+            </div>
+            <div class="status-item" id="clock">
+                00:00:00
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- Left Panel: Units -->
+        <div class="panel">
+            <div class="panel-title">Active Units</div>
+            <div class="unit-list">
+                <div class="unit" onclick="selectUnit(this, 'Alpha')">
+                    <div class="unit-avatar">A1</div>
+                    <div>
+                        <div style="font-weight:bold;">Sgt. Alpha</div>
+                        <div style="font-size:10px; color:#aaa;">Status: Patrol</div>
+                    </div>
+                </div>
+                <div class="unit" onclick="selectUnit(this, 'Bravo')">
+                    <div class="unit-avatar">B2</div>
+                    <div>
+                        <div style="font-weight:bold;">Lt. Bravo</div>
+                        <div style="font-size:10px; color:#aaa;">Status: Standby</div>
+                    </div>
+                </div>
+                <div class="unit" onclick="selectUnit(this, 'Charlie')">
+                    <div class="unit-avatar">C3</div>
+                    <div>
+                        <div style="font-weight:bold;">Cpt. Charlie</div>
+                        <div style="font-size:10px; color:#aaa;">Status: Analyzing</div>
+                    </div>
+                </div>
+                <div class="unit" onclick="selectUnit(this, 'Delta')">
+                    <div class="unit-avatar">D4</div>
+                    <div>
+                        <div style="font-weight:bold;">Spc. Delta</div>
+                        <div style="font-size:10px; color:#aaa;">Status: Offline</div>
+                    </div>
+                </div>
+            </div>
+            <div style="margin-top: auto; padding-top:10px; border-top:1px solid #333;">
+                <div style="font-size:10px; color:var(--neon-blue);">SIGNAL STRENGTH</div>
+                <div style="width:100%; height:5px; background:#333; margin-top:5px;">
+                    <div style="width:85%; height:100%; background:var(--neon-blue);"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center: Map -->
+        <div class="map-container" id="map-area">
+            <div class="grid-lines"></div>
+            <canvas id="waveform"></canvas>
+            
+            <!-- Simplified Abstract World Map SVG -->
+            <svg id="world-map" viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
+                <!-- South Americaish Shape -->
+                <path class="land" d="M250,200 L280,180 L320,190 L340,250 L320,320 L290,350 L260,300 Z" onclick="pingLocation(300, 250, 'Sector 4')"/>
+                <!-- Africaish Shape -->
+                <path class="land" d="M400,150 L450,140 L480,180 L470,250 L440,280 L410,240 L390,200 Z" onclick="pingLocation(440, 200, 'Sector 7')"/>
+                <!-- Europe/Asiaish Shape -->
+                <path class="land" d="M380,100 L450,80 L550,90 L600,150 L550,180 L480,130 L400,120 Z" onclick="pingLocation(500, 120, 'Sector 2')"/>
+                <!-- North Americaish Shape -->
+                <path class="land" d="M150,80 L250,70 L280,120 L240,160 L180,140 L140,100 Z" onclick="pingLocation(200, 110, 'Sector 1')"/>
+                
+                <!-- Dynamic Target Circles will be appended here via JS -->
+            </svg>
+
+            <div style="position:absolute; top:10px; right:10px; text-align:right;">
+                <div style="font-size:12px; color:var(--neon-blue);">GLOBAL MONITOR</div>
+                <div style="font-size:20px; font-weight:bold;" id="coord-display">LAT: 00.00 LON: 00.00</div>
+            </div>
+        </div>
+
+        <!-- Right Panel: Data -->
+        <div class="panel">
+            <div class="panel-title">Network Traffic</div>
+            <div class="chart-container" id="traffic-chart">
+                <!-- Bars generated by JS -->
+            </div>
+            
+            <div class="panel-title">Threat Analysis</div>
+            <div class="chart-container" id="threat-chart">
+                <!-- Bars generated by JS -->
+            </div>
+
+            <div class="panel-title">System Log</div>
+            <div class="log-feed" id="log-feed">
+                <div class="log-entry"><span class="log-time">10:00:01</span> System initialized.</div>
+                <div class="log-entry"><span class="log-time">10:00:05</span> Connection established.</div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Bottom: Holo Deck -->
+    <div class="holo-deck">
+        <!-- VR Headset: Simulation Mode -->
+        <div class="holo-item" onclick="activateHolo(this, 'VR')">
+            <div class="holo-shape h-vr">🥽</div>
+            <div class="holo-base"></div>
+            <div style="text-align:center; font-size:10px; margin-top:5px; color:#fff;">SIMULATION</div>
+        </div>
+
+        <!-- Star: Priority Target -->
+        <div class="holo-item" onclick="activateHolo(this, 'STAR')">
+            <div class="holo-shape h-star">⭐</div>
+            <div class="holo-base"></div>
+            <div style="text-align:center; font-size:10px; margin-top:5px; color:var(--neon-purple);">PRIORITY</div>
+        </div>
+
+        <!-- Shield: Defense -->
+        <div class="holo-item" onclick="activateHolo(this, 'SHIELD')">
+            <div class="holo-shape h-shield">🛡️</div>
+            <div class="holo-base"></div>
+            <div style="text-align:center; font-size:10px; margin-top:5px; color:var(--neon-green);">DEFENSE</div>
+        </div>
+
+        <!-- Head: AI Intel -->
+        <div class="holo-item active" onclick="activateHolo(this, 'AI')">
+            <div class="holo-shape h-head">🤖</div>
+            <div class="holo-base"></div>
+            <div style="text-align:center; font-size:10px; margin-top:5px; color:var(--neon-blue);">AI INTEL</div>
+        </div>
+    </div>
+
+    <!-- VR Overlay -->
+    <div id="vr-overlay" onclick="this.style.display='none'">
+        <div class="vr-text">SIMULATION MODE ACTIVE</div>
+        <div style="margin-top:20px; font-size:14px;">Click anywhere to exit</div>
+    </div>
+
+    <script>
+        // Clock
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('clock').innerText = now.toLocaleTimeString();
+        }, 1000);
+
+        // Chart Generator
+        function createBars(containerId, count, colorVar) {
+            const container = document.getElementById(containerId);
+            for(let i=0; i<count; i++) {
+                const bar = document.createElement('div');
+                bar.className = 'bar';
+                bar.style.height = Math.random() * 100 + '%';
+                container.appendChild(bar);
+            }
+        }
+
+        createBars('traffic-chart', 10);
+        createBars('threat-chart', 10);
+
+        // Animate Charts
+        setInterval(() => {
+            document.querySelectorAll('.bar').forEach(bar => {
+                if(Math.random() > 0.5) {
+                    bar.style.height = Math.random() * 100 + '%';
+                }
+            });
+            
+            // Random Coordinates update
+            document.getElementById('coord-display').innerText = 
+                `LAT: ${Math.floor(Math.random()*90)}.${Math.floor(Math.random()*99)} LON: ${Math.floor(Math.random()*180)}.${Math.floor(Math.random()*99)}`;
+
+        }, 800);
+
+        // Log Feed
+        function addLog(msg) {
+            const feed = document.getElementById('log-feed');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            const time = new Date().toLocaleTimeString();
+            entry.innerHTML = `<span class="log-time">${time}</span> ${msg}`;
+            feed.prepend(entry);
+            if(feed.children.length > 6) feed.lastChild.remove();
+        }
+
+        // Map Interaction
+        function pingLocation(cx, cy, sectorName) {
+            const svg = document.getElementById('world-map');
+            
+            // Create ping circle
+            const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            circle.setAttribute("cx", cx);
+            circle.setAttribute("cy", cy);
+            circle.setAttribute("r", "5");
+            circle.setAttribute("class", "target-point");
+            svg.appendChild(circle);
+
+            addLog(`Signal detected in ${sectorName}. Analyzing...`);
+
+            // Remove after animation
+            setTimeout(() => {
+                circle.remove();
+            }, 2000);
+        }
+
+        // Unit Selection
+        function selectUnit(el, name) {
+            document.querySelectorAll('.unit').forEach(u => u.style.background = 'rgba(0,0,0,0.3)');
+            el.style.background = 'rgba(0, 243, 255, 0.2)';
+            addLog(`Commander selected: ${name}`);
+        }
+
+        // Hologram Activation
+        function activateHolo(el, type) {
+            document.querySelectorAll('.holo-item').forEach(i => i.classList.remove('active'));
+            el.classList.add('active');
+
+            if (type === 'VR') {
+                document.getElementById('vr-overlay').style.display = 'flex';
+                addLog("Entering Neural Simulation...");
+            } else if (type === 'STAR') {
+                addLog("Priority Targets Highlighted.");
+                document.body.style.setProperty('--neon-blue', '#bd00ff'); // Change theme to purple
+            } else if (type === 'SHIELD') {
+                addLog("Defense Grid Activated.");
+                document.body.style.setProperty('--neon-blue', '#00ff9d'); // Change theme to green
+            } else {
+                addLog("AI Intel Analysis Resumed.");
+                document.body.style.setProperty('--neon-blue', '#00f3ff'); // Reset theme
+            }
+        }
+
+        // Waveform Animation (Canvas)
+        const canvas = document.getElementById('waveform');
+        const ctx = canvas.getContext('2d');
+        let offset = 0;
+
+        function resizeCanvas() {
+            canvas.width = canvas.parentElement.offsetWidth;
+            canvas.height = 100;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function drawWave() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.beginPath();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--neon-purple');
+            
+            for (let i = 0; i < canvas.width; i++) {
+                const y = 50 + Math.sin((i + offset) * 0.02) * 20 * Math.sin(offset * 0.05);
+                ctx.lineTo(i, y);
+            }
+            ctx.stroke();
+            offset += 2;
+            requestAnimationFrame(drawWave);
+        }
+        drawWave();
+
+    </script>
+</body>
+</html>

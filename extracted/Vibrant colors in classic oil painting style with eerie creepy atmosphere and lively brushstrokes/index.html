@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Midnight Village Mystery</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lato:wght@400;700&display=swap');
+
+        :root {
+            --color-bg-top: #1a2a3a;
+            --color-bg-mid: #2b5a5f;
+            --color-bg-bot: #132226;
+            --glow-yellow: #f9d71c;
+            --glow-green: #4ade80;
+            --glow-red: #f87171;
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: linear-gradient(to bottom, #0f172a, #1e293b);
+            font-family: 'Lato', sans-serif;
+            color: white;
+            height: 100vh;
+            width: 100vw;
+            user-select: none;
+        }
+
+        /* The World Container */
+        #game-world {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 60% 20%, #374151 0%, #111827 40%, #000000 100%);
+            overflow: hidden;
+            cursor: crosshair;
+        }
+
+        /* Sky Elements */
+        .moon {
+            position: absolute;
+            top: 10%;
+            right: 25%;
+            width: 120px;
+            height: 120px;
+            background: radial-gradient(circle, #fef08a, #fbbf24);
+            border-radius: 50%;
+            box-shadow: 0 0 60px 20px rgba(251, 191, 36, 0.4);
+            transition: transform 0.5s ease;
+            z-index: 1;
+        }
+        .moon:hover {
+            transform: scale(1.1);
+            cursor: pointer;
+        }
+
+        /* Fog Animation */
+        .fog {
+            position: absolute;
+            width: 200%;
+            height: 100%;
+            background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23noise)" opacity="0.4"/></svg>');
+            opacity: 0.1;
+            animation: drift 60s linear infinite;
+            pointer-events: none;
+            z-index: 5;
+            mix-blend-mode: screen;
+        }
+        @keyframes drift {
+            from { transform: translateX(0); }
+            to { transform: translateX(-50%); }
+        }
+
+        /* Ground */
+        .ground {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 40%;
+            background: linear-gradient(to top, #050505, #0f2e2e 60%, transparent);
+            z-index: 2;
+            clip-path: polygon(0 20%, 20% 10%, 50% 25%, 80% 15%, 100% 30%, 100% 100%, 0 100%);
+        }
+
+        /* Houses - CSS Art */
+        .house {
+            position: absolute;
+            z-index: 3;
+            transition: filter 0.3s;
+        }
+        .house:hover {
+            filter: drop-shadow(0 0 15px rgba(255,255,255,0.2));
+        }
+
+        /* Left House (Red) */
+        .house-left {
+            bottom: 15%;
+            left: 5%;
+            width: 180px;
+            height: 250px;
+        }
+        .hl-roof {
+            width: 100%;
+            height: 100px;
+            background: #7f1d1d;
+            clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+            position: absolute;
+            top: 0;
+        }
+        .hl-body {
+            width: 80%;
+            height: 150px;
+            background: #450a0a;
+            position: absolute;
+            bottom: 0;
+            left: 10%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .window {
+            width: 30px;
+            height: 40px;
+            background: #333;
+            border-radius: 20px 20px 0 0;
+            transition: background 0.5s, box-shadow 0.5s;
+            cursor: pointer;
+            border: 2px solid #1a1a1a;
+        }
+        .window.lit {
+            background: #facc15;
+            box-shadow: 0 0 20px #facc15;
+        }
+
+        /* Center House (Spooky) */
+        .house-center {
+            bottom: 20%;
+            left: 40%;
+            width: 200px;
+            height: 300px;
+            z-index: 2;
+        }
+        .hc-roof {
+            width: 100%;
+            height: 120px;
+            background: #1e1b4b;
+            clip-path: polygon(20% 0%, 0% 100%, 100% 100%);
+            position: absolute;
+            top: 0;
+        }
+        .hc-body {
+            width: 90%;
+            height: 180px;
+            background: #0f172a;
+            position: absolute;
+            bottom: 0;
+            left: 5%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            padding-bottom: 10px;
+        }
+        .door {
+            width: 50px;
+            height: 80px;
+            background: #064e3b;
+            border-radius: 30px 30px 0 0;
+            border: 2px solid #022c22;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .door:hover {
+            background: #10b981;
+            box-shadow: 0 0 30px #10b981;
+        }
+
+        /* Right House (Tall) */
+        .house-right {
+            bottom: 18%;
+            right: 5%;
+            width: 160px;
+            height: 350px;
+        }
+        .hr-roof {
+            width: 100%;
+            height: 150px;
+            background: #312e81;
+            clip-path: polygon(50% 0%, 10% 100%, 90% 100%);
+            position: absolute;
+            top: 0;
+        }
+        .hr-body {
+            width: 70%;
+            height: 200px;
+            background: #172554;
+            position: absolute;
+            bottom: 0;
+            left: 15%;
+            display: flex;
+            justify-content: center;
+            padding-top: 20px;
+        }
+
+        /* Characters */
+        .character {
+            position: absolute;
+            font-size: 3rem;
+            filter: drop-shadow(0 5px 5px rgba(0,0,0,0.8));
+            cursor: pointer;
+            transition: transform 0.2s;
+            z-index: 4;
+        }
+        .character:hover {
+            transform: scale(1.1) translateY(-5px);
+        }
+        .watcher-main { bottom: 25%; left: 48%; font-size: 4rem; z-index: 4; }
+        .watcher-left { bottom: 15%; left: 20%; transform: scaleX(-1); }
+        .watcher-right { bottom: 12%; right: 25%; }
+        .cat { top: 15%; left: 15%; font-size: 2rem; animation: float 3s ease-in-out infinite; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* Collectibles */
+        .item {
+            position: absolute;
+            cursor: pointer;
+            transition: transform 0.2s, opacity 0.5s;
+            z-index: 4;
+            animation: pulse 2s infinite;
+        }
+        .item:hover { transform: scale(1.2); }
+        @keyframes pulse {
+            0% { filter: drop-shadow(0 0 2px red); }
+            50% { filter: drop-shadow(0 0 8px red); }
+            100% { filter: drop-shadow(0 0 2px red); }
+        }
+
+        /* CSS Shapes for "Red Planks" from image */
+        .plank {
+            width: 60px;
+            height: 15px;
+            background: #ef4444;
+            transform: rotate(15deg);
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+        }
+
+        /* UI Overlay */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+        }
+
+        .hud-panel {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 15px;
+            pointer-events: auto;
+            color: #e2e8f0;
+            max-width: 300px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+
+        h1 { font-family: 'Cinzel', serif; color: #facc15; margin-bottom: 5px; font-size: 1.2rem; }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #334155;
+            border-radius: 4px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: #10b981;
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        #message-box {
+            position: absolute;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.85);
+            border: 1px solid #facc15;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            max-width: 500px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            font-family: 'Cinzel', serif;
+            color: #facc15;
+            font-size: 1.1rem;
+        }
+        #message-box.visible { opacity: 1; }
+
+        /* Inventory */
+        .inventory-slot {
+            width: 40px;
+            height: 40px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        /* Tree CSS */
+        .tree {
+            position: absolute;
+            bottom: 20%;
+            width: 10px;
+            height: 200px;
+            background: #111;
+            z-index: 2;
+        }
+        .tree-branch {
+            position: absolute;
+            background: #111;
+            height: 5px;
+        }
+        .tree-left { left: -20px; transform: rotate(-10deg); height: 400px; width: 40px; bottom: 0; }
+        .tree-right { right: -10px; transform: rotate(5deg); height: 350px; width: 30px; bottom: 0; }
+        
+        /* Particles */
+        .particle {
+            position: absolute;
+            background: #facc15;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: floatUp 4s linear infinite;
+            opacity: 0;
+        }
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(0); opacity: 0; }
+            50% { opacity: 0.8; }
+            100% { transform: translateY(-100px) scale(1); opacity: 0; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="game-world">
+        <!-- Sky -->
+        <div class="fog"></div>
+        <div class="moon" id="moon" onclick="handleInteraction('moon')"></div>
+
+        <!-- Environment -->
+        <div class="tree tree-left">
+            <div class="tree-branch" style="width: 100px; top: 50px; left: 20px; transform: rotate(-20deg);"></div>
+            <div class="tree-branch" style="width: 80px; top: 120px; left: -40px; transform: rotate(20deg);"></div>
+        </div>
+        <div class="tree tree-right">
+             <div class="tree-branch" style="width: 120px; top: 80px; left: -80px; transform: rotate(15deg);"></div>
+        </div>
+
+        <!-- Houses -->
+        <div class="house house-left">
+            <div class="hl-roof"></div>
+            <div class="hl-body">
+                <div class="window" id="win1" onclick="toggleLight('win1')"></div>
+            </div>
+        </div>
+
+        <div class="house house-center">
+            <div class="hc-roof"></div>
+            <div class="hc-body">
+                <div class="window" style="width: 40px; height: 40px; margin-bottom: 20px;" id="win2" onclick="toggleLight('win2')"></div>
+                <div class="door" id="door" onclick="handleInteraction('door')"></div>
+            </div>
+        </div>
+
+        <div class="house house-right">
+            <div class="hr-roof"></div>
+            <div class="hr-body">
+                <div class="window" id="win3" onclick="toggleLight('win3')"></div>
+            </div>
+        </div>
+
+        <!-- Ground & Characters -->
+        <div class="ground"></div>
+        
+        <div class="character watcher-main" onclick="handleInteraction('watcher')">🕴️</div>
+        <div class="character watcher-left" onclick="handleInteraction('pilgrim1')">🧙‍♂️</div>
+        <div class="character watcher-right" onclick="handleInteraction('pilgrim2')">🧙</div>
+        <div class="character cat" onclick="handleInteraction('cat')">🐈‍⬛</div>
+
+        <!-- Items (Generated by JS) -->
+        <div id="items-container"></div>
+
+    </div>
+
+    <!-- UI Layer -->
+    <div id="ui-layer">
+        <div class="flex justify-between w-full">
+            <div class="hud-panel">
+                <h1>Midnight Mystery</h1>
+                <p class="text-sm text-slate-300">The village is in disarray. Help the Night Watch restore order.</p>
+                <div class="mt-4 text-xs uppercase tracking-widest text-slate-400">Restoration Progress</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <div class="mt-2 text-xs text-right" id="progress-text">0%</div>
+            </div>
+            
+            <div class="hud-panel">
+                <div class="text-xs uppercase tracking-widest text-slate-400 mb-2">Inventory</div>
+                <div class="flex gap-2" id="inventory">
+                    <div class="inventory-slot"></div>
+                    <div class="inventory-slot"></div>
+                    <div class="inventory-slot"></div>
+                    <div class="inventory-slot"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="message-box"></div>
+    </div>
+
+    <script>
+        // Game State
+        const state = {
+            lightsLit: 0,
+            itemsCollected: 0,
+            totalLights: 3,
+            totalItems: 5,
+            doorOpen: false,
+            inventory: []
+        };
+
+        const itemsData = [
+            { id: 'scroll1', emoji: '📜', x: 20, y: 85, type: 'item', desc: 'An ancient prophecy scroll.' },
+            { id: 'plank1', type: 'plank', x: 35, y: 90, desc: 'A red ceremonial plank.' },
+            { id: 'plank2', type: 'plank', x: 60, y: 88, desc: 'Debris from the old shrine.' },
+            { id: 'potion', emoji: '🧪', x: 75, y: 82, type: 'item', desc: 'Strange glowing liquid.' },
+            { id: 'key', emoji: '🗝️', x: 50, y: 75, type: 'item', desc: 'A rusty iron key.' }
+        ];
+
+        // Initialization
+        function init() {
+            renderItems();
+            createParticles();
+            showMessage("Welcome to Eldermoor. The spirits are restless. Clean the debris and light the windows.");
+        }
+
+        // Render Items on Ground
+        function renderItems() {
+            const container = document.getElementById('items-container');
+            itemsData.forEach(item => {
+                const el = document.createElement('div');
+                el.className = 'item';
+                el.style.left = item.x + '%';
+                el.style.top = item.y + '%';
+                el.id = item.id;
+                
+                if (item.type === 'plank') {
+                    el.className = 'item plank';
+                } else {
+                    el.innerText = item.emoji;
+                    el.style.fontSize = '2rem';
+                }
+
+                el.onclick = (e) => {
+                    e.stopPropagation();
+                    collectItem(item);
+                    el.style.transform = 'scale(0) rotate(360deg)';
+                    setTimeout(() => el.remove(), 500);
+                };
+                container.appendChild(el);
+            });
+        }
+
+        // Interactions
+        function collectItem(item) {
+            state.itemsCollected++;
+            state.inventory.push(item.emoji || '🪵');
+            updateInventory();
+            checkProgress();
+            showMessage(`Collected: ${item.desc}`);
+        }
+
+        function toggleLight(id) {
+            const win = document.getElementById(id);
+            if (!win.classList.contains('lit')) {
+                win.classList.add('lit');
+                state.lightsLit++;
+                checkProgress();
+                showMessage("A light flickers on in the darkness.");
+            } else {
+                showMessage("The light is already burning bright.");
+            }
+        }
+
+        function handleInteraction(type) {
+            switch(type) {
+                case 'moon':
+                    document.body.style.filter = document.body.style.filter === 'hue-rotate(90deg)' ? 'none' : 'hue-rotate(90deg)';
+                    showMessage("The moon shifts phases... the world looks different.");
+                    break;
+                case 'watcher':
+                    if (state.itemsCollected >= state.totalItems) {
+                        showMessage("Watcher: 'You have cleared the path. Enter the Green Door.'");
+                    } else {
+                        showMessage("Watcher: 'The path is cluttered. Clear the red debris first.'");
+                    }
+                    break;
+                case 'door':
+                    if (state.lightsLit === state.totalLights && state.itemsCollected >= state.totalItems) {
+                        showMessage("THE DOOR OPENS! You have saved the village!");
+                        triggerWin();
+                    } else {
+                        showMessage("The door is locked by shadow. Light all windows and clear the ground.");
+                    }
+                    break;
+                case 'cat':
+                    showMessage("Meow. The cat stares at the invisible ghosts.");
+                    break;
+                case 'pilgrim1':
+                    showMessage("Pilgrim: 'We are painting the runes... or are we erasing them?'");
+                    break;
+                case 'pilgrim2':
+                    showMessage("Pilgrim: 'Be careful of the red planks. They are cursed.'");
+                    break;
+            }
+        }
+
+        // UI Updates
+        function updateInventory() {
+            const slots = document.querySelectorAll('.inventory-slot');
+            state.inventory.forEach((item, index) => {
+                if (slots[index]) slots[index].innerText = item;
+            });
+        }
+
+        function checkProgress() {
+            const totalTasks = state.totalLights + state.totalItems;
+            const current = state.lightsLit + state.itemsCollected;
+            const pct = Math.round((current / totalTasks) * 100);
+            
+            document.getElementById('progress-fill').style.width = pct + '%';
+            document.getElementById('progress-text').innerText = pct + '%';
+        }
+
+        function showMessage(text) {
+            const box = document.getElementById('message-box');
+            box.innerText = text;
+            box.classList.add('visible');
+            
+            // Clear previous timeout if exists
+            if (window.msgTimeout) clearTimeout(window.msgTimeout);
+            
+            window.msgTimeout = setTimeout(() => {
+                box.classList.remove('visible');
+            }, 4000);
+        }
+
+        function triggerWin() {
+            const door = document.getElementById('door');
+            door.style.background = 'white';
+            door.style.boxShadow = '0 0 100px white';
+            
+            setTimeout(() => {
+                alert("CONGRATULATIONS! You restored the village.");
+                location.reload();
+            }, 2000);
+        }
+
+        // Ambient Particles
+        function createParticles() {
+            const container = document.getElementById('game-world');
+            for(let i=0; i<20; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                p.style.left = Math.random() * 100 + '%';
+                p.style.top = Math.random() * 100 + '%';
+                p.style.width = Math.random() * 4 + 'px';
+                p.style.height = p.style.width;
+                p.style.animationDelay = Math.random() * 5 + 's';
+                p.style.animationDuration = (Math.random() * 5 + 5) + 's';
+                container.appendChild(p);
+            }
+        }
+
+        init();
+
+    </script>
+</body>
+</html>

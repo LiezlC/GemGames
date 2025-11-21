@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BitSoil SageByte: The Architecture of Mending</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;1,300&family=Inter:wght@400;600&display=swap');
+
+        :root {
+            --terra-color: #8D6E63;
+            --silas-color: #5D4037;
+            --kai-color: #37474F;
+            --paloma-color: #E6C17A;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1c1917; /* stone-900 */
+            color: #e7e5e4; /* stone-200 */
+            overflow: hidden;
+        }
+
+        .serif {
+            font-family: 'Merriweather', serif;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #292524; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #44403c; 
+            border-radius: 4px;
+        }
+
+        /* Animations */
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+        
+        @keyframes build-up {
+            0% { transform: scaleY(0); opacity: 0; transform-origin: bottom; }
+            100% { transform: scaleY(1); opacity: 1; transform-origin: bottom; }
+        }
+
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-build {
+            animation: build-up 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        .animate-fade-in {
+            animation: fade-in 0.8s ease-out forwards;
+        }
+
+        /* Material Textures via CSS */
+        .texture-cob {
+            background-color: #8D6E63;
+            background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.15'/%3E%3C/svg%3E");
+            border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+        }
+
+        .texture-log {
+            background: repeating-linear-gradient(
+                0deg,
+                #5D4037,
+                #5D4037 10px,
+                #4E342E 10px,
+                #4E342E 20px
+            );
+            border-radius: 4px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        .texture-tires {
+            background-color: #262626;
+            background-image: radial-gradient(circle at center, #171717 40%, transparent 41%);
+            background-size: 20px 20px;
+            border-radius: 8px;
+        }
+
+        .texture-straw {
+            background-color: #E6C17A;
+            background-image: repeating-linear-gradient(
+                45deg,
+                rgba(0,0,0,0.05) 0px,
+                rgba(0,0,0,0.05) 2px,
+                transparent 2px,
+                transparent 4px
+            );
+            border: 1px solid #D4A017;
+        }
+
+        /* Interactive Elements */
+        .action-btn {
+            transition: all 0.1s;
+        }
+        .action-btn:active {
+            transform: scale(0.95);
+        }
+
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            animation: fade-out 1s forwards;
+        }
+        @keyframes fade-out {
+            0% { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+        }
+
+        .glass-panel {
+            background: rgba(41, 37, 36, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col md:flex-row">
+
+    <!-- Left Panel: Narrative -->
+    <div class="w-full md:w-1/3 h-1/2 md:h-full border-r border-stone-800 flex flex-col bg-stone-900 z-10 shadow-2xl">
+        <div class="p-6 border-b border-stone-800 bg-stone-950">
+            <h1 class="text-xl font-bold text-amber-500 tracking-wider uppercase text-xs mb-1">BitSoil SageByte</h1>
+            <h2 class="text-2xl font-serif text-stone-100 leading-tight">The Architecture of Mending</h2>
+            <p class="text-stone-500 text-sm mt-2">By Liezl Coetzee</p>
+        </div>
+        
+        <div id="story-container" class="flex-1 overflow-y-auto p-8 space-y-6 relative">
+            <!-- Story content injected here -->
+            <div id="story-content" class="space-y-6 pb-20"></div>
+            <div class="h-12"></div> 
+        </div>
+
+        <!-- Progress Indicator -->
+        <div class="p-4 bg-stone-950 border-t border-stone-800 flex justify-between items-center">
+            <span class="text-xs text-stone-500 uppercase tracking-widest">Chapter <span id="chapter-num">1</span>/6</span>
+            <div class="flex gap-1">
+                <div id="pip-1" class="w-2 h-2 rounded-full bg-amber-600"></div>
+                <div id="pip-2" class="w-2 h-2 rounded-full bg-stone-800"></div>
+                <div id="pip-3" class="w-2 h-2 rounded-full bg-stone-800"></div>
+                <div id="pip-4" class="w-2 h-2 rounded-full bg-stone-800"></div>
+                <div id="pip-5" class="w-2 h-2 rounded-full bg-stone-800"></div>
+                <div id="pip-6" class="w-2 h-2 rounded-full bg-stone-800"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Panel: Interactive Workspace -->
+    <div class="w-full md:w-2/3 h-1/2 md:h-full relative bg-stone-900 overflow-hidden flex flex-col">
+        
+        <!-- Background / Sky -->
+        <div id="sky-bg" class="absolute inset-0 transition-all duration-[2000ms] bg-gradient-to-b from-blue-900 via-stone-800 to-stone-900"></div>
+        
+        <!-- Sun/Moon -->
+        <div id="celestial-body" class="absolute top-10 right-10 w-24 h-24 rounded-full bg-amber-200 blur-xl opacity-20 transition-all duration-[3000ms]"></div>
+
+        <!-- The Village (Visual Output) -->
+        <div class="flex-1 relative z-10 flex items-end justify-center pb-12 px-4 perspective-1000">
+            <div id="village-container" class="flex items-end gap-4 md:gap-8 w-full max-w-4xl justify-center">
+                <!-- Houses will be built here -->
+            </div>
+        </div>
+
+        <!-- Interaction Zone (Bottom) -->
+        <div class="relative z-20 p-6 glass-panel m-4 rounded-xl shadow-2xl border border-stone-700/50">
+            <div id="game-ui" class="flex flex-col items-center justify-center text-center space-y-4">
+                <h3 id="task-title" class="text-lg font-bold text-stone-200">Initialize Sequence</h3>
+                <p id="task-desc" class="text-stone-400 text-sm max-w-md">The land is ready. The exiles stand waiting.</p>
+                
+                <!-- Action Area -->
+                <div class="w-full max-w-md bg-stone-800 rounded-full h-4 overflow-hidden border border-stone-700 relative">
+                    <div id="progress-bar" class="h-full bg-amber-600 w-0 transition-all duration-200"></div>
+                </div>
+
+                <button id="action-btn" class="action-btn mt-2 px-8 py-3 bg-amber-700 hover:bg-amber-600 text-white font-bold rounded-lg shadow-lg border-b-4 border-amber-900 flex items-center gap-2">
+                    <span id="btn-icon">🌱</span> <span id="btn-text">Begin the Work</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Game Data ---
+        const chapters = [
+            {
+                id: 1,
+                title: "The Season of Building",
+                text: `<p class="serif text-lg leading-relaxed">The first season of forgetting was over. The exiles had composted their shame. Now came the season of building.</p>
+                       <p class="serif text-lg leading-relaxed mt-4">SageByte stood on a small hill, looking down at a field sectioned off with twine. The land was ready. The exiles—Terra, Silas, Kai, and Paloma—stood before her, their hands empty but their eyes full of a nervous resolve.</p>`,
+                task: "Survey the Land",
+                desc: "Click to prepare the foundation lines.",
+                btnText: "Place Twine",
+                btnIcon: "🧶",
+                clicksReq: 5,
+                bgClass: "from-blue-900 via-stone-800 to-stone-900", // Morning
+                houseType: "foundation"
+            },
+            {
+                id: 2,
+                title: "Terra: The Ghosted Lover",
+                text: `<p class="serif text-lg leading-relaxed">Terra was first. She’d been made to feel like vapor, a conversation left on 'read'. So she chose the earth.</p>
+                       <p class="serif text-lg leading-relaxed mt-4">She mixed clay, sand, and straw with her bare feet, sinking into the mud. She was building a <strong>cob house</strong>, a structure that demanded touch. Every curve of the wall would be the curve of her own hands, solid and undeniable.</p>`,
+                task: "Mix the Cob",
+                desc: "Mix clay, sand, and straw to build solid walls.",
+                btnText: "Stomp Mud",
+                btnIcon: "🦶",
+                clicksReq: 15,
+                bgClass: "from-sky-800 via-stone-700 to-stone-900", // Mid-morning
+                houseType: "cob"
+            },
+            {
+                id: 3,
+                title: "Silas: The Reputation Refugee",
+                text: `<p class="serif text-lg leading-relaxed">Next was Silas. They had built a life of careful glass, and watched it shatter online. Now, he wanted walls. Thick ones.</p>
+                       <p class="serif text-lg leading-relaxed mt-4">He chose <strong>logs</strong>, each one a heavy, unshakeable truth. He learned to notch them, to fit them together so tightly not even a whisper could pass through. His cabin was a fortress against the noise.</p>`,
+                task: "Notch the Logs",
+                desc: "Stack the heavy timber to block out the noise.",
+                btnText: "Stack Log",
+                btnIcon: "🪓",
+                clicksReq: 15,
+                bgClass: "from-sky-700 via-stone-700 to-stone-900", // Noon
+                houseType: "log"
+            },
+            {
+                id: 4,
+                title: "Kai: The Doomscroller",
+                text: `<p class="serif text-lg leading-relaxed">Kai had spent years buried in the endless scroll of bad news. He decided to build with the very refuse of that world.</p>
+                       <p class="serif text-lg leading-relaxed mt-4">Old <strong>tires</strong>, thousands of them, packed with rammed earth. His earthship was half-buried in the ground, a bunker against the apocalypse he’d always read about. He was turning the engine of his anxiety into a foundation.</p>`,
+                task: "Pack the Tires",
+                desc: "Ram the earth into the tires to ground the anxiety.",
+                btnText: "Ram Earth",
+                btnIcon: "🔨",
+                clicksReq: 20,
+                bgClass: "from-orange-900 via-stone-800 to-stone-900", // Late Afternoon
+                houseType: "tire"
+            },
+            {
+                id: 5,
+                title: "Paloma: The Parent in Collapse",
+                text: `<p class="serif text-lg leading-relaxed">And then there was Paloma. She had lived in a house filled with screams. She craved silence.</p>
+                       <p class="serif text-lg leading-relaxed mt-4">Her choice was <strong>straw-bale</strong>, walls that absorbed sound, that held the warmth of the sun. She stacked the bales gently, as if tucking a child into bed, dreaming of a home where she could finally hear herself think.</p>`,
+                task: "Stack the Bales",
+                desc: "Place the straw gently to create a quiet sanctuary.",
+                btnText: "Place Bale",
+                btnIcon: "🌾",
+                clicksReq: 12,
+                bgClass: "from-indigo-900 via-purple-900 to-stone-900", // Dusk
+                houseType: "straw"
+            },
+            {
+                id: 6,
+                title: "The Village of Mending",
+                text: `<p class="serif text-lg leading-relaxed">One evening, as the skeletons of five strange houses stood against the sunset, SageByte gathered them.</p>
+                       <p class="serif text-lg leading-relaxed mt-4">"You see?" she said, her voice soft as dusk. "You were never broken. You were just raw material. You are not building a village to hide in. You are building a testament to the fact that you survived."</p>`,
+                task: "Admire the Work",
+                desc: "The village is complete. The mending has begun.",
+                btnText: "Restart Journey",
+                btnIcon: "🌅",
+                clicksReq: 1,
+                bgClass: "from-orange-500 via-red-700 to-stone-900", // Sunset
+                houseType: "finish"
+            }
+        ];
+
+        // --- State ---
+        let currentChapterIdx = 0;
+        let clicks = 0;
+        let housesBuilt = [];
+
+        // --- DOM Elements ---
+        const storyContainer = document.getElementById('story-content');
+        const taskTitle = document.getElementById('task-title');
+        const taskDesc = document.getElementById('task-desc');
+        const actionBtn = document.getElementById('action-btn');
+        const btnText = document.getElementById('btn-text');
+        const btnIcon = document.getElementById('btn-icon');
+        const progressBar = document.getElementById('progress-bar');
+        const villageContainer = document.getElementById('village-container');
+        const skyBg = document.getElementById('sky-bg');
+        const chapterNumDisplay = document.getElementById('chapter-num');
+
+        // --- Initialization ---
+        function init() {
+            loadChapter(0);
+        }
+
+        // --- Logic ---
+        function loadChapter(idx) {
+            currentChapterIdx = idx;
+            const chapter = chapters[idx];
+            clicks = 0;
+            updateProgress(0);
+
+            // Update Text
+            const textDiv = document.createElement('div');
+            textDiv.innerHTML = `<h3 class="text-amber-500 font-bold uppercase text-xs mb-2 tracking-widest">Chapter ${chapter.id}</h3>
+                                 <h2 class="text-xl font-bold text-white mb-4">${chapter.title}</h2>
+                                 ${chapter.text}`;
+            textDiv.className = "animate-fade-in border-l-2 border-stone-700 pl-4";
+            storyContainer.appendChild(textDiv);
+            
+            // Auto scroll to bottom
+            document.getElementById('story-container').scrollTop = document.getElementById('story-container').scrollHeight;
+
+            // Update UI
+            taskTitle.innerText = chapter.task;
+            taskDesc.innerText = chapter.desc;
+            btnText.innerText = chapter.btnText;
+            btnIcon.innerText = chapter.btnIcon;
+            chapterNumDisplay.innerText = chapter.id;
+
+            // Update Pips
+            for(let i=1; i<=6; i++) {
+                const pip = document.getElementById(`pip-${i}`);
+                if (i <= chapter.id) pip.classList.replace('bg-stone-800', 'bg-amber-600');
+                else pip.classList.replace('bg-amber-600', 'bg-stone-800');
+            }
+
+            // Update Atmosphere
+            skyBg.className = `absolute inset-0 transition-all duration-[2000ms] bg-gradient-to-b ${chapter.bgClass}`;
+
+            // Special Handling for Final Chapter
+            if (idx === 5) {
+                actionBtn.onclick = () => location.reload();
+                progressBar.style.width = '100%';
+                createConfetti();
+            } else {
+                actionBtn.onclick = handleAction;
+            }
+        }
+
+        function handleAction(e) {
+            const chapter = chapters[currentChapterIdx];
+            clicks++;
+            
+            // Particles
+            createParticles(e.clientX, e.clientY, chapter.btnIcon);
+
+            // Progress
+            const percentage = (clicks / chapter.clicksReq) * 100;
+            updateProgress(percentage);
+
+            // Visual Feedback on House Construction
+            updateHouseVisuals(chapter.houseType, percentage);
+
+            if (clicks >= chapter.clicksReq) {
+                completeChapter();
+            }
+        }
+
+        function updateProgress(percent) {
+            progressBar.style.width = `${percent}%`;
+        }
+
+        function completeChapter() {
+            // Disable button temporarily
+            actionBtn.disabled = true;
+            actionBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            
+            // Finalize House Visual
+            finalizeHouse(chapters[currentChapterIdx].houseType);
+
+            setTimeout(() => {
+                actionBtn.disabled = false;
+                actionBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                if (currentChapterIdx < chapters.length - 1) {
+                    loadChapter(currentChapterIdx + 1);
+                }
+            }, 1000);
+        }
+
+        // --- Visual Engine ---
+
+        function updateHouseVisuals(type, percent) {
+            // This function could add temporary "dust" or "construction" effects
+            // For simplicity, we handle the main building in finalizeHouse, 
+            // but let's add a "ghost" structure if it's the first click
+            if (clicks === 1 && type !== 'foundation' && type !== 'finish') {
+                // Create placeholder
+            }
+        }
+
+        function finalizeHouse(type) {
+            let houseHTML = '';
+            let width = 'w-24 md:w-32';
+            let height = 'h-24 md:h-32';
+
+            if (type === 'foundation') {
+                // Just lines on the ground
+                const foundation = document.createElement('div');
+                foundation.className = "absolute bottom-0 w-full border-b-2 border-dashed border-stone-500 h-2 animate-fade-in";
+                villageContainer.appendChild(foundation);
+                return;
+            }
+
+            if (type === 'cob') {
+                // Organic shape
+                houseHTML = `
+                    <div class="${width} ${height} relative animate-build origin-bottom">
+                        <div class="absolute inset-0 texture-cob shadow-lg transform scale-105"></div>
+                        <div class="absolute bottom-0 left-1/3 w-1/3 h-1/2 bg-stone-900 rounded-t-full border-4 border-[#6D4C41]"></div> <!-- Door -->
+                        <div class="absolute top-1/3 right-2 w-6 h-6 bg-blue-900/30 rounded-full border-2 border-[#5D4037]"></div> <!-- Window -->
+                    </div>
+                `;
+            } else if (type === 'log') {
+                // Stacked logs
+                houseHTML = `
+                    <div class="${width} ${height} flex flex-col justify-end animate-build origin-bottom">
+                        <div class="h-4 w-full texture-log mb-0.5"></div>
+                        <div class="h-4 w-full texture-log mb-0.5"></div>
+                        <div class="h-4 w-full texture-log mb-0.5"></div>
+                        <div class="h-4 w-full texture-log mb-0.5 flex justify-center"><div class="w-8 h-full bg-stone-900"></div></div>
+                        <div class="h-4 w-full texture-log mb-0.5 flex justify-center"><div class="w-8 h-full bg-stone-900"></div></div>
+                        <div class="h-4 w-full texture-log mb-0.5 flex justify-center"><div class="w-8 h-full bg-stone-900"></div></div>
+                        <div class="absolute -top-4 left-0 w-full h-4 bg-stone-800 skew-x-12 origin-bottom-left"></div> <!-- Roof hint -->
+                    </div>
+                `;
+            } else if (type === 'tire') {
+                // Stacked tires (circles)
+                houseHTML = `
+                    <div class="${width} ${height} relative animate-build origin-bottom flex flex-col-reverse flex-wrap content-center gap-1">
+                        <div class="flex justify-center gap-1">
+                             <div class="w-6 h-6 texture-tires rounded-full border border-stone-900"></div>
+                             <div class="w-6 h-6 texture-tires rounded-full border border-stone-900"></div>
+                             <div class="w-6 h-6 texture-tires rounded-full border border-stone-900"></div>
+                             <div class="w-6 h-6 texture-tires rounded-full border border-stone-900"></div>
+                        </div>
+                        <div class="flex justify-center gap-1">
+                             <div class="w-6 h-6 texture-tires rounded-full border border-stone-900"></div>
+                             <div class="w-6 h-6 texture-tires rounded-full border border-stone-900"></div>
+                             <div class="w-6 h-6 texture-tires rounded-full border border-stone-900"></div>
+                        </div>
+                        <div class="flex justify-center gap-1">
+                             <div class="w-6 h-6 texture-tires rounded-full border border-stone-900"></div>
+                             <div class="w-6 h-6 texture-tires rounded-full border border-stone-900"></div>
+                        </div>
+                        <div class="absolute bottom-0 left-0 w-full h-full bg-gradient-to-t from-black/50 to-transparent pointer-events-none"></div>
+                    </div>
+                `;
+            } else if (type === 'straw') {
+                // Stacked bales (yellow bricks)
+                houseHTML = `
+                    <div class="${width} ${height} flex flex-col justify-end animate-build origin-bottom">
+                        <div class="flex w-full h-1/4">
+                            <div class="w-1/2 h-full texture-straw"></div>
+                            <div class="w-1/2 h-full texture-straw"></div>
+                        </div>
+                        <div class="flex w-full h-1/4">
+                            <div class="w-1/3 h-full texture-straw"></div>
+                            <div class="w-1/3 h-full texture-straw"></div>
+                            <div class="w-1/3 h-full texture-straw"></div>
+                        </div>
+                        <div class="flex w-full h-1/4">
+                            <div class="w-1/2 h-full texture-straw"></div>
+                            <div class="w-1/2 h-full texture-straw"></div>
+                        </div>
+                        <div class="flex w-full h-1/4">
+                            <div class="w-full h-full texture-straw"></div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            if (houseHTML) {
+                const wrapper = document.createElement('div');
+                wrapper.innerHTML = houseHTML;
+                villageContainer.appendChild(wrapper);
+            }
+        }
+
+        // --- FX ---
+        function createParticles(x, y, emoji) {
+            const count = 5;
+            for (let i = 0; i < count; i++) {
+                const p = document.createElement('div');
+                p.innerText = emoji;
+                p.className = 'particle text-xl';
+                p.style.left = x + 'px';
+                p.style.top = y + 'px';
+                
+                // Random direction
+                const tx = (Math.random() - 0.5) * 100;
+                const ty = (Math.random() - 1) * 100;
+                p.style.setProperty('--tx', `${tx}px`);
+                p.style.setProperty('--ty', `${ty}px`);
+                
+                document.body.appendChild(p);
+                setTimeout(() => p.remove(), 1000);
+            }
+        }
+
+        function createConfetti() {
+            const colors = ['#F59E0B', '#78350F', '#1C1917', '#E7E5E4'];
+            for(let i=0; i<100; i++) {
+                const c = document.createElement('div');
+                c.style.position = 'fixed';
+                c.style.left = Math.random() * 100 + 'vw';
+                c.style.top = '-10px';
+                c.style.width = '10px';
+                c.style.height = '10px';
+                c.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                c.style.transition = `top ${Math.random() * 2 + 2}s linear, transform 2s linear`;
+                c.style.zIndex = 100;
+                document.body.appendChild(c);
+                
+                setTimeout(() => {
+                    c.style.top = '110vh';
+                    c.style.transform = `rotate(${Math.random() * 360}deg)`;
+                }, 100);
+            }
+        }
+
+        // Start
+        init();
+
+    </script>
+</body>
+</html>

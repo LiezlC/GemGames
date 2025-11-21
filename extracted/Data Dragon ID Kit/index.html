@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Dragon ID KIT</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600;800&display=swap');
+
+        :root {
+            --neon-red: #ff4d4d;
+            --neon-blue: #4dffff;
+            --neon-purple: #bf4dff;
+            --neon-green: #4dff88;
+            --bg-dark: #0f172a;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(76, 29, 149, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.15) 0%, transparent 40%);
+        }
+
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Glassmorphism */
+        .glass {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .glass-hover:hover {
+            background: rgba(51, 65, 85, 0.8);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Animations */
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 10px rgba(77, 255, 255, 0.2); }
+            50% { box-shadow: 0 0 20px rgba(77, 255, 255, 0.6); }
+        }
+
+        @keyframes slay-shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px) rotate(-5deg); }
+            50% { transform: translateX(5px) rotate(5deg); }
+            75% { transform: translateX(-5px) rotate(-5deg); }
+            100% { transform: translateX(0); }
+        }
+
+        .animate-slay {
+            animation: slay-shake 0.4s ease-in-out;
+        }
+
+        .dragon-icon {
+            font-size: 3rem;
+            filter: drop-shadow(0 0 10px rgba(255,255,255,0.3));
+            transition: all 0.3s ease;
+        }
+
+        /* Category Colors */
+        .cat-classic { border-left: 4px solid var(--neon-red); }
+        .cat-transform { border-left: 4px solid var(--neon-blue); }
+        .cat-human { border-left: 4px solid var(--neon-purple); }
+        .cat-hidden { border-left: 4px solid var(--neon-green); }
+
+        .text-classic { color: var(--neon-red); }
+        .text-transform { color: var(--neon-blue); }
+        .text-human { color: var(--neon-purple); }
+        .text-hidden { color: var(--neon-green); }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569; 
+        }
+
+        .progress-bar {
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .purified {
+            opacity: 0.5;
+            filter: grayscale(100%);
+            pointer-events: none;
+            border-color: #10b981 !important;
+            background: rgba(6, 78, 59, 0.3);
+        }
+        
+        .purified::after {
+            content: "NEUTRALIZED";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-15deg);
+            font-weight: 900;
+            font-size: 1.5rem;
+            color: #10b981;
+            border: 4px solid #10b981;
+            padding: 0.5rem 1rem;
+            z-index: 10;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col md:flex-row overflow-hidden">
+
+    <!-- Sidebar / Navigation -->
+    <aside class="w-full md:w-80 bg-slate-900 border-r border-slate-800 flex flex-col z-20 shadow-2xl">
+        <div class="p-6 border-b border-slate-800 bg-slate-950">
+            <div class="flex items-center gap-3 mb-2">
+                <div class="text-4xl">🐉</div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-wider text-white">DATA DRAGON</h1>
+                    <div class="text-xs text-slate-400 mono">ID KIT v2.4.0</div>
+                </div>
+            </div>
+            <div class="mt-4 bg-slate-800 rounded-full h-2 w-full overflow-hidden">
+                <div id="total-progress" class="bg-gradient-to-r from-blue-500 to-purple-500 h-full w-0 progress-bar"></div>
+            </div>
+            <div class="flex justify-between text-xs mt-2 mono text-slate-400">
+                <span>THREAT LEVEL</span>
+                <span id="threat-level" class="text-red-400 animate-pulse">CRITICAL</span>
+            </div>
+        </div>
+
+        <nav class="flex-1 overflow-y-auto p-4 space-y-2">
+            <button onclick="filterDragons('all')" class="w-full text-left p-3 rounded-lg hover:bg-slate-800 transition-colors text-sm font-semibold text-slate-300 border border-transparent hover:border-slate-700 active-filter bg-slate-800" id="btn-all">
+                🛡️ All Threats
+            </button>
+            <div class="text-xs font-bold text-slate-500 mt-4 mb-2 uppercase tracking-widest px-2">Bestiary Categories</div>
+            
+            <button onclick="filterDragons('classic')" class="w-full text-left p-3 rounded-lg hover:bg-slate-800/50 transition-colors flex items-center gap-3 group" id="btn-classic">
+                <div class="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]"></div>
+                <div>
+                    <div class="text-sm font-semibold text-slate-200 group-hover:text-red-400 transition-colors">The Classic Dragons</div>
+                    <div class="text-xs text-slate-500">Always Hungry</div>
+                </div>
+            </button>
+
+            <button onclick="filterDragons('transform')" class="w-full text-left p-3 rounded-lg hover:bg-slate-800/50 transition-colors flex items-center gap-3 group" id="btn-transform">
+                <div class="w-2 h-2 rounded-full bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.6)]"></div>
+                <div>
+                    <div class="text-sm font-semibold text-slate-200 group-hover:text-cyan-400 transition-colors">Transformation Dragons</div>
+                    <div class="text-xs text-slate-500">Shape-shifters</div>
+                </div>
+            </button>
+
+            <button onclick="filterDragons('human')" class="w-full text-left p-3 rounded-lg hover:bg-slate-800/50 transition-colors flex items-center gap-3 group" id="btn-human">
+                <div class="w-2 h-2 rounded-full bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.6)]"></div>
+                <div>
+                    <div class="text-sm font-semibold text-slate-200 group-hover:text-purple-400 transition-colors">The Human Dragons</div>
+                    <div class="text-xs text-slate-500">Most Dangerous</div>
+                </div>
+            </button>
+
+            <button onclick="filterDragons('hidden')" class="w-full text-left p-3 rounded-lg hover:bg-slate-800/50 transition-colors flex items-center gap-3 group" id="btn-hidden">
+                <div class="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
+                <div>
+                    <div class="text-sm font-semibold text-slate-200 group-hover:text-green-400 transition-colors">The Hidden Dragons</div>
+                    <div class="text-xs text-slate-500">Expensive When Found</div>
+                </div>
+            </button>
+        </nav>
+
+        <div class="p-4 border-t border-slate-800 bg-slate-950 text-center">
+            <button onclick="resetGame()" class="text-xs text-slate-500 hover:text-white transition-colors underline">Reset Simulation</button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col relative overflow-hidden">
+        <!-- Header -->
+        <header class="p-6 md:p-8 flex justify-between items-end z-10">
+            <div>
+                <h2 class="text-3xl font-bold text-white mb-1" id="section-title">Field Guide</h2>
+                <p class="text-slate-400 max-w-xl" id="section-desc">Identify data hazards in your environment. Click a card to deploy countermeasures.</p>
+            </div>
+            <div class="hidden md:block text-right">
+                <div class="text-4xl font-bold mono text-white" id="neutralized-count">0/17</div>
+                <div class="text-xs text-slate-500 uppercase tracking-widest">Threats Neutralized</div>
+            </div>
+        </header>
+
+        <!-- Grid -->
+        <div class="flex-1 overflow-y-auto p-6 md:p-8 pt-0 z-10">
+            <div id="card-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pb-20">
+                <!-- Cards injected via JS -->
+            </div>
+        </div>
+
+        <!-- Background Decor -->
+        <div class="absolute top-0 right-0 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl -z-0 pointer-events-none"></div>
+        <div class="absolute bottom-0 left-0 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl -z-0 pointer-events-none"></div>
+    </main>
+
+    <!-- Modal for Success -->
+    <div id="success-modal" class="fixed inset-0 z-50 flex items-center justify-center pointer-events-none opacity-0 transition-opacity duration-500">
+        <div class="bg-black/80 absolute inset-0 backdrop-blur-sm"></div>
+        <div class="bg-slate-900 border border-green-500/50 p-8 rounded-2xl shadow-2xl transform scale-90 transition-transform duration-300 flex flex-col items-center text-center max-w-md mx-4">
+            <div class="text-6xl mb-4">✨</div>
+            <h3 class="text-2xl font-bold text-white mb-2">Sector Cleared!</h3>
+            <p class="text-slate-300 mb-6">All Data Dragons have been identified and neutralized. Your data ecosystem is now optimized.</p>
+            <button onclick="resetGame()" class="pointer-events-auto bg-green-600 hover:bg-green-500 text-white px-6 py-3 rounded-lg font-bold transition-colors shadow-[0_0_15px_rgba(34,197,94,0.5)]">
+                Start New Scan
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Data from the PDF
+        const dragons = [
+            // Classic Dragons
+            {
+                id: 'd1',
+                category: 'classic',
+                name: 'Data Quality Decay',
+                desc: 'When good data goes bad over time.',
+                detail: 'Entropy affects databases too. Without maintenance, accuracy rots.',
+                icon: '🧟',
+                color: 'text-red-400'
+            },
+            {
+                id: 'd2',
+                category: 'classic',
+                name: 'Integration Hell',
+                desc: 'Multiple systems that refuse to talk.',
+                detail: 'APIs break, formats mismatch, and data silos grow stronger.',
+                icon: '🔌',
+                color: 'text-red-400'
+            },
+            {
+                id: 'd3',
+                category: 'classic',
+                name: 'The Documentation Void',
+                desc: 'Critical knowledge exists only in Dave\'s head.',
+                detail: '...and Dave is leaving next Tuesday. Panic ensues.',
+                icon: '🕳️',
+                color: 'text-red-400'
+            },
+            {
+                id: 'd4',
+                category: 'classic',
+                name: 'Dashboard Graveyards',
+                desc: 'Beautiful visualizations no one uses.',
+                detail: 'Built without user input, they gather digital dust.',
+                icon: '🪦',
+                color: 'text-red-400'
+            },
+            {
+                id: 'd5',
+                category: 'classic',
+                name: 'Spreadsheet Sprawl',
+                desc: '47 versions of "Budget_Final_v2_ACTUAL.xlsx".',
+                detail: 'The dark matter of enterprise data. Ungovernable and everywhere.',
+                icon: '📉',
+                color: 'text-red-400'
+            },
+            // Transformation Dragons
+            {
+                id: 'd6',
+                category: 'transform',
+                name: 'Migration Nightmares',
+                desc: 'Moving from legacy systems without losing souls.',
+                detail: 'The bridge between old and new is often built of duct tape.',
+                icon: '🌉',
+                color: 'text-cyan-400'
+            },
+            {
+                id: 'd7',
+                category: 'transform',
+                name: 'Schema Evolution',
+                desc: 'When business needs outgrow database design.',
+                detail: 'Rigid structures break under the weight of new requirements.',
+                icon: '🧬',
+                color: 'text-cyan-400'
+            },
+            {
+                id: 'd8',
+                category: 'transform',
+                name: 'Real-time vs Right-time',
+                desc: 'The speed vs accuracy trade-off.',
+                detail: 'Do you want the wrong answer instantly, or the right one later?',
+                icon: '⏱️',
+                color: 'text-cyan-400'
+            },
+            {
+                id: 'd9',
+                category: 'transform',
+                name: 'Unstructured Data Floods',
+                desc: 'PDFs, emails, images demanding structure.',
+                detail: 'A tsunami of content that SQL databases cannot contain.',
+                icon: '🌊',
+                color: 'text-cyan-400'
+            },
+            // Human Dragons
+            {
+                id: 'd10',
+                category: 'human',
+                name: 'Shadow IT Kingdoms',
+                desc: 'Unofficial systems running critical processes.',
+                detail: 'Marketing bought a SaaS tool without telling IT. Again.',
+                icon: '🏰',
+                color: 'text-purple-400'
+            },
+            {
+                id: 'd11',
+                category: 'human',
+                name: 'The Training Gap',
+                desc: 'New tools, same old habits.',
+                detail: 'Buying Snowflake doesn\'t help if people still use it like Excel.',
+                icon: '🎓',
+                color: 'text-purple-400'
+            },
+            {
+                id: 'd12',
+                category: 'human',
+                name: 'Data Hoarding vs Sharing',
+                desc: 'Trust and territory battles.',
+                detail: '"My data is my power." Silos created by politics, not tech.',
+                icon: '🐲',
+                color: 'text-purple-400'
+            },
+            {
+                id: 'd13',
+                category: 'human',
+                name: 'Compliance Exhaustion',
+                desc: 'GDPR/privacy requirements feeling impossible.',
+                detail: 'The legal team is asking questions you can\'t answer.',
+                icon: '📜',
+                color: 'text-purple-400'
+            },
+            // Hidden Dragons
+            {
+                id: 'd14',
+                category: 'hidden',
+                name: 'Technical Debt Monsters',
+                desc: 'Quick fixes becoming permanent problems.',
+                detail: 'Interest accumulates daily. Pay now or pay (more) later.',
+                icon: '👹',
+                color: 'text-green-400'
+            },
+            {
+                id: 'd15',
+                category: 'hidden',
+                name: 'The Single Point of Failure',
+                desc: 'When everything depends on one ancient script.',
+                detail: 'It runs on a server under a desk. Do not touch it.',
+                icon: '🏛️',
+                color: 'text-green-400'
+            },
+            {
+                id: 'd16',
+                category: 'hidden',
+                name: 'Garbage In, Gospel Out',
+                desc: 'Bad data making "data-driven" decisions.',
+                detail: 'Confident errors are the most dangerous kind.',
+                icon: '🗑️',
+                color: 'text-green-400'
+            },
+            {
+                id: 'd17',
+                category: 'hidden',
+                name: 'The Metrics Theater',
+                desc: 'Measuring what\'s easy instead of what matters.',
+                detail: 'Vanity metrics that look good on slides but mean nothing.',
+                icon: '🎭',
+                color: 'text-green-400'
+            }
+        ];
+
+        let neutralized = new Set();
+        let currentFilter = 'all';
+
+        const grid = document.getElementById('card-grid');
+        const titleEl = document.getElementById('section-title');
+        const descEl = document.getElementById('section-desc');
+        const countEl = document.getElementById('neutralized-count');
+        const progressEl = document.getElementById('total-progress');
+        const threatEl = document.getElementById('threat-level');
+
+        function init() {
+            renderCards();
+        }
+
+        function filterDragons(category) {
+            currentFilter = category;
+            
+            // Update UI Active State
+            document.querySelectorAll('nav button').forEach(btn => {
+                btn.classList.remove('bg-slate-800', 'border-slate-700');
+                if(btn.id === `btn-${category}`) {
+                    btn.classList.add('bg-slate-800', 'border-slate-700');
+                }
+            });
+
+            // Update Titles
+            if (category === 'all') {
+                titleEl.innerText = 'Field Guide';
+                descEl.innerText = 'Identify data hazards in your environment. Click a card to deploy countermeasures.';
+            } else if (category === 'classic') {
+                titleEl.innerText = 'The Classic Dragons';
+                descEl.innerText = 'Always Hungry. These are the foundational issues that plague every data team.';
+            } else if (category === 'transform') {
+                titleEl.innerText = 'Transformation Dragons';
+                descEl.innerText = 'Shape-shifters. Issues that arise during modernization and scaling.';
+            } else if (category === 'human') {
+                titleEl.innerText = 'The Human Dragons';
+                descEl.innerText = 'Most Dangerous. Cultural and behavioral issues that tech cannot fix.';
+            } else if (category === 'hidden') {
+                titleEl.innerText = 'The Hidden Dragons';
+                descEl.innerText = 'Expensive When Found. Subtle, structural issues that explode later.';
+            }
+
+            renderCards();
+        }
+
+        function renderCards() {
+            grid.innerHTML = '';
+            
+            const filtered = dragons.filter(d => currentFilter === 'all' || d.category === currentFilter);
+
+            filtered.forEach(d => {
+                const isNeutralized = neutralized.has(d.id);
+                
+                const card = document.createElement('div');
+                card.className = `glass p-6 rounded-xl relative group transition-all duration-300 cat-${d.category} ${isNeutralized ? 'purified' : 'glass-hover cursor-pointer'}`;
+                
+                // Action Handler
+                if (!isNeutralized) {
+                    card.onclick = () => neutralizeDragon(d.id, card);
+                }
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="dragon-icon ${isNeutralized ? 'grayscale' : ''}">${d.icon}</div>
+                        <div class="text-xs font-bold px-2 py-1 rounded bg-slate-800/50 border border-slate-700 mono ${d.color}">
+                            ${d.category.toUpperCase()}
+                        </div>
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-2 leading-tight">${d.name}</h3>
+                    <p class="text-slate-400 text-sm mb-4">${d.desc}</p>
+                    
+                    <div class="bg-slate-900/50 p-3 rounded border border-slate-800/50 text-xs text-slate-500 mono">
+                        <span class="text-slate-300 font-bold">SCAN RESULT:</span> ${d.detail}
+                    </div>
+
+                    ${!isNeutralized ? `
+                    <div class="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <span class="text-xs font-bold text-white bg-blue-600 px-3 py-1 rounded-full shadow-lg shadow-blue-500/50">NEUTRALIZE</span>
+                    </div>
+                    ` : ''}
+                `;
+                
+                grid.appendChild(card);
+            });
+        }
+
+        function neutralizeDragon(id, cardElement) {
+            if (neutralized.has(id)) return;
+
+            // Animation
+            cardElement.classList.add('animate-slay');
+            
+            setTimeout(() => {
+                neutralized.add(id);
+                updateStats();
+                renderCards(); // Re-render to apply styling
+                checkWin();
+            }, 400);
+        }
+
+        function updateStats() {
+            const count = neutralized.size;
+            const total = dragons.length;
+            const percent = (count / total) * 100;
+
+            countEl.innerText = `${count}/${total}`;
+            progressEl.style.width = `${percent}%`;
+
+            if (percent > 30) threatEl.innerText = "HIGH";
+            if (percent > 60) threatEl.innerText = "MODERATE";
+            if (percent > 90) threatEl.innerText = "LOW";
+            if (percent === 100) {
+                threatEl.innerText = "SECURE";
+                threatEl.classList.remove('text-red-400', 'animate-pulse');
+                threatEl.classList.add('text-green-400');
+            }
+        }
+
+        function checkWin() {
+            if (neutralized.size === dragons.length) {
+                const modal = document.getElementById('success-modal');
+                const modalContent = modal.querySelector('div:nth-child(2)');
+                
+                modal.classList.remove('pointer-events-none', 'opacity-0');
+                modalContent.classList.remove('scale-90');
+                modalContent.classList.add('scale-100');
+                
+                // Confetti effect via CSS/JS could go here, keeping it simple for single file
+            }
+        }
+
+        function resetGame() {
+            neutralized.clear();
+            updateStats();
+            
+            const modal = document.getElementById('success-modal');
+            modal.classList.add('pointer-events-none', 'opacity-0');
+            
+            threatEl.innerText = "CRITICAL";
+            threatEl.classList.add('text-red-400', 'animate-pulse');
+            threatEl.classList.remove('text-green-400');
+            
+            renderCards();
+        }
+
+        // Initialize
+        init();
+
+    </script>
+</body>
+</html>

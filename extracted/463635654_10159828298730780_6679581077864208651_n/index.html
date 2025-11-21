@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sunday Braai Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a1a1a;
+            color: white;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* --- SCENE CSS ART --- */
+        .scene-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(to bottom, #87CEEB 0%, #87CEEB 40%, #e0f7fa 50%, #4a6fa5 100%);
+            overflow: hidden;
+            perspective: 1000px;
+        }
+
+        /* Grass */
+        .grass {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 35%;
+            background: linear-gradient(to bottom, #4ade80 0%, #166534 100%);
+            z-index: 1;
+        }
+
+        /* Concrete Floor */
+        .floor {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%) perspective(500px) rotateX(20deg);
+            width: 90%;
+            height: 40%;
+            background: #d1d5db;
+            border-top: 2px solid #9ca3af;
+            z-index: 2;
+            box-shadow: 0 -10px 20px rgba(0,0,0,0.1);
+        }
+
+        /* Tree Shadows on Floor */
+        .shadow-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                linear-gradient(90deg, transparent 40%, rgba(0,0,0,0.1) 45%, transparent 50%),
+                linear-gradient(120deg, transparent 30%, rgba(0,0,0,0.15) 35%, transparent 40%);
+            filter: blur(4px);
+            pointer-events: none;
+        }
+
+        /* The Structure (Wall) */
+        .wall-structure {
+            position: absolute;
+            bottom: 30%; /* Sits on "horizon" */
+            left: 50%;
+            transform: translateX(-50%);
+            width: 70%;
+            max-width: 800px;
+            height: 50%;
+            background: #eef2f3;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            z-index: 3;
+            box-shadow: 10px 10px 30px rgba(0,0,0,0.3);
+        }
+
+        /* Roof */
+        .roof {
+            position: absolute;
+            top: -40px;
+            left: -10%;
+            width: 120%;
+            height: 40px;
+            background: #5D4037;
+            transform: skewX(-10deg);
+            box-shadow: 0 5px 10px rgba(0,0,0,0.4);
+            z-index: 5;
+        }
+
+        /* Chimney */
+        .chimney {
+            position: absolute;
+            top: -120px;
+            right: 20%;
+            width: 80px;
+            height: 100px;
+            background: #eef2f3;
+            z-index: 4;
+        }
+        .chimney-top {
+            position: absolute;
+            top: -30px;
+            left: -10px;
+            width: 100px;
+            height: 30px;
+            background: #333;
+            clip-path: polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%);
+        }
+
+        /* Fireplace Area */
+        .fireplace-outer {
+            position: relative;
+            width: 40%;
+            height: 70%;
+            background: #d1d5db;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            border-top-left-radius: 40px;
+            border-top-right-radius: 40px;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.1);
+        }
+
+        .fireplace-inner {
+            width: 80%;
+            height: 60%;
+            background: #1f2937;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+            border-radius: 4px;
+            box-shadow: inset 0 0 30px black;
+        }
+
+        /* Grill Grate */
+        .grill-grate {
+            position: absolute;
+            bottom: 30px;
+            left: 5%;
+            width: 90%;
+            height: 10px;
+            background: repeating-linear-gradient(
+                90deg,
+                #555,
+                #555 4px,
+                transparent 4px,
+                transparent 14px
+            );
+            z-index: 10;
+            border-top: 2px solid #444;
+            border-bottom: 2px solid #444;
+        }
+
+        /* Fire Animation */
+        .fire {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            height: 80px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            filter: blur(2px) contrast(1.5);
+            opacity: 0;
+            transition: opacity 1s;
+        }
+        .fire.active { opacity: 1; }
+        
+        .flame {
+            width: 20px;
+            height: 20px;
+            background: orangered;
+            border-radius: 50% 50% 20% 20%;
+            animation: flicker 0.5s infinite alternate;
+            margin: 0 -5px;
+            opacity: 0.8;
+        }
+        .flame:nth-child(2n) { animation-duration: 0.3s; height: 30px; background: orange; }
+        .flame:nth-child(3n) { animation-duration: 0.7s; height: 15px; background: yellow; }
+
+        @keyframes flicker {
+            0% { transform: scale(1) translateY(0); }
+            100% { transform: scale(1.1) translateY(-10px); }
+        }
+
+        /* Smoke */
+        .smoke-particle {
+            position: absolute;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: rise 3s linear forwards;
+        }
+        @keyframes rise {
+            0% { transform: translateY(0) scale(1); opacity: 0.5; }
+            100% { transform: translateY(-200px) scale(3); opacity: 0; }
+        }
+
+        /* Trees (CSS/Emoji) */
+        .tree-left {
+            position: absolute;
+            left: -50px;
+            bottom: 20%;
+            font-size: 300px;
+            z-index: 6;
+            filter: drop-shadow(10px 10px 20px rgba(0,0,0,0.5));
+            transform: rotate(5deg);
+        }
+        .tree-right {
+            position: absolute;
+            right: -100px;
+            top: 10%;
+            font-size: 250px;
+            z-index: 6;
+            filter: drop-shadow(-10px 10px 20px rgba(0,0,0,0.5));
+        }
+
+        /* --- GAME ELEMENTS --- */
+        .item {
+            position: absolute;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            user-select: none;
+        }
+        .item:hover { transform: scale(1.1); }
+
+        .trash { font-size: 2rem; z-index: 10; }
+        
+        /* Food on Grill */
+        .food-item {
+            position: absolute;
+            font-size: 2.5rem;
+            z-index: 20;
+            cursor: grab;
+            transition: filter 0.2s, transform 0.2s;
+        }
+        .food-item:active { cursor: grabbing; transform: scale(1.1); }
+        
+        /* Cooking States */
+        .raw { filter: brightness(1) sepia(0); }
+        .cooking { filter: brightness(0.9) sepia(0.2) saturate(1.5); }
+        .cooked { filter: brightness(0.7) sepia(0.6) hue-rotate(-10deg); }
+        .burnt { filter: brightness(0.2) grayscale(1); }
+
+        /* UI Overlay */
+        .ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+        }
+
+        .hud-panel {
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 16px;
+            pointer-events: auto;
+            border: 1px solid rgba(255,255,255,0.1);
+            color: white;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #444;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #fbbf24, #ef4444);
+            width: 0%;
+            transition: width 0.2s;
+        }
+
+        .inventory-slot {
+            width: 60px;
+            height: 60px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            position: relative;
+        }
+        .inventory-slot:hover { background: rgba(255,255,255,0.2); }
+        .inventory-slot span.count {
+            position: absolute;
+            bottom: 2px;
+            right: 5px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        /* Floating Text */
+        .floater {
+            position: absolute;
+            color: #fff;
+            font-weight: bold;
+            font-size: 1.2rem;
+            pointer-events: none;
+            animation: floatUp 1s forwards;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            z-index: 200;
+        }
+        @keyframes floatUp {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-50px); opacity: 0; }
+        }
+
+        /* Modal */
+        .modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .modal.open { opacity: 1; pointer-events: auto; }
+        .modal-content {
+            background: #1f2937;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 400px;
+            border: 1px solid #374151;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- SCENE -->
+    <div class="scene-container" id="scene">
+        <div class="tree-left">🌳</div>
+        <div class="tree-right">🌿</div>
+
+        <!-- The Wall Structure -->
+        <div class="wall-structure">
+            <div class="roof"></div>
+            <div class="chimney">
+                <div class="chimney-top"></div>
+                <div id="smoke-origin" style="position:absolute; top:-20px; left:50%;"></div>
+            </div>
+            
+            <div class="fireplace-outer">
+                <div class="fireplace-inner" id="grill-area">
+                    <div class="fire" id="fire-fx">
+                        <div class="flame"></div><div class="flame"></div><div class="flame"></div>
+                        <div class="flame"></div><div class="flame"></div><div class="flame"></div>
+                    </div>
+                    <div class="grill-grate"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Floor -->
+        <div class="floor">
+            <div class="shadow-overlay"></div>
+            <!-- Trash items will be injected here -->
+            <div id="trash-container"></div>
+        </div>
+
+        <!-- Grass -->
+        <div class="grass"></div>
+    </div>
+
+    <!-- UI LAYER -->
+    <div class="ui-layer">
+        <!-- Top Bar -->
+        <div class="flex justify-between w-full">
+            <div class="hud-panel">
+                <h1 class="text-xl font-bold text-yellow-400">Sunday Braai 🇿🇦</h1>
+                <div class="text-sm text-gray-300">Phase: <span id="phase-text">Cleanup</span></div>
+            </div>
+            <div class="hud-panel text-right">
+                <div class="text-2xl font-bold" id="score-display">0</div>
+                <div class="text-xs text-gray-400">SCORE</div>
+            </div>
+        </div>
+
+        <!-- Bottom Bar (Controls) -->
+        <div class="hud-panel w-full max-w-2xl mx-auto mb-4 transition-transform duration-500 translate-y-full" id="control-panel">
+            <div class="flex justify-between items-end">
+                <!-- Fire Control -->
+                <div class="w-1/3 mr-4">
+                    <div class="flex justify-between text-xs mb-1">
+                        <span>🔥 Heat</span>
+                        <span id="temp-val">0°C</span>
+                    </div>
+                    <div class="progress-bar bg-gray-700">
+                        <div class="progress-fill" id="heat-bar" style="width: 0%"></div>
+                    </div>
+                    <button onclick="game.addWood()" class="mt-2 w-full bg-orange-700 hover:bg-orange-600 text-white py-2 rounded text-sm font-bold shadow-lg active:scale-95 transition">
+                        🪵 Add Wood
+                    </button>
+                </div>
+
+                <!-- Inventory -->
+                <div class="flex space-x-2">
+                    <div class="inventory-slot" onclick="game.placeFood('steak')">
+                        🥩 <span class="count" id="count-steak">3</span>
+                    </div>
+                    <div class="inventory-slot" onclick="game.placeFood('sausage')">
+                        🌭 <span class="count" id="count-sausage">3</span>
+                    </div>
+                    <div class="inventory-slot" onclick="game.placeFood('corn')">
+                        🌽 <span class="count" id="count-corn">2</span>
+                    </div>
+                </div>
+
+                <!-- Plate -->
+                <div class="inventory-slot bg-green-900 border-2 border-green-500" id="plate-zone">
+                    🍽️
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALS -->
+    <div class="modal open" id="start-modal">
+        <div class="modal-content">
+            <h2 class="text-3xl font-bold mb-2">The Patio Project</h2>
+            <p class="text-gray-400 mb-6">The backyard is a mess. Clean it up, light the fire, and cook the perfect Sunday lunch.</p>
+            <button onclick="game.startCleanup()" class="bg-green-600 hover:bg-green-500 text-white px-8 py-3 rounded-full font-bold text-lg shadow-lg transform transition hover:scale-105">
+                Start Cleaning 🧹
+            </button>
+        </div>
+    </div>
+
+    <div class="modal" id="end-modal">
+        <div class="modal-content">
+            <h2 class="text-3xl font-bold mb-2">Lunch is Served!</h2>
+            <p class="text-gray-400 mb-4">Final Score</p>
+            <div class="text-5xl font-bold text-yellow-400 mb-6" id="final-score">0</div>
+            <button onclick="location.reload()" class="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-full font-bold text-lg shadow-lg">
+                Play Again 🔄
+            </button>
+        </div>
+    </div>
+
+    <script>
+        class BBQGame {
+            constructor() {
+                this.phase = 'start'; // start, cleanup, cooking, end
+                this.score = 0;
+                this.heat = 0;
+                this.targetHeat = 70; // Optimal cooking heat
+                this.trashCount = 0;
+                
+                this.inventory = {
+                    steak: 3,
+                    sausage: 3,
+                    corn: 2
+                };
+                
+                this.grillItems = [];
+                this.lastTime = 0;
+                
+                // Elements
+                this.trashContainer = document.getElementById('trash-container');
+                this.controlPanel = document.getElementById('control-panel');
+                this.heatBar = document.getElementById('heat-bar');
+                this.tempVal = document.getElementById('temp-val');
+                this.grillArea = document.getElementById('grill-area');
+                this.fireFx = document.getElementById('fire-fx');
+                this.smokeOrigin = document.getElementById('smoke-origin');
+                this.plateZone = document.getElementById('plate-zone');
+
+                this.bindEvents();
+            }
+
+            bindEvents() {
+                // Plate zone click (simplified serving mechanism)
+                this.plateZone.addEventListener('click', () => {
+                    this.showFloatingText("Drag food here to serve!", this.plateZone.getBoundingClientRect().left, this.plateZone.getBoundingClientRect().top);
+                });
+            }
+
+            startCleanup() {
+                document.getElementById('start-modal').classList.remove('open');
+                this.phase = 'cleanup';
+                document.getElementById('phase-text').innerText = "Clean Up";
+                this.spawnTrash();
+            }
+
+            spawnTrash() {
+                const trashTypes = ['🍂', '🍃', '🥡', '🗞️', '🥤', '🍂', '🍂'];
+                // Spawn 10 items
+                for(let i=0; i<10; i++) {
+                    const el = document.createElement('div');
+                    el.classList.add('item', 'trash');
+                    el.innerText = trashTypes[Math.floor(Math.random() * trashTypes.length)];
+                    
+                    // Random position on floor
+                    const left = 10 + Math.random() * 80;
+                    const top = 10 + Math.random() * 80;
+                    
+                    el.style.left = `${left}%`;
+                    el.style.top = `${top}%`;
+                    
+                    el.onclick = (e) => {
+                        this.collectTrash(e.target);
+                        e.stopPropagation();
+                    };
+                    
+                    this.trashContainer.appendChild(el);
+                    this.trashCount++;
+                }
+            }
+
+            collectTrash(el) {
+                // Animation
+                el.style.transform = "scale(0) rotate(180deg)";
+                el.style.opacity = "0";
+                setTimeout(() => el.remove(), 300);
+                
+                this.score += 10;
+                this.updateScore();
+                this.trashCount--;
+                
+                // Play sound effect logic here if allowed, skipping for simple HTML
+                
+                if(this.trashCount <= 0) {
+                    setTimeout(() => this.startCookingPhase(), 500);
+                }
+            }
+
+            startCookingPhase() {
+                this.phase = 'cooking';
+                document.getElementById('phase-text').innerText = "Cooking";
+                this.showFloatingText("🔥 Light the fire!", window.innerWidth/2, window.innerHeight/2);
+                
+                // Slide up controls
+                this.controlPanel.classList.remove('translate-y-full');
+                
+                // Start Game Loop
+                requestAnimationFrame((t) => this.gameLoop(t));
+            }
+
+            addWood() {
+                if(this.phase !== 'cooking') return;
+                this.heat = Math.min(this.heat + 30, 100);
+                this.createSmoke();
+                this.updateHeatUI();
+            }
+
+            createSmoke() {
+                const smoke = document.createElement('div');
+                smoke.classList.add('smoke-particle');
+                smoke.style.width = (20 + Math.random() * 30) + 'px';
+                smoke.style.height = smoke.style.width;
+                
+                // Randomize start slightly
+                const offset = (Math.random() - 0.5) * 20;
+                smoke.style.left = offset + 'px';
+                
+                this.smokeOrigin.appendChild(smoke);
+                setTimeout(() => smoke.remove(), 3000);
+            }
+
+            updateHeatUI() {
+                this.heatBar.style.width = `${this.heat}%`;
+                this.tempVal.innerText = `${Math.floor(this.heat * 3)}°C`;
+                
+                // Visual fire intensity
+                if(this.heat > 10) {
+                    this.fireFx.classList.add('active');
+                    this.fireFx.style.opacity = this.heat / 100;
+                } else {
+                    this.fireFx.classList.remove('active');
+                }
+            }
+
+            placeFood(type) {
+                if(this.inventory[type] > 0 && this.heat > 20) {
+                    this.inventory[type]--;
+                    document.getElementById(`count-${type}`).innerText = this.inventory[type];
+                    
+                    const food = {
+                        id: Date.now(),
+                        type: type,
+                        cookLevel: 0,
+                        state: 'raw', // raw, cooking, cooked, burnt
+                        el: null
+                    };
+                    
+                    this.spawnFoodOnGrill(food);
+                    this.grillItems.push(food);
+                } else if (this.heat <= 20) {
+                    this.showFloatingText("Too cold! Add wood!", window.innerWidth/2, window.innerHeight - 200);
+                }
+            }
+
+            spawnFoodOnGrill(food) {
+                const el = document.createElement('div');
+                el.classList.add('food-item');
+                
+                const icons = { steak: '🥩', sausage: '🌭', corn: '🌽' };
+                el.innerText = icons[food.type];
+                
+                // Random pos on grill
+                // Grill area is roughly 300px wide
+                const x = 20 + Math.random() * 60;
+                const y = 20 + Math.random() * 40; // Keep it near the grate line
+                
+                el.style.left = `${x}%`;
+                el.style.bottom = `${y}%`; // relative to fireplace inner
+                
+                // Drag Logic
+                this.makeDraggable(el, food);
+                
+                this.grillArea.appendChild(el);
+                food.el = el;
+            }
+
+            makeDraggable(el, foodObj) {
+                let isDragging = false;
+                
+                const onStart = (e) => {
+                    isDragging = true;
+                    el.style.zIndex = 1000;
+                };
+
+                const onEnd = (e) => {
+                    if(!isDragging) return;
+                    isDragging = false;
+                    el.style.zIndex = 20;
+
+                    // Check if dropped on plate
+                    const rect = el.getBoundingClientRect();
+                    const plateRect = this.plateZone.getBoundingClientRect();
+
+                    // Simple collision detection
+                    if (
+                        rect.left < plateRect.right &&
+                        rect.right > plateRect.left &&
+                        rect.top < plateRect.bottom &&
+                        rect.bottom > plateRect.top
+                    ) {
+                        this.serveFood(foodObj);
+                    } else {
+                        // Snap back to grill if not on plate (simplified)
+                        // In a complex app we'd calculate positions, here we just leave it on grill visually
+                    }
+                };
+
+                // Mouse events
+                el.addEventListener('mousedown', onStart);
+                window.addEventListener('mouseup', onEnd);
+                
+                // Move logic is handled by CSS transform in a real drag lib, 
+                // but for this simple version, we will just use Click to Serve if cooked?
+                // Actually, let's implement a simple follow-mouse for drag
+                
+                window.addEventListener('mousemove', (e) => {
+                    if(isDragging) {
+                        // Move element to mouse pos
+                        // We need to convert page coordinates to container relative
+                        // This is complex without a library.
+                        // ALTERNATIVE: Click to flip, Shift+Click to serve.
+                    }
+                });
+                
+                // Let's override with a simpler interaction model for robustness
+                el.onmousedown = null;
+                window.onmouseup = null;
+                window.onmousemove = null;
+
+                el.onclick = (e) => {
+                    if(e.shiftKey) {
+                        this.serveFood(foodObj);
+                    } else {
+                        this.flipFood(foodObj);
+                    }
+                };
+            }
+
+            flipFood(food) {
+                // Visual flip
+                food.el.style.transform = "scaleX(-1)";
+                setTimeout(() => food.el.style.transform = "scaleX(1)", 200);
+                this.showFloatingText("Flip!", food.el.getBoundingClientRect().left, food.el.getBoundingClientRect().top);
+            }
+
+            serveFood(food) {
+                // Remove from array
+                this.grillItems = this.grillItems.filter(i => i.id !== food.id);
+                food.el.remove();
+                
+                // Score calc
+                let points = 0;
+                let msg = "";
+                
+                if(food.state === 'cooked') {
+                    points = 500;
+                    msg = "Perfect! 😋";
+                } else if (food.state === 'cooking') {
+                    points = 100;
+                    msg = "Undercooked 😐";
+                } else if (food.state === 'burnt') {
+                    points = -200;
+                    msg = "Burnt! 🤮";
+                } else {
+                    points = -50;
+                    msg = "Raw! 🤢";
+                }
+                
+                this.score += points;
+                this.updateScore();
+                this.showFloatingText(msg, window.innerWidth - 100, window.innerHeight - 100);
+
+                this.checkEndGame();
+            }
+
+            checkEndGame() {
+                const totalInventory = this.inventory.steak + this.inventory.sausage + this.inventory.corn;
+                if(totalInventory === 0 && this.grillItems.length === 0) {
+                    setTimeout(() => {
+                        document.getElementById('final-score').innerText = this.score;
+                        document.getElementById('end-modal').classList.add('open');
+                    }, 1000);
+                }
+            }
+
+            gameLoop(timestamp) {
+                if(this.phase !== 'cooking') return;
+                
+                const dt = timestamp - this.lastTime;
+                this.lastTime = timestamp;
+                
+                // Fire decay (approx 1 unit per second)
+                if(Math.random() < 0.02) {
+                    this.heat = Math.max(this.heat - 0.5, 0);
+                    this.updateHeatUI();
+                }
+
+                // Cook food
+                this.grillItems.forEach(item => {
+                    // Cooking speed depends on heat
+                    if(this.heat > 30) {
+                        const speed = (this.heat / 100) * 0.2;
+                        item.cookLevel += speed;
+                        this.updateFoodVisuals(item);
+                    }
+                });
+                
+                // Random smoke
+                if(this.heat > 50 && Math.random() < 0.01) this.createSmoke();
+
+                requestAnimationFrame((t) => this.gameLoop(t));
+            }
+
+            updateFoodVisuals(item) {
+                // 0-30 Raw, 30-80 Cooked, 80+ Burnt
+                if(item.cookLevel < 30) {
+                    item.state = 'raw';
+                    item.el.className = 'food-item raw';
+                } else if (item.cookLevel < 80) {
+                    item.state = 'cooked';
+                    item.el.className = 'food-item cooked';
+                    // Add smoke occasionally
+                    if(Math.random() < 0.05) {
+                        this.showFloatingText("♨️", item.el.getBoundingClientRect().left, item.el.getBoundingClientRect().top - 20);
+                    }
+                } else {
+                    item.state = 'burnt';
+                    item.el.className = 'food-item burnt';
+                }
+            }
+
+            updateScore() {
+                document.getElementById('score-display').innerText = this.score;
+            }
+
+            showFloatingText(text, x, y) {
+                const el = document.createElement('div');
+                el.classList.add('floater');
+                el.innerText = text;
+                el.style.left = x + 'px';
+                el.style.top = y + 'px';
+                document.body.appendChild(el);
+                setTimeout(() => el.remove(), 1000);
+            }
+        }
+
+        // Init
+        const game = new BBQGame();
+
+    </script>
+</body>
+</html>

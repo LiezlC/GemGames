@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neural Sync Interface</title>
+    <style>
+        :root {
+            --bg-x: 50%;
+            --bg-y: 50%;
+            --pulse-speed: 4s;
+            --theme-cool: #004e64;
+            --theme-mid: #ffd60a;
+            --theme-warm: #d00000;
+            --scan-color: #00ffcc;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #050505;
+            color: #fff;
+            font-family: 'Courier New', Courier, monospace;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            user-select: none;
+        }
+
+        /* The Dynamic Background representing the aura */
+        .aura-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(
+                circle at var(--bg-x) var(--bg-y), 
+                var(--theme-mid) 0%, 
+                var(--theme-warm) 30%, 
+                var(--theme-cool) 70%, 
+                #000 100%
+            );
+            opacity: 0.8;
+            z-index: 1;
+            transition: background 0.2s ease;
+            animation: pulse var(--pulse-speed) infinite alternate;
+        }
+
+        /* Scanlines overlay */
+        .scanlines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.2));
+            background-size: 100% 4px;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        /* The Silhouette Construction */
+        .silhouette-container {
+            position: relative;
+            z-index: 3;
+            width: 400px;
+            height: 500px;
+            filter: drop-shadow(0 0 10px rgba(0,0,0,0.8));
+            transform: scale(1);
+            transition: transform 0.1s;
+        }
+
+        svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .silhouette-path {
+            fill: #0a0a0a;
+            stroke: none;
+        }
+
+        .tech-detail {
+            fill: #1a1a1a;
+            stroke: #333;
+            stroke-width: 1;
+        }
+
+        .lens {
+            fill: #111;
+            stroke: #00ffcc;
+            stroke-width: 2;
+            fill-opacity: 0.5;
+        }
+
+        .drip {
+            fill: var(--theme-warm);
+            animation: dripDrop 3s infinite ease-in;
+        }
+
+        /* HUD / UI Controls */
+        .hud-layer {
+            position: absolute;
+            z-index: 10;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Let clicks pass through to background for some areas */
+        }
+
+        .control-panel {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #444;
+            padding: 20px;
+            border-radius: 8px;
+            display: flex;
+            gap: 20px;
+            pointer-events: auto;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        label {
+            font-size: 12px;
+            color: #aaa;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        input[type="range"] {
+            width: 100px;
+            accent-color: var(--theme-mid);
+        }
+
+        button {
+            background: transparent;
+            border: 1px solid var(--theme-mid);
+            color: var(--theme-mid);
+            padding: 5px 15px;
+            cursor: pointer;
+            font-family: inherit;
+            text-transform: uppercase;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: var(--theme-mid);
+            color: #000;
+            box-shadow: 0 0 10px var(--theme-mid);
+        }
+
+        .status-text {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            text-align: right;
+            pointer-events: auto;
+        }
+
+        .status-header {
+            font-size: 24px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 0 0 5px var(--scan-color);
+        }
+
+        .status-sub {
+            font-size: 12px;
+            color: #888;
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0% { filter: brightness(0.8) hue-rotate(0deg); }
+            100% { filter: brightness(1.2) hue-rotate(10deg); }
+        }
+
+        @keyframes dripDrop {
+            0% { transform: translateY(0); opacity: 1; }
+            80% { opacity: 1; }
+            100% { transform: translateY(50px); opacity: 0; }
+        }
+
+        @keyframes glitch {
+            0% { transform: translate(0); }
+            20% { transform: translate(-2px, 2px); }
+            40% { transform: translate(-2px, -2px); }
+            60% { transform: translate(2px, 2px); }
+            80% { transform: translate(2px, -2px); }
+            100% { transform: translate(0); }
+        }
+
+        .glitching {
+            animation: glitch 0.2s infinite;
+        }
+
+        /* Interactive Elements in SVG */
+        .interactive-zone {
+            fill: transparent;
+            cursor: pointer;
+        }
+        .interactive-zone:hover {
+            fill: rgba(255, 255, 255, 0.1);
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Background Gradient Layer -->
+    <div class="aura-background" id="aura"></div>
+    <div class="scanlines"></div>
+
+    <!-- Main Visual: The Silhouette -->
+    <div class="silhouette-container" id="silhouette">
+        <svg viewBox="0 0 400 500" xmlns="http://www.w3.org/2000/svg">
+            <!-- Definitions for gradients -->
+            <defs>
+                <linearGradient id="metal" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:#333;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#111;stop-opacity:1" />
+                </linearGradient>
+            </defs>
+
+            <!-- Abstract Head Shape -->
+            <path class="silhouette-path" d="
+                M 150 450 
+                L 120 450 
+                Q 80 450 80 400
+                L 80 300
+                Q 80 250 100 200
+                L 100 150
+                Q 100 80 180 60
+                Q 260 40 300 100
+                L 300 150
+                L 280 180
+                L 280 220
+                L 320 250
+                L 320 350
+                L 350 400
+                L 350 450
+                Z
+            " />
+
+            <!-- Mechanical Neck/Device -->
+            <rect x="260" y="250" width="60" height="100" class="tech-detail" rx="5" />
+            <circle cx="290" cy="300" r="20" fill="#222" stroke="#444" />
+            <circle cx="290" cy="300" r="10" fill="#00ffcc" opacity="0.5" />
+
+            <!-- The "Lens" Eye Piece -->
+            <g transform="translate(260, 130)">
+                <circle cx="0" cy="0" r="35" class="tech-detail" />
+                <circle cx="0" cy="0" r="25" class="lens" id="eye-lens" />
+                <circle cx="0" cy="0" r="10" fill="#fff" opacity="0.8" />
+            </g>
+
+            <!-- Drips (Paint/Blood/Oil) -->
+            <path class="drip" d="M 300 350 L 305 380 L 310 350 Z" style="animation-delay: 0s" />
+            <path class="drip" d="M 320 360 L 325 400 L 330 360 Z" style="animation-delay: 1s" />
+
+            <!-- Interactive Zones -->
+            <circle cx="260" cy="130" r="40" class="interactive-zone" onclick="triggerGlitch()" />
+            <rect x="260" y="250" width="60" height="100" class="interactive-zone" onclick="cycleMode()" />
+
+        </svg>
+    </div>
+
+    <!-- HUD Layer -->
+    <div class="hud-layer">
+        <div class="status-text">
+            <div class="status-header">NEURAL SYNC</div>
+            <div class="status-sub" id="status-mode">MODE: STANDBY</div>
+            <div class="status-sub" id="coords">X: 000 Y: 000</div>
+        </div>
+
+        <div class="control-panel">
+            <div class="control-group">
+                <label>Intensity</label>
+                <input type="range" min="1" max="10" value="4" id="intensity-slider">
+            </div>
+            <div class="control-group">
+                <label>Spectrum</label>
+                <input type="range" min="0" max="100" value="50" id="spectrum-slider">
+            </div>
+            <div class="control-group">
+                <label>System</label>
+                <button onclick="triggerScan()">SCAN</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const body = document.body;
+        const aura = document.getElementById('aura');
+        const silhouette = document.getElementById('silhouette');
+        const intensitySlider = document.getElementById('intensity-slider');
+        const spectrumSlider = document.getElementById('spectrum-slider');
+        const statusMode = document.getElementById('status-mode');
+        const coordsDisplay = document.getElementById('coords');
+        const eyeLens = document.getElementById('eye-lens');
+
+        let isGlitching = false;
+        let modes = ['STANDBY', 'SYNCHRONIZED', 'OVERDRIVE', 'COOLING'];
+        let currentModeIdx = 0;
+
+        // Mouse Movement - Parallax & Gradient Center
+        document.addEventListener('mousemove', (e) => {
+            const x = e.clientX;
+            const y = e.clientY;
+            
+            // Update CSS variables for gradient position
+            const xPercent = (x / window.innerWidth) * 100;
+            const yPercent = (y / window.innerHeight) * 100;
+            
+            document.documentElement.style.setProperty('--bg-x', `${xPercent}%`);
+            document.documentElement.style.setProperty('--bg-y', `${yPercent}%`);
+
+            // Slight parallax on silhouette
+            const moveX = (window.innerWidth / 2 - x) * 0.02;
+            const moveY = (window.innerHeight / 2 - y) * 0.02;
+            silhouette.style.transform = `translate(${moveX}px, ${moveY}px)`;
+
+            // Update HUD coords
+            coordsDisplay.innerText = `X: ${x.toString().padStart(3, '0')} Y: ${y.toString().padStart(3, '0')}`;
+        });
+
+        // Intensity Slider
+        intensitySlider.addEventListener('input', (e) => {
+            const val = e.target.value;
+            // Invert: Higher value = lower duration (faster)
+            const speed = 11 - val; 
+            document.documentElement.style.setProperty('--pulse-speed', `${speed}s`);
+            statusMode.innerText = `INTENSITY: ${(val * 10)}%`;
+        });
+
+        // Spectrum Slider (Color Balance)
+        spectrumSlider.addEventListener('input', (e) => {
+            const val = e.target.value;
+            // Shift colors based on slider
+            // 0 = All Blue, 50 = Mixed, 100 = All Red
+            
+            // Interpolate colors roughly
+            if (val < 50) {
+                // More Blue
+                document.documentElement.style.setProperty('--theme-mid', '#00b4d8');
+                document.documentElement.style.setProperty('--theme-warm', '#0077b6');
+            } else {
+                // More Red/Yellow
+                document.documentElement.style.setProperty('--theme-mid', '#ffd60a');
+                document.documentElement.style.setProperty('--theme-warm', '#d00000');
+            }
+            
+            // Visual feedback on lens
+            const hue = (val / 100) * 360;
+            eyeLens.style.stroke = `hsl(${hue}, 100%, 50%)`;
+        });
+
+        // Trigger Glitch Effect
+        function triggerGlitch() {
+            if (isGlitching) return;
+            isGlitching = true;
+            body.classList.add('glitching');
+            statusMode.innerText = "SYSTEM ERROR";
+            statusMode.style.color = "red";
+            
+            // Play a fake sound effect visually by shaking screen
+            setTimeout(() => {
+                body.classList.remove('glitching');
+                statusMode.innerText = "SYSTEM RESTORED";
+                statusMode.style.color = "#888";
+                isGlitching = false;
+            }, 800);
+        }
+
+        // Cycle Modes (Clicking the mechanical neck)
+        function cycleMode() {
+            currentModeIdx = (currentModeIdx + 1) % modes.length;
+            const mode = modes[currentModeIdx];
+            statusMode.innerText = `MODE: ${mode}`;
+            
+            if(mode === 'OVERDRIVE') {
+                document.documentElement.style.setProperty('--pulse-speed', `0.5s`);
+                eyeLens.style.fill = "red";
+            } else if (mode === 'COOLING') {
+                document.documentElement.style.setProperty('--pulse-speed', `8s`);
+                eyeLens.style.fill = "cyan";
+            } else {
+                document.documentElement.style.setProperty('--pulse-speed', `4s`);
+                eyeLens.style.fill = "#111";
+            }
+        }
+
+        // Scan Animation
+        function triggerScan() {
+            statusMode.innerText = "SCANNING...";
+            const scanLine = document.createElement('div');
+            scanLine.style.position = 'absolute';
+            scanLine.style.top = '0';
+            scanLine.style.left = '0';
+            scanLine.style.width = '100%';
+            scanLine.style.height = '5px';
+            scanLine.style.background = '#00ffcc';
+            scanLine.style.boxShadow = '0 0 15px #00ffcc';
+            scanLine.style.zIndex = '20';
+            scanLine.style.transition = 'top 1.5s ease-in-out';
+            document.body.appendChild(scanLine);
+
+            // Force reflow
+            void scanLine.offsetWidth;
+
+            scanLine.style.top = '100%';
+
+            setTimeout(() => {
+                scanLine.remove();
+                statusMode.innerText = "SCAN COMPLETE";
+                // Random result
+                const analysis = ["STABLE", "VOLATILE", "SYNCED", "OFFLINE"];
+                const result = analysis[Math.floor(Math.random() * analysis.length)];
+                setTimeout(() => statusMode.innerText = `RESULT: ${result}`, 500);
+            }, 1500);
+        }
+
+        // Initial Animation
+        setTimeout(() => {
+            statusMode.innerText = "INITIALIZING...";
+            setTimeout(() => {
+                statusMode.innerText = "READY";
+            }, 1000);
+        }, 500);
+
+    </script>
+</body>
+</html>

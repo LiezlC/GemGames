@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Galactic Globe: The Roast Battle</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Orbitron:wght@500;900&family=Space+Mono&display=swap');
+
+        :root {
+            --neon-cyan: #00f3ff;
+            --neon-pink: #ff00ff;
+            --neon-gold: #ffd700;
+            --bg-dark: #050510;
+            --glass: rgba(255, 255, 255, 0.05);
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            background-image: 
+                radial-gradient(circle at 50% 0%, #ff6b6b 0%, transparent 40%),
+                radial-gradient(circle at 0% 100%, #2d1b4e 0%, transparent 50%),
+                radial-gradient(circle at 100% 100%, #00f3ff33 0%, transparent 50%);
+            color: white;
+            font-family: 'Space Mono', monospace;
+            height: 100vh;
+            overflow: hidden;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Holographic Effects */
+        .hologram-container {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.1);
+            border-radius: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hologram-scanline {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, transparent 50%, rgba(0, 243, 255, 0.05) 51%);
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* Typography */
+        .title-font { font-family: 'Orbitron', sans-serif; }
+        .bard-font { font-family: 'Cinzel', serif; }
+        
+        /* Character Avatars */
+        .avatar-glow-bard {
+            filter: drop-shadow(0 0 15px var(--neon-gold));
+            animation: float 3s ease-in-out infinite;
+        }
+        .avatar-glow-alien {
+            filter: drop-shadow(0 0 15px var(--neon-cyan));
+            animation: float 3s ease-in-out infinite reverse;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* Chat Bubbles */
+        .bubble {
+            max-width: 80%;
+            padding: 12px 16px;
+            margin: 8px 0;
+            border-radius: 12px;
+            position: relative;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: popIn 0.4s forwards;
+        }
+
+        .bubble-bard {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 140, 0, 0.1));
+            border-left: 4px solid var(--neon-gold);
+            align-self: flex-start;
+            font-family: 'Cinzel', serif;
+            font-weight: bold;
+        }
+
+        .bubble-alien {
+            background: linear-gradient(135deg, rgba(0, 243, 255, 0.1), rgba(0, 0, 255, 0.1));
+            border-right: 4px solid var(--neon-cyan);
+            align-self: flex-end;
+            text-align: right;
+            font-family: 'Orbitron', sans-serif;
+            letter-spacing: 1px;
+        }
+
+        @keyframes popIn {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Neon Button */
+        .neon-btn {
+            background: transparent;
+            border: 2px solid white;
+            color: white;
+            text-transform: uppercase;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            letter-spacing: 2px;
+            transition: all 0.2s;
+            box-shadow: 0 0 10px rgba(255,255,255,0.2);
+            position: relative;
+            overflow: hidden;
+        }
+        .neon-btn:hover {
+            background: white;
+            color: black;
+            box-shadow: 0 0 30px var(--neon-pink);
+            border-color: var(--neon-pink);
+        }
+        .neon-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Crowd Reaction Particles */
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            animation: rise 1.5s ease-out forwards;
+            font-size: 24px;
+        }
+        @keyframes rise {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-100px) scale(1.5); }
+        }
+
+        /* Stage Lighting */
+        .spotlight {
+            position: absolute;
+            bottom: 0;
+            width: 100px;
+            height: 300px;
+            background: linear-gradient(to top, rgba(255,255,255,0.2), transparent);
+            transform-origin: bottom center;
+            filter: blur(20px);
+            z-index: 0;
+        }
+        .spotlight-left { left: 20%; transform: rotate(15deg); }
+        .spotlight-right { right: 20%; transform: rotate(-15deg); }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #000; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+
+    </style>
+</head>
+<body>
+
+    <!-- Background Elements -->
+    <div class="absolute inset-0 pointer-events-none overflow-hidden">
+        <!-- Cityscape Silhouette (CSS Shapes) -->
+        <div class="absolute bottom-0 left-0 right-0 h-32 bg-black opacity-80" style="clip-path: polygon(0% 100%, 5% 80%, 10% 100%, 15% 60%, 20% 90%, 25% 50%, 30% 85%, 35% 40%, 40% 80%, 45% 55%, 50% 90%, 55% 45%, 60% 85%, 65% 30%, 70% 80%, 75% 50%, 80% 90%, 85% 60%, 90% 80%, 95% 70%, 100% 100%);"></div>
+        <div class="spotlight spotlight-left"></div>
+        <div class="spotlight spotlight-right"></div>
+    </div>
+
+    <!-- Header -->
+    <header class="relative z-20 text-center py-4 border-b border-white/10 bg-black/40 backdrop-blur-md">
+        <h1 class="text-3xl md:text-5xl title-font text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 drop-shadow-lg">
+            GALACTIC GLOBE
+        </h1>
+        <p class="text-xs md:text-sm text-gray-400 tracking-widest mt-1">SHAKESPEARE v. CEO // ROAST PROTOCOL INITIATED</p>
+    </header>
+
+    <!-- Main Arena -->
+    <main class="flex-1 relative z-10 flex flex-col md:flex-row gap-4 p-4 max-w-6xl mx-auto w-full h-full overflow-hidden">
+        
+        <!-- Left Fighter: The Bard -->
+        <div class="flex-1 flex flex-col items-center justify-end pb-8 relative group">
+            <div class="absolute top-4 left-4 text-left">
+                <h2 class="text-2xl bard-font text-yellow-500">The Bard-Bot</h2>
+                <div class="text-xs text-gray-400">Class: Poet Class V</div>
+                <div class="w-32 h-2 bg-gray-800 rounded mt-1 overflow-hidden">
+                    <div id="hp-bard" class="h-full bg-yellow-500 transition-all duration-500" style="width: 100%"></div>
+                </div>
+            </div>
+            
+            <!-- Avatar -->
+            <div class="text-9xl avatar-glow-bard cursor-pointer transition-transform hover:scale-110" onclick="triggerReaction('left')">
+                📜
+            </div>
+            <div class="mt-4 text-center opacity-0 group-hover:opacity-100 transition-opacity text-yellow-200 text-sm">
+                "I bite my thumb at thee!"
+            </div>
+        </div>
+
+        <!-- Center: The Battle Log -->
+        <div class="flex-[2] flex flex-col h-full max-h-[60vh] md:max-h-[70vh] hologram-container relative">
+            <div class="hologram-scanline"></div>
+            
+            <!-- Chat Area -->
+            <div id="chat-log" class="flex-1 overflow-y-auto p-4 flex flex-col gap-2 scroll-smooth">
+                <div class="text-center text-gray-500 text-sm italic my-4">
+                    --- SYSTEM: Neural Link Established ---<br>
+                    --- SYSTEM: Wit Processors at 100% ---
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="p-4 border-t border-white/10 bg-black/20 backdrop-blur flex justify-center gap-4">
+                <button onclick="generateRound()" id="roast-btn" class="neon-btn px-8 py-4 rounded-full text-lg">
+                    INITIATE ROAST
+                </button>
+            </div>
+        </div>
+
+        <!-- Right Fighter: The CEO -->
+        <div class="flex-1 flex flex-col items-center justify-end pb-8 relative group">
+            <div class="absolute top-4 right-4 text-right">
+                <h2 class="text-2xl title-font text-cyan-400">Xeno-Exec</h2>
+                <div class="text-xs text-gray-400">Class: Disruptor Elite</div>
+                <div class="w-32 h-2 bg-gray-800 rounded mt-1 overflow-hidden ml-auto">
+                    <div id="hp-alien" class="h-full bg-cyan-400 transition-all duration-500" style="width: 100%"></div>
+                </div>
+            </div>
+
+            <!-- Avatar -->
+            <div class="text-9xl avatar-glow-alien cursor-pointer transition-transform hover:scale-110" onclick="triggerReaction('right')">
+                👽
+            </div>
+            <div class="mt-4 text-center opacity-0 group-hover:opacity-100 transition-opacity text-cyan-200 text-sm">
+                "Let's circle back to your failure."
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // Data Banks
+        const shakespeareParts = {
+            start: ["Thou art a", "O thou", "Why, thou", "Away, you"],
+            adj1: ["artless", "bawdy", "beslubbering", "bootless", "churlish", "clouted", "craven", "currish", "dankish", "dissembling", "droning", "errant", "fawning", "fobbing", "froward"],
+            adj2: ["base-court", "bat-fowling", "beef-witted", "beetle-headed", "boil-brained", "clapper-clawed", "clay-brained", "common-kissing", "crook-pated", "dismal-dreaming", "dizzy-eyed"],
+            noun: ["apple-john", "baggage", "barnacle", "bladder", "boar-pig", "bugbear", "bum-bailey", "canker-blossom", "clack-dish", "clotpole", "coxcomb", "codpiece", "death-token", "dewberry"]
+        };
+
+        const ceoParts = {
+            start: ["Look,", "Listen,", "Honestly,", "Just so you know,"],
+            buzzword: ["synergy", "bandwidth", "paradigm shift", "KPI", "deliverable", "touchpoint", "ecosystem", "value-add", "ROI", "thought leadership", "disruption"],
+            insult: ["is suboptimal", "lacks scalability", "is a sunk cost", "needs a pivot", "is not moving the needle", "is below the fold", "doesn't align with our Q4 goals"],
+            closer: ["Let's take this offline.", "Per my last email.", "Circle back when you have value.", "You're fired.", "I'm pivoting away from you.", "That's a hard pass."]
+        };
+
+        // State
+        let turn = 0; // 0 = Bard, 1 = Alien
+        let bardHP = 100;
+        let alienHP = 100;
+        const chatLog = document.getElementById('chat-log');
+        const btn = document.getElementById('roast-btn');
+
+        // Generators
+        function getShakespeareRoast() {
+            const s = shakespeareParts;
+            const r = (arr) => arr[Math.floor(Math.random() * arr.length)];
+            return `${r(s.start)} ${r(s.adj1)}, ${r(s.adj2)} ${r(s.noun)}!`;
+        }
+
+        function getCEORoast() {
+            const c = ceoParts;
+            const r = (arr) => arr[Math.floor(Math.random() * arr.length)];
+            return `${r(c.start)} your personal ${r(c.buzzword)} ${r(c.insult)}. ${r(c.closer)}`;
+        }
+
+        // Game Logic
+        function generateRound() {
+            if (bardHP <= 0 || alienHP <= 0) {
+                resetGame();
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerText = "COMPUTING INSULTS...";
+            btn.classList.add('opacity-50');
+
+            // Determine who goes first randomly for variety, but stick to turn logic
+            const first = turn === 0 ? 'bard' : 'alien';
+            const second = turn === 0 ? 'alien' : 'bard';
+
+            // First Roast
+            setTimeout(() => {
+                addMessage(first);
+                triggerReaction(first === 'bard' ? 'left' : 'right');
+                
+                // Second Roast
+                setTimeout(() => {
+                    addMessage(second);
+                    triggerReaction(second === 'bard' ? 'left' : 'right');
+                    
+                    // Calculate Damage
+                    calculateDamage();
+                    
+                    btn.disabled = false;
+                    btn.innerText = "NEXT ROUND";
+                    btn.classList.remove('opacity-50');
+                    turn = turn === 0 ? 1 : 0; // Swap starter for next round
+                    
+                }, 1500);
+            }, 500);
+        }
+
+        function addMessage(character) {
+            const div = document.createElement('div');
+            div.className = `bubble bubble-${character}`;
+            
+            if (character === 'bard') {
+                div.innerHTML = `<strong>📜 Bard-Bot:</strong> "${getShakespeareRoast()}"`;
+            } else {
+                div.innerHTML = `<strong>👽 Xeno-Exec:</strong> "${getCEORoast()}"`;
+            }
+            
+            chatLog.appendChild(div);
+            chatLog.scrollTop = chatLog.scrollHeight;
+        }
+
+        function calculateDamage() {
+            // Random damage between 10 and 25
+            const dmg1 = Math.floor(Math.random() * 15) + 10;
+            const dmg2 = Math.floor(Math.random() * 15) + 10;
+
+            bardHP -= dmg2; // Alien hits Bard
+            alienHP -= dmg1; // Bard hits Alien
+
+            if (bardHP < 0) bardHP = 0;
+            if (alienHP < 0) alienHP = 0;
+
+            updateHealthBars();
+
+            // Check Win
+            if (bardHP === 0 || alienHP === 0) {
+                setTimeout(() => declareWinner(), 1000);
+            }
+        }
+
+        function updateHealthBars() {
+            document.getElementById('hp-bard').style.width = `${bardHP}%`;
+            document.getElementById('hp-alien').style.width = `${alienHP}%`;
+            
+            // Color change on low health
+            if(bardHP < 30) document.getElementById('hp-bard').classList.replace('bg-yellow-500', 'bg-red-600');
+            if(alienHP < 30) document.getElementById('hp-alien').classList.replace('bg-cyan-400', 'bg-red-600');
+        }
+
+        function declareWinner() {
+            const winner = bardHP > alienHP ? "THE BARD-BOT" : "XENO-EXEC";
+            const color = bardHP > alienHP ? "text-yellow-500" : "text-cyan-400";
+            
+            const div = document.createElement('div');
+            div.className = "text-center py-8 animate-bounce";
+            div.innerHTML = `
+                <h2 class="text-3xl ${color} font-bold">🏆 WINNER: ${winner} 🏆</h2>
+                <p class="text-white text-sm mt-2">The crowd goes wild!</p>
+            `;
+            chatLog.appendChild(div);
+            chatLog.scrollTop = chatLog.scrollHeight;
+            
+            btn.innerText = "REBOOT SYSTEM (PLAY AGAIN)";
+            btn.disabled = false;
+            btn.classList.remove('opacity-50');
+        }
+
+        function resetGame() {
+            bardHP = 100;
+            alienHP = 100;
+            document.getElementById('hp-bard').className = "h-full bg-yellow-500 transition-all duration-500";
+            document.getElementById('hp-alien').className = "h-full bg-cyan-400 transition-all duration-500";
+            updateHealthBars();
+            chatLog.innerHTML = `<div class="text-center text-gray-500 text-sm italic my-4">--- SYSTEM REBOOTED ---</div>`;
+            btn.innerText = "INITIATE ROAST";
+        }
+
+        // Visual Effects
+        function triggerReaction(side) {
+            const emojis = side === 'left' ? ['🔥', '📜', '💀', '🎭'] : ['📉', '👽', '🛸', '💥'];
+            const container = document.body;
+            
+            for(let i=0; i<5; i++) {
+                const el = document.createElement('div');
+                el.innerText = emojis[Math.floor(Math.random() * emojis.length)];
+                el.className = 'particle';
+                
+                // Position near the character
+                const xBase = side === 'left' ? 20 : 80;
+                const xRand = (Math.random() * 10) - 5;
+                const yBase = 70;
+                
+                el.style.left = `${xBase + xRand}%`;
+                el.style.top = `${yBase}%`;
+                
+                container.appendChild(el);
+                
+                setTimeout(() => el.remove(), 1500);
+            }
+        }
+
+    </script>
+</body>
+</html>

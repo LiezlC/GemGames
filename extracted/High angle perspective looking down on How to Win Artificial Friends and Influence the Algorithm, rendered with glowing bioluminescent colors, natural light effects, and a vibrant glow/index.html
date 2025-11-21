@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lumina: Light Memory Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #050505;
+            background-image: radial-gradient(circle at 50% 30%, #1a1a1a 0%, #000000 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: white;
+            user-select: none;
+        }
+
+        /* Bokeh Background Effect */
+        .bokeh {
+            position: absolute;
+            border-radius: 50%;
+            opacity: 0.1;
+            filter: blur(20px);
+            z-index: 0;
+            animation: float 10s infinite ease-in-out;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(10px, -20px); }
+        }
+
+        /* Game Container */
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+
+        /* The Wires */
+        svg.wires {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        path.wire-line {
+            fill: none;
+            stroke: #444;
+            stroke-width: 2;
+            opacity: 0.6;
+        }
+
+        /* The Bulbs */
+        .bulb {
+            position: absolute;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.1s ease-out;
+            z-index: 2;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            /* Base unlit state */
+            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.1), rgba(0,0,0,0.8));
+            box-shadow: inset 0 -2px 5px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .bulb::after {
+            /* The filament look */
+            content: '';
+            width: 40%;
+            height: 40%;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+        }
+
+        .bulb:active {
+            transform: scale(0.95);
+        }
+
+        /* Socket for the bulb */
+        .socket {
+            position: absolute;
+            background: #222;
+            border-radius: 4px;
+            z-index: 1;
+        }
+
+        /* Glow States */
+        .bulb.lit-red {
+            background: radial-gradient(circle at 30% 30%, #ffcccc, #ff0000);
+            box-shadow: 0 0 20px #ff0000, 0 0 40px #ff0000, inset 0 0 10px #fff;
+            border-color: #ffaaaa;
+        }
+        .bulb.lit-green {
+            background: radial-gradient(circle at 30% 30%, #ccffcc, #00ff00);
+            box-shadow: 0 0 20px #00ff00, 0 0 40px #00ff00, inset 0 0 10px #fff;
+            border-color: #aaffaa;
+        }
+        .bulb.lit-yellow {
+            background: radial-gradient(circle at 30% 30%, #ffffcc, #ffcc00);
+            box-shadow: 0 0 20px #ffcc00, 0 0 40px #ffcc00, inset 0 0 10px #fff;
+            border-color: #ffffaa;
+        }
+        .bulb.lit-orange {
+            background: radial-gradient(circle at 30% 30%, #ffeebb, #ff8800);
+            box-shadow: 0 0 20px #ff8800, 0 0 40px #ff8800, inset 0 0 10px #fff;
+            border-color: #ffccaa;
+        }
+        .bulb.lit-blue {
+            background: radial-gradient(circle at 30% 30%, #ccffff, #00ccff);
+            box-shadow: 0 0 20px #00ccff, 0 0 40px #00ccff, inset 0 0 10px #fff;
+            border-color: #aaffff;
+        }
+
+        /* The Big Central Light */
+        .master-bulb {
+            width: 100px;
+            height: 100px;
+            top: 15%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: radial-gradient(circle at 30% 30%, #fff, #ffaa00);
+            box-shadow: 0 0 50px #ffaa00, 0 0 100px rgba(255, 170, 0, 0.5);
+            z-index: 5;
+            animation: pulse-master 4s infinite ease-in-out;
+        }
+
+        @keyframes pulse-master {
+            0%, 100% { box-shadow: 0 0 50px #ffaa00, 0 0 100px rgba(255, 170, 0, 0.5); }
+            50% { box-shadow: 0 0 70px #ffaa00, 0 0 140px rgba(255, 170, 0, 0.6); }
+        }
+
+        /* UI Overlay */
+        #ui-layer {
+            position: absolute;
+            bottom: 30px;
+            width: 100%;
+            text-align: center;
+            z-index: 20;
+            pointer-events: none; /* Let clicks pass through to bulbs if needed, but buttons will have auto */
+        }
+
+        .btn {
+            pointer-events: auto;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 12px 30px;
+            font-size: 1.2rem;
+            border-radius: 30px;
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .btn:hover {
+            background: rgba(255,255,255,0.3);
+            box-shadow: 0 0 15px rgba(255,255,255,0.5);
+        }
+
+        .score-board {
+            font-size: 2rem;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(255,255,255,0.5);
+            margin-bottom: 10px;
+        }
+
+        .status-text {
+            font-size: 1rem;
+            color: #aaa;
+            margin-bottom: 20px;
+            min-height: 1.5em;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Background Bokeh -->
+    <div class="bokeh" style="top: 10%; left: 20%; width: 100px; height: 100px; background: red;"></div>
+    <div class="bokeh" style="top: 60%; left: 80%; width: 150px; height: 150px; background: green;"></div>
+    <div class="bokeh" style="top: 80%; left: 10%; width: 80px; height: 80px; background: orange;"></div>
+    <div class="bokeh" style="top: 30%; left: 70%; width: 120px; height: 120px; background: yellow;"></div>
+
+    <div id="game-container">
+        <!-- SVG Wires -->
+        <svg class="wires" id="wires-svg">
+            <!-- Paths will be generated by JS -->
+        </svg>
+
+        <!-- Bulbs will be injected here by JS -->
+        
+        <!-- The Master Light (Visual Anchor) -->
+        <div class="bulb master-bulb" id="master-bulb"></div>
+    </div>
+
+    <div id="ui-layer">
+        <div class="score-board">SCORE: <span id="score">0</span></div>
+        <div class="status-text" id="status">Press Start to Play</div>
+        <button class="btn" id="start-btn">Start Game</button>
+    </div>
+
+    <script>
+        // --- Configuration ---
+        // Based on the image: Arcs of lights.
+        // We will define positions relative to the center (50% width, 50% height is roughly center, but we want them hanging from top)
+        
+        const bulbConfig = [
+            // Inner Arc
+            { id: 0, x: 35, y: 35, color: 'lit-red', note: 261.63 },    // C4
+            { id: 1, x: 42, y: 40, color: 'lit-orange', note: 293.66 }, // D4
+            { id: 2, x: 50, y: 42, color: 'lit-yellow', note: 329.63 }, // E4 (Center low)
+            { id: 3, x: 58, y: 40, color: 'lit-orange', note: 349.23 }, // F4
+            { id: 4, x: 65, y: 35, color: 'lit-red', note: 392.00 },    // G4
+
+            // Outer Arc
+            { id: 5, x: 20, y: 50, color: 'lit-green', note: 440.00 },  // A4
+            { id: 6, x: 35, y: 60, color: 'lit-blue', note: 493.88 },   // B4
+            { id: 7, x: 50, y: 65, color: 'lit-yellow', note: 523.25 }, // C5
+            { id: 8, x: 65, y: 60, color: 'lit-blue', note: 587.33 },   // D5
+            { id: 9, x: 80, y: 50, color: 'lit-green', note: 659.25 },  // E5
+        ];
+
+        const container = document.getElementById('game-container');
+        const wiresSvg = document.getElementById('wires-svg');
+        const startBtn = document.getElementById('start-btn');
+        const statusText = document.getElementById('status');
+        const scoreDisplay = document.getElementById('score');
+        const masterBulb = document.getElementById('master-bulb');
+
+        let audioCtx;
+        let gameSequence = [];
+        let playerSequence = [];
+        let isGameActive = false;
+        let isPlayerTurn = false;
+        let score = 0;
+
+        // --- Initialization ---
+
+        function init() {
+            drawWires();
+            createBulbs();
+            
+            // Initialize Audio Context on first click
+            document.body.addEventListener('click', () => {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            }, { once: true });
+        }
+
+        function createBulbs() {
+            bulbConfig.forEach(cfg => {
+                // Create socket
+                const socket = document.createElement('div');
+                socket.className = 'socket';
+                socket.style.left = `calc(${cfg.x}% - 5px)`;
+                socket.style.top = `calc(${cfg.y}% - 15px)`;
+                socket.style.width = '10px';
+                socket.style.height = '15px';
+                container.appendChild(socket);
+
+                // Create Bulb
+                const bulb = document.createElement('div');
+                bulb.className = 'bulb';
+                bulb.id = `bulb-${cfg.id}`;
+                bulb.style.left = `calc(${cfg.x}% - 20px)`; // Center 40px bulb
+                bulb.style.top = `calc(${cfg.y}% - 20px)`;
+                bulb.style.width = '40px';
+                bulb.style.height = '40px';
+                
+                bulb.addEventListener('mousedown', () => handleBulbClick(cfg.id));
+                
+                container.appendChild(bulb);
+            });
+        }
+
+        function drawWires() {
+            // Simple catenary-like curves connecting the bulbs
+            // We'll draw one path for the inner arc and one for the outer
+            
+            // Inner Arc Path
+            const innerPoints = bulbConfig.slice(0, 5);
+            const outerPoints = bulbConfig.slice(5, 10);
+
+            const drawPath = (points) => {
+                let d = `M ${points[0].x} ${points[0].y} `; // Start
+                // Use quadratic bezier curves for smooth hanging look
+                for (let i = 0; i < points.length - 1; i++) {
+                    const p1 = points[i];
+                    const p2 = points[i+1];
+                    // Control point is halfway between x, and slightly lower y to simulate gravity
+                    const cx = (p1.x + p2.x) / 2;
+                    const cy = (p1.y + p2.y) / 2 + 5; // Sag factor
+                    d += `Q ${cx} ${cy}, ${p2.x} ${p2.y} `;
+                }
+                
+                // Also connect to the "ceiling" or offscreen
+                // Let's just draw lines from top corners to the first/last bulbs
+                let dStart = `M 0 0 Q 10 20, ${points[0].x} ${points[0].y}`;
+                let dEnd = `M ${points[points.length-1].x} ${points[points.length-1].y} Q 90 20, 100 0`;
+
+                const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                path.setAttribute("d", dStart + " " + d + " " + dEnd); // Combine segments roughly
+                // Actually, let's just draw the arc between bulbs. The "hanging" from ceiling is implied.
+                // Better path logic:
+                
+                let finalD = `M 0 0 C 10 10, ${points[0].x} ${points[0].y - 10}, ${points[0].x} ${points[0].y} `;
+                for(let i=0; i<points.length-1; i++){
+                     const p1 = points[i];
+                     const p2 = points[i+1];
+                     const cx = (p1.x + p2.x) / 2;
+                     const cy = Math.max(p1.y, p2.y) + 2; 
+                     finalD += `Q ${cx} ${cy} ${p2.x} ${p2.y} `;
+                }
+                finalD += `C ${points[points.length-1].x} ${points[points.length-1].y - 10}, 90 10, 100 0`;
+
+                const pathEl = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                pathEl.setAttribute("class", "wire-line");
+                // Convert % to coordinates for SVG is tricky if responsive. 
+                // We will use vector-effect: non-scaling-stroke and viewBox 0 0 100 100
+                wiresSvg.setAttribute("viewBox", "0 0 100 100");
+                wiresSvg.setAttribute("preserveAspectRatio", "none");
+                pathEl.setAttribute("d", finalD);
+                wiresSvg.appendChild(pathEl);
+            };
+
+            drawPath(innerPoints);
+            drawPath(outerPoints);
+        }
+
+        // --- Audio Logic ---
+
+        function playTone(freq, duration = 0.3) {
+            if (!audioCtx) return;
+            
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            osc.start();
+            
+            // Envelope
+            gain.gain.setValueAtTime(0, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+            
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        function playErrorTone() {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.value = 100;
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+            osc.stop(audioCtx.currentTime + 0.5);
+        }
+
+        // --- Game Logic ---
+
+        function lightUpBulb(id, speed = 500) {
+            return new Promise(resolve => {
+                const bulb = document.getElementById(`bulb-${id}`);
+                const cfg = bulbConfig.find(b => b.id === id);
+                
+                bulb.classList.add(cfg.color);
+                playTone(cfg.note);
+                
+                setTimeout(() => {
+                    bulb.classList.remove(cfg.color);
+                    setTimeout(resolve, 100); // Gap between lights
+                }, speed);
+            });
+        }
+
+        async function playSequence() {
+            isPlayerTurn = false;
+            statusText.textContent = "Watch the lights...";
+            
+            // Initial pause
+            await new Promise(r => setTimeout(r, 800));
+
+            for (let id of gameSequence) {
+                await lightUpBulb(id, 400);
+            }
+
+            isPlayerTurn = true;
+            statusText.textContent = "Your turn!";
+        }
+
+        function handleBulbClick(id) {
+            // Always light up and play sound for feedback (Free Play or Game)
+            const bulb = document.getElementById(`bulb-${id}`);
+            const cfg = bulbConfig.find(b => b.id === id);
+            
+            bulb.classList.add(cfg.color);
+            playTone(cfg.note);
+            setTimeout(() => bulb.classList.remove(cfg.color), 300);
+
+            if (!isGameActive || !isPlayerTurn) return;
+
+            // Game Logic
+            const expectedId = gameSequence[playerSequence.length];
+            
+            if (id === expectedId) {
+                playerSequence.push(id);
+                if (playerSequence.length === gameSequence.length) {
+                    // Level Complete
+                    score++;
+                    scoreDisplay.textContent = score;
+                    playerSequence = [];
+                    isPlayerTurn = false;
+                    statusText.textContent = "Good! Next level...";
+                    
+                    // Add new step
+                    setTimeout(() => {
+                        const nextId = Math.floor(Math.random() * bulbConfig.length);
+                        gameSequence.push(nextId);
+                        playSequence();
+                    }, 1000);
+                }
+            } else {
+                // Game Over
+                gameOver();
+            }
+        }
+
+        function gameOver() {
+            isGameActive = false;
+            isPlayerTurn = false;
+            statusText.textContent = "Game Over! Press Start to try again.";
+            playErrorTone();
+            startBtn.style.display = 'inline-block';
+            startBtn.textContent = "Try Again";
+            
+            // Flash all red
+            const allBulbs = document.querySelectorAll('.bulb');
+            allBulbs.forEach(b => b.classList.add('lit-red'));
+            setTimeout(() => {
+                allBulbs.forEach(b => b.classList.remove('lit-red'));
+            }, 500);
+        }
+
+        startBtn.addEventListener('click', () => {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+
+            score = 0;
+            scoreDisplay.textContent = score;
+            gameSequence = [];
+            playerSequence = [];
+            isGameActive = true;
+            startBtn.style.display = 'none';
+            
+            // Start with one random bulb
+            const startId = Math.floor(Math.random() * bulbConfig.length);
+            gameSequence.push(startId);
+            
+            playSequence();
+        });
+
+        // Run initialization
+        init();
+
+    </script>
+</body>
+</html>

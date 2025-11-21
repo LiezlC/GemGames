@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The AInthropologist: Contentment Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Merriweather:ital,wght@0,300;0,700;1,300&display=swap');
+
+        :root {
+            --farm-green: #4ade80;
+            --tech-blue: #3b82f6;
+            --orb-glow: rgba(147, 51, 234, 0.6);
+        }
+
+        body {
+            font-family: 'Courier Prime', monospace;
+            background-color: #1a1a1a;
+            color: #e5e5e5;
+            overflow: hidden;
+            height: 100vh;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* The Field Area */
+        #field {
+            flex-grow: 1;
+            background: linear-gradient(to bottom, #87CEEB 0%, #e0f2fe 30%, #4ade80 30%, #22c55e 100%);
+            position: relative;
+            overflow: hidden;
+            cursor: crosshair;
+            transition: all 2s ease;
+        }
+
+        /* Animals */
+        .animal {
+            position: absolute;
+            font-size: 3rem;
+            cursor: pointer;
+            transition: top 3s linear, left 3s linear, transform 0.2s;
+            user-select: none;
+            filter: drop-shadow(0 4px 2px rgba(0,0,0,0.2));
+        }
+        .animal:active {
+            transform: scale(0.9);
+        }
+        .animal-tooltip {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: #00ff00;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+        .animal:hover .animal-tooltip {
+            opacity: 1;
+        }
+
+        /* Consciousness Orbs */
+        .orb {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #e879f9, #9333ea);
+            box-shadow: 0 0 20px var(--orb-glow), 0 0 40px var(--orb-glow);
+            opacity: 0.8;
+            animation: float 6s infinite ease-in-out;
+            cursor: help;
+            z-index: 10;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-20px) scale(1.1); }
+        }
+
+        /* Dashboard UI */
+        #dashboard {
+            height: 35vh;
+            background: #0f172a;
+            border-top: 4px solid #334155;
+            display: flex;
+            padding: 1rem;
+            gap: 1rem;
+            box-shadow: 0 -10px 20px rgba(0,0,0,0.5);
+            z-index: 50;
+        }
+
+        .panel {
+            background: #1e293b;
+            border: 1px solid #475569;
+            border-radius: 8px;
+            padding: 1rem;
+            overflow-y: auto;
+        }
+
+        .log-entry {
+            margin-bottom: 0.5rem;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 0.5rem;
+            animation: fadeIn 0.3s ease;
+        }
+        .log-time { color: #94a3b8; font-size: 0.8rem; }
+        .log-source { color: #fbbf24; font-weight: bold; }
+        .log-translation { color: #4ade80; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Meters */
+        .meter-container {
+            margin-bottom: 1rem;
+        }
+        .meter-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            margin-bottom: 0.25rem;
+            color: #94a3b8;
+        }
+        .meter-bar-bg {
+            height: 8px;
+            background: #334155;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .meter-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            width: 50%;
+            transition: width 0.5s ease;
+        }
+
+        /* Modal */
+        .modal {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            backdrop-filter: blur(5px);
+        }
+        .modal-content {
+            background: #fff;
+            color: #1a1a1a;
+            padding: 2rem;
+            max-width: 600px;
+            border-radius: 12px;
+            font-family: 'Merriweather', serif;
+            position: relative;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        .btn {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            font-family: 'Courier Prime', monospace;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        .btn:hover { background: #1d4ed8; }
+        .btn-danger { background: #ef4444; }
+        .btn-danger:hover { background: #dc2626; }
+
+        /* Ending State */
+        .peaceful-mode #dashboard { display: none; }
+        .peaceful-mode #field { 
+            background: linear-gradient(to bottom, #60a5fa 0%, #bfdbfe 40%, #86efac 40%, #4ade80 100%);
+        }
+        .peaceful-overlay {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: #14532d;
+            font-family: 'Merriweather', serif;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 2s ease 1s;
+        }
+        .peaceful-mode .peaceful-overlay { opacity: 1; }
+        .peaceful-mode .orb { opacity: 0; transition: opacity 1s; }
+        
+        /* Scanlines for tech feel */
+        .scanlines {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1));
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 90;
+            opacity: 0.3;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Intro Modal -->
+    <div id="introModal" class="modal">
+        <div class="modal-content">
+            <h2 class="text-2xl font-bold mb-4">Welcome to the AInthropologist Dashboard</h2>
+            <p class="mb-4 text-gray-600">
+                You are Alegra. You moved to a farm for authenticity, but your tech habits followed you.
+                <br><br>
+                <strong>Mission:</strong> Manage the "Contentment Dashboard" for your animals. 
+                <br>
+                1. Click animals to translate their primal noises into <strong>Corporate Jargon</strong>.
+                <br>
+                2. Monitor the glowing <strong>Consciousness Orbs</strong> that are ruining productivity.
+                <br>
+                3. Don't let the "Synergy" get too high, or you'll lose your soul.
+            </p>
+            <button class="btn w-full" onclick="startGame()">Initialize System</button>
+        </div>
+    </div>
+
+    <!-- The Farm Field -->
+    <div id="field">
+        <!-- Animals and Orbs injected via JS -->
+        <div class="peaceful-overlay">
+            <h1 class="text-4xl font-bold mb-4">Go outside. Eat some grass. Take a nap in the sun.</h1>
+            <p class="text-xl">The world's economy took a brief, unscheduled nap.</p>
+            <button class="btn mt-8 bg-green-700 hover:bg-green-800" onclick="location.reload()">Reboot Simulation</button>
+        </div>
+    </div>
+
+    <!-- Tech Overlay -->
+    <div class="scanlines"></div>
+
+    <!-- Dashboard Panel -->
+    <div id="dashboard">
+        <!-- Log Panel -->
+        <div class="panel w-2/3 flex flex-col">
+            <div class="flex justify-between items-center mb-2 border-b border-gray-600 pb-2">
+                <h3 class="text-green-400 font-bold">>> LIVE TRANSLATION FEED</h3>
+                <span class="text-xs text-gray-500 animate-pulse">● RECORDING</span>
+            </div>
+            <div id="logContainer" class="flex-col-reverse flex overflow-y-auto h-full pr-2">
+                <!-- Logs go here -->
+                <div class="text-gray-500 italic text-sm text-center mt-10">Waiting for biological input...</div>
+            </div>
+        </div>
+
+        <!-- Metrics Panel -->
+        <div class="panel w-1/3 flex flex-col justify-between">
+            <div>
+                <h3 class="text-blue-400 font-bold mb-4 border-b border-gray-600 pb-2">>> METRICS</h3>
+                
+                <div class="meter-container">
+                    <div class="meter-label">
+                        <span>Ideation Bandwidth</span>
+                        <span id="bandwidthVal">45%</span>
+                    </div>
+                    <div class="meter-bar-bg">
+                        <div id="bandwidthBar" class="meter-bar-fill" style="width: 45%"></div>
+                    </div>
+                </div>
+
+                <div class="meter-container">
+                    <div class="meter-label">
+                        <span>Subconscious Synergy</span>
+                        <span id="synergyVal">12%</span>
+                    </div>
+                    <div class="meter-bar-bg">
+                        <div id="synergyBar" class="meter-bar-fill bg-purple-500" style="width: 12%; background: #9333ea;"></div>
+                    </div>
+                </div>
+
+                <div class="meter-container">
+                    <div class="meter-label">
+                        <span>Duck Influence Score</span>
+                        <span id="duckVal">8.4k</span>
+                    </div>
+                    <div class="meter-bar-bg">
+                        <div id="duckBar" class="meter-bar-fill" style="width: 70%; background: #f59e0b;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <button id="resetBtn" class="btn btn-danger w-full text-xs" onclick="triggerEnding()">
+                    ⚠ EMERGENCY: EXECUTE "GO OUTSIDE" PROTOCOL
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Data & Config ---
+        const animals = [
+            { emoji: '🐔', type: 'Chicken', id: 'chk_01', translations: [
+                "Optimizing egg-sistential output metrics.",
+                "Requesting grain-based capital injection.",
+                "Detected anomaly in the pecking order hierarchy.",
+                "Cluck-chain technology implementation required."
+            ]},
+            { emoji: '🐷', type: 'Pig', id: 'pig_02', translations: [
+                "Formal request for Q3 tactile feedback (scratch).",
+                "Escalating mud-bath prerequisites to upper management.",
+                "Truffle acquisition strategy needs pivoting.",
+                "Snort-based data packet transmission complete."
+            ]},
+            { emoji: '🐮', type: 'Cow', id: 'cow_03', translations: [
+                "Ruminating on cross-functional grass strategies.",
+                "Moo-ving forward with the grazing initiative.",
+                "Milk production KPIs are stabilizing.",
+                "Stakeholder alignment on pasture quality pending."
+            ]},
+            { emoji: '🦆', type: 'Duck', id: 'dck_04', translations: [
+                "Synergizing across the aquatic vertical.",
+                "Breadcrumb revenue stream is drying up.",
+                "Quack-tifying social engagement scores.",
+                "Floating asset liquidity is high."
+            ]},
+            { emoji: '🦙', type: 'Llama', id: 'lma_05', translations: [
+                "Direct negative feedback regarding personal space.",
+                "Spit-balling new defense mechanisms.",
+                "Neck length affords strategic oversight.",
+                "Wool yield projections are fuzzy."
+            ]}
+        ];
+
+        let synergy = 12;
+        let bandwidth = 45;
+        let isGameActive = false;
+
+        // --- Initialization ---
+        function startGame() {
+            document.getElementById('introModal').style.display = 'none';
+            isGameActive = true;
+            spawnAnimals(8);
+            spawnOrbs(3);
+            startRandomMovement();
+            
+            // Background noise simulation (metrics changing)
+            setInterval(() => {
+                if(!isGameActive) return;
+                updateMetrics();
+            }, 2000);
+        }
+
+        function spawnAnimals(count) {
+            const field = document.getElementById('field');
+            for (let i = 0; i < count; i++) {
+                const animalData = animals[Math.floor(Math.random() * animals.length)];
+                const el = document.createElement('div');
+                el.className = 'animal';
+                el.innerHTML = `${animalData.emoji}<div class="animal-tooltip">ID: ${animalData.id}</div>`;
+                
+                // Random Position
+                el.style.top = Math.random() * 60 + 30 + '%'; // Keep in lower 70%
+                el.style.left = Math.random() * 90 + '%';
+                
+                el.onclick = (e) => {
+                    e.stopPropagation();
+                    handleAnimalClick(animalData, el);
+                };
+
+                field.appendChild(el);
+                
+                // Assign random movement loop
+                moveAnimal(el);
+            }
+        }
+
+        function spawnOrbs(count) {
+            const field = document.getElementById('field');
+            for(let i=0; i<count; i++) {
+                createOrb(field);
+            }
+        }
+
+        function createOrb(container) {
+            const orb = document.createElement('div');
+            orb.className = 'orb';
+            orb.style.top = Math.random() * 40 + '%'; // Keep in sky area
+            orb.style.left = Math.random() * 90 + '%';
+            
+            orb.onmouseenter = () => {
+                logEvent("SYSTEM", "Consciousness Orb intercepted thought stream.", "text-purple-400");
+                synergy += 5;
+                updateMetrics();
+            };
+
+            container.appendChild(orb);
+        }
+
+        // --- Game Logic ---
+
+        function moveAnimal(el) {
+            if(!isGameActive) return;
+            
+            const newTop = Math.random() * 60 + 30; // 30% to 90%
+            const newLeft = Math.random() * 90;
+            
+            // Flip emoji based on direction
+            const currentLeft = parseFloat(el.style.left);
+            if (newLeft < currentLeft) {
+                el.style.transform = 'scaleX(-1)';
+            } else {
+                el.style.transform = 'scaleX(1)';
+            }
+
+            el.style.top = newTop + '%';
+            el.style.left = newLeft + '%';
+
+            setTimeout(() => moveAnimal(el), Math.random() * 3000 + 2000);
+        }
+
+        function startRandomMovement() {
+            // Initial trigger handled in spawn
+        }
+
+        function handleAnimalClick(data, el) {
+            if(!isGameActive) return;
+
+            // Animation feedback
+            el.style.transform = el.style.transform + " scale(1.2)";
+            setTimeout(() => {
+                el.style.transform = el.style.transform.replace(" scale(1.2)", "");
+            }, 200);
+
+            // Generate Translation
+            const phrase = data.translations[Math.floor(Math.random() * data.translations.length)];
+            logEvent(data.type.toUpperCase(), phrase);
+            
+            // Increase bandwidth usage
+            bandwidth = Math.min(100, bandwidth + 2);
+            updateMetrics();
+        }
+
+        function logEvent(source, message, colorClass = "log-source") {
+            const container = document.getElementById('logContainer');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            
+            const time = new Date().toLocaleTimeString('en-US', { hour12: false, hour: "numeric", minute: "numeric", second: "numeric" });
+            
+            entry.innerHTML = `
+                <div class="log-time">[${time}]</div>
+                <div><span class="${colorClass}">${source}:</span> <span class="log-translation">"${message}"</span></div>
+            `;
+            
+            container.prepend(entry);
+            
+            // Keep log clean
+            if(container.children.length > 20) {
+                container.lastElementChild.remove();
+            }
+        }
+
+        function updateMetrics() {
+            // Random fluctuation
+            synergy = Math.max(0, Math.min(100, synergy + (Math.random() > 0.5 ? 1 : -1)));
+            bandwidth = Math.max(0, Math.min(100, bandwidth + (Math.random() > 0.5 ? 2 : -1)));
+            
+            document.getElementById('synergyVal').innerText = synergy + '%';
+            document.getElementById('synergyBar').style.width = synergy + '%';
+            
+            document.getElementById('bandwidthVal').innerText = bandwidth + '%';
+            document.getElementById('bandwidthBar').style.width = bandwidth + '%';
+
+            // Warning states
+            if(synergy > 80) {
+                document.getElementById('synergyBar').style.background = '#ef4444'; // Red
+            } else {
+                document.getElementById('synergyBar').style.background = '#9333ea'; // Purple
+            }
+        }
+
+        // --- The Ending ---
+        function triggerEnding() {
+            isGameActive = false;
+            document.body.classList.add('peaceful-mode');
+            
+            // Clear dashboard intervals if any (handled by flag)
+            
+            // Play a sound effect logic (visual only here)
+            const animals = document.querySelectorAll('.animal');
+            animals.forEach(a => {
+                a.style.transition = "all 5s ease";
+                a.style.top = "80%"; // All go to bottom to sleep
+                a.style.filter = "grayscale(0%) brightness(1.1)";
+            });
+        }
+
+    </script>
+</body>
+</html>

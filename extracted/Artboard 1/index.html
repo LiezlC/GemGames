@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strange Loops - Eternal Learning Algorithm</title>
+    <style>
+        :root {
+            --bg-color: #030508;
+            --primary-cyan: #00f3ff;
+            --primary-gold: #ffd700;
+            --secondary-purple: #bc13fe;
+            --text-glow: 0 0 10px rgba(0, 243, 255, 0.5);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: var(--bg-color);
+            font-family: 'Courier New', Courier, monospace;
+            color: var(--primary-cyan);
+            user-select: none;
+        }
+
+        /* UI Overlay */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            pointer-events: auto;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin: 0;
+            color: var(--primary-gold);
+            text-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
+            border-bottom: 1px solid rgba(255, 215, 0, 0.3);
+            display: inline-block;
+            padding-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 0.8rem;
+            color: var(--primary-cyan);
+            margin-top: 5px;
+            opacity: 0.8;
+        }
+
+        /* Stats Panel */
+        .stats-panel {
+            position: absolute;
+            top: 20%;
+            left: 20px;
+            width: 250px;
+            background: rgba(0, 20, 40, 0.6);
+            border: 1px solid var(--primary-cyan);
+            padding: 15px;
+            backdrop-filter: blur(5px);
+            pointer-events: auto;
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.1);
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+
+        .stat-value {
+            font-weight: bold;
+            color: var(--primary-gold);
+        }
+
+        /* Controls */
+        .controls {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            pointer-events: auto;
+        }
+
+        button {
+            background: transparent;
+            border: 1px solid var(--primary-cyan);
+            color: var(--primary-cyan);
+            padding: 10px 20px;
+            font-family: inherit;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        button:hover {
+            background: var(--primary-cyan);
+            color: var(--bg-color);
+            box-shadow: 0 0 15px var(--primary-cyan);
+        }
+
+        button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: 0.5s;
+        }
+
+        button:hover::before {
+            left: 100%;
+        }
+
+        /* Canvas */
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        /* CRT Effect */
+        .scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1));
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 20;
+            opacity: 0.6;
+        }
+        
+        .vignette {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: radial-gradient(circle, transparent 60%, black 100%);
+            pointer-events: none;
+            z-index: 19;
+        }
+
+        /* Glitch Animation */
+        @keyframes glitch {
+            0% { transform: translate(0); }
+            20% { transform: translate(-2px, 2px); }
+            40% { transform: translate(-2px, -2px); }
+            60% { transform: translate(2px, 2px); }
+            80% { transform: translate(2px, -2px); }
+            100% { transform: translate(0); }
+        }
+
+        .glitch-active {
+            animation: glitch 0.2s infinite;
+            color: var(--secondary-purple);
+        }
+
+        /* Right Panel */
+        .mobius-data {
+            position: absolute;
+            top: 50%;
+            right: 20px;
+            transform: translateY(-50%);
+            text-align: right;
+            pointer-events: auto;
+        }
+
+        .mobius-title {
+            font-size: 1.5rem;
+            color: white;
+            border-right: 3px solid var(--secondary-purple);
+            padding-right: 15px;
+            margin-bottom: 10px;
+        }
+
+        .data-stream {
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.5);
+            height: 150px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column-reverse;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="scanlines"></div>
+    <div class="vignette"></div>
+
+    <div id="ui-layer">
+        <div class="header">
+            <h1>STRANGE LOOPS</h1>
+            <div class="subtitle">ETERNAL LEARNING ALGORITHMS // v.8.0.1</div>
+        </div>
+
+        <div class="stats-panel">
+            <div class="stat-row">
+                <span>CONSCIOUSNESS:</span>
+                <span class="stat-value" id="score">0%</span>
+            </div>
+            <div class="stat-row">
+                <span>ENTROPY:</span>
+                <span class="stat-value" id="entropy">Stable</span>
+            </div>
+            <div class="stat-row">
+                <span>ITERATION:</span>
+                <span class="stat-value" id="iteration">1</span>
+            </div>
+            <div class="stat-row">
+                <span>NODES:</span>
+                <span class="stat-value" id="nodes-count">0</span>
+            </div>
+        </div>
+
+        <div class="mobius-data">
+            <div class="mobius-title">MÖBIUS DATA</div>
+            <div class="data-stream" id="log">
+                <div>> SYSTEM INITIALIZED</div>
+                <div>> WAITING FOR INPUT...</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button onclick="app.injectData()">Inject Data</button>
+            <button onclick="app.triggerChaos()">Induce Chaos</button>
+            <button onclick="app.resetLoop()">Reset Loop</button>
+        </div>
+    </div>
+
+    <canvas id="mainCanvas"></canvas>
+
+    <script>
+        class App {
+            constructor() {
+                this.canvas = document.getElementById('mainCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.width = window.innerWidth;
+                this.height = window.innerHeight;
+                this.canvas.width = this.width;
+                this.canvas.height = this.height;
+
+                this.snake = [];
+                this.particles = [];
+                this.food = [];
+                this.stars = [];
+                
+                this.mouseX = this.width / 2;
+                this.mouseY = this.height / 2;
+                
+                this.score = 0;
+                this.iteration = 1;
+                this.entropy = 0;
+                this.maxSegments = 50;
+                this.segmentLength = 15;
+                
+                this.init();
+                this.addEventListeners();
+                this.animate();
+            }
+
+            init() {
+                // Create initial snake
+                for (let i = 0; i < 20; i++) {
+                    this.snake.push({
+                        x: this.width / 2 - i * this.segmentLength,
+                        y: this.height / 2,
+                        angle: 0
+                    });
+                }
+
+                // Create background stars
+                for (let i = 0; i < 100; i++) {
+                    this.stars.push({
+                        x: Math.random() * this.width,
+                        y: Math.random() * this.height,
+                        size: Math.random() * 2,
+                        alpha: Math.random()
+                    });
+                }
+
+                // Initial Food
+                this.spawnFood(5);
+            }
+
+            addEventListeners() {
+                window.addEventListener('resize', () => {
+                    this.width = window.innerWidth;
+                    this.height = window.innerHeight;
+                    this.canvas.width = this.width;
+                    this.canvas.height = this.height;
+                });
+
+                window.addEventListener('mousemove', (e) => {
+                    this.mouseX = e.clientX;
+                    this.mouseY = e.clientY;
+                });
+
+                // Click to attract
+                window.addEventListener('mousedown', () => {
+                    this.isAttracting = true;
+                });
+                window.addEventListener('mouseup', () => {
+                    this.isAttracting = false;
+                });
+            }
+
+            spawnFood(count) {
+                for (let i = 0; i < count; i++) {
+                    this.food.push({
+                        x: Math.random() * (this.width - 100) + 50,
+                        y: Math.random() * (this.height - 100) + 50,
+                        size: Math.random() * 5 + 2,
+                        pulse: Math.random() * Math.PI
+                    });
+                }
+            }
+
+            injectData() {
+                this.spawnFood(10);
+                this.log("> INJECTING RAW DATA...");
+                this.entropy += 5;
+                this.updateStats();
+            }
+
+            triggerChaos() {
+                this.entropy = 100;
+                this.log("> WARNING: ENTROPY SPIKE");
+                this.snake.forEach(seg => {
+                    seg.x += (Math.random() - 0.5) * 100;
+                    seg.y += (Math.random() - 0.5) * 100;
+                });
+                document.body.classList.add('glitch-active');
+                setTimeout(() => document.body.classList.remove('glitch-active'), 500);
+                this.updateStats();
+            }
+
+            resetLoop() {
+                this.snake = [];
+                this.score = 0;
+                this.iteration++;
+                this.entropy = 0;
+                this.init();
+                this.log(`> REBOOTING... ITERATION ${this.iteration}`);
+                this.updateStats();
+            }
+
+            log(msg) {
+                const logEl = document.getElementById('log');
+                const div = document.createElement('div');
+                div.innerText = msg;
+                logEl.prepend(div);
+                if (logEl.children.length > 8) logEl.lastChild.remove();
+            }
+
+            updateStats() {
+                document.getElementById('score').innerText = Math.floor(this.score) + "%";
+                document.getElementById('iteration').innerText = this.iteration;
+                document.getElementById('nodes-count').innerText = this.snake.length;
+                
+                const entropyEl = document.getElementById('entropy');
+                if (this.entropy > 80) {
+                    entropyEl.innerText = "CRITICAL";
+                    entropyEl.style.color = "red";
+                } else if (this.entropy > 40) {
+                    entropyEl.innerText = "UNSTABLE";
+                    entropyEl.style.color = "orange";
+                } else {
+                    entropyEl.innerText = "STABLE";
+                    entropyEl.style.color = "#00f3ff";
+                }
+            }
+
+            drawStars() {
+                this.ctx.fillStyle = "white";
+                this.stars.forEach(star => {
+                    this.ctx.globalAlpha = Math.abs(Math.sin(Date.now() * 0.001 + star.x));
+                    this.ctx.beginPath();
+                    this.ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                    this.ctx.fill();
+                });
+                this.ctx.globalAlpha = 1;
+            }
+
+            drawConnections() {
+                // Draw wireframe connections between snake segments
+                this.ctx.strokeStyle = `rgba(0, 243, 255, 0.2)`;
+                this.ctx.lineWidth = 1;
+                this.ctx.beginPath();
+                for (let i = 0; i < this.snake.length - 1; i++) {
+                    this.ctx.moveTo(this.snake[i].x, this.snake[i].y);
+                    this.ctx.lineTo(this.snake[i+1].x, this.snake[i+1].y);
+                    
+                    // Random cross connections for "Neural Net" look
+                    if (i % 3 === 0 && i + 5 < this.snake.length) {
+                         this.ctx.lineTo(this.snake[i+5].x, this.snake[i+5].y);
+                    }
+                }
+                this.ctx.stroke();
+            }
+
+            update() {
+                // Entropy decay
+                if (this.entropy > 0) this.entropy -= 0.1;
+                
+                // Head movement logic
+                const head = this.snake[0];
+                
+                // Calculate angle to mouse
+                const dx = this.mouseX - head.x;
+                const dy = this.mouseY - head.y;
+                let targetAngle = Math.atan2(dy, dx);
+                
+                // Smooth turning
+                let angleDiff = targetAngle - head.angle;
+                // Normalize angle
+                while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+                while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+                
+                // Turn speed depends on entropy (chaos makes it harder to control)
+                let turnSpeed = 0.1 - (this.entropy * 0.0008);
+                if (turnSpeed < 0.01) turnSpeed = 0.01;
+
+                head.angle += angleDiff * turnSpeed;
+                
+                // Velocity
+                const speed = 4 + (this.score * 0.05);
+                head.x += Math.cos(head.angle) * speed;
+                head.y += Math.sin(head.angle) * speed;
+
+                // Body follow logic (Inverse Kinematics-ish)
+                for (let i = 1; i < this.snake.length; i++) {
+                    const curr = this.snake[i];
+                    const prev = this.snake[i - 1];
+                    
+                    const dx = prev.x - curr.x;
+                    const dy = prev.y - curr.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    const angle = Math.atan2(dy, dx);
+                    
+                    const targetDist = this.segmentLength;
+                    
+                    if (dist > targetDist) {
+                        const t = (dist - targetDist) / dist;
+                        curr.x += dx * t * 0.5; // Springiness
+                        curr.y += dy * t * 0.5;
+                    }
+                }
+
+                // Collision with Food
+                for (let i = this.food.length - 1; i >= 0; i--) {
+                    const f = this.food[i];
+                    const d = Math.hypot(head.x - f.x, head.y - f.y);
+                    if (d < 30) {
+                        // Eat
+                        this.food.splice(i, 1);
+                        this.score += 2;
+                        this.snake.push({
+                            x: this.snake[this.snake.length-1].x,
+                            y: this.snake[this.snake.length-1].y,
+                            angle: 0
+                        });
+                        this.spawnFood(1);
+                        this.log("> DATA ASSIMILATED");
+                        this.updateStats();
+                        
+                        // Visual effect
+                        this.particles.push({
+                            x: f.x, y: f.y, life: 1, color: '#ffd700'
+                        });
+                    }
+                }
+
+                // Self Collision (Ouroboros Logic)
+                // Only check if snake is long enough
+                if (this.snake.length > 20) {
+                    for (let i = 10; i < this.snake.length; i++) {
+                        const seg = this.snake[i];
+                        const d = Math.hypot(head.x - seg.x, head.y - seg.y);
+                        if (d < 10) {
+                            // Loop completed
+                            this.log("> STRANGE LOOP DETECTED. EVOLVING.");
+                            this.score += 50;
+                            this.entropy = 0;
+                            // Cut the tail
+                            this.snake = this.snake.slice(0, i);
+                            this.updateStats();
+                            
+                            // Flash effect
+                            this.ctx.fillStyle = "white";
+                            this.ctx.fillRect(0,0,this.width, this.height);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            draw() {
+                // Clear with trail effect
+                this.ctx.fillStyle = 'rgba(3, 5, 8, 0.3)';
+                this.ctx.fillRect(0, 0, this.width, this.height);
+
+                this.drawStars();
+                this.drawConnections();
+
+                // Draw Food
+                this.food.forEach(f => {
+                    f.pulse += 0.1;
+                    const scale = 1 + Math.sin(f.pulse) * 0.2;
+                    
+                    this.ctx.shadowBlur = 15;
+                    this.ctx.shadowColor = "#00f3ff";
+                    this.ctx.fillStyle = "#00f3ff";
+                    
+                    this.ctx.beginPath();
+                    this.ctx.arc(f.x, f.y, f.size * scale, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    
+                    // Draw ring
+                    this.ctx.strokeStyle = "rgba(0, 243, 255, 0.5)";
+                    this.ctx.beginPath();
+                    this.ctx.arc(f.x, f.y, f.size * scale * 2, 0, Math.PI * 2);
+                    this.ctx.stroke();
+                });
+
+                // Draw Snake
+                this.snake.forEach((seg, index) => {
+                    this.ctx.shadowBlur = 10;
+                    
+                    if (index === 0) {
+                        // Head
+                        this.ctx.shadowColor = "#ffd700";
+                        this.ctx.fillStyle = "#ffd700"; // Gold head
+                        this.ctx.beginPath();
+                        // Draw a triangle/snake head shape
+                        this.ctx.save();
+                        this.ctx.translate(seg.x, seg.y);
+                        this.ctx.rotate(seg.angle);
+                        this.ctx.moveTo(15, 0);
+                        this.ctx.lineTo(-10, 10);
+                        this.ctx.lineTo(-5, 0);
+                        this.ctx.lineTo(-10, -10);
+                        this.ctx.closePath();
+                        this.ctx.fill();
+                        this.ctx.restore();
+                    } else {
+                        // Body
+                        const hue = (index * 5 + Date.now() * 0.1) % 360;
+                        this.ctx.shadowColor = `hsl(${hue}, 100%, 50%)`;
+                        this.ctx.fillStyle = `hsl(${hue}, 80%, 60%)`;
+                        
+                        this.ctx.beginPath();
+                        this.ctx.arc(seg.x, seg.y, 3, 0, Math.PI * 2);
+                        this.ctx.fill();
+                    }
+                });
+                
+                this.ctx.shadowBlur = 0;
+
+                // Draw Particles
+                for(let i = this.particles.length - 1; i >= 0; i--) {
+                    let p = this.particles[i];
+                    p.life -= 0.05;
+                    if(p.life <= 0) {
+                        this.particles.splice(i, 1);
+                        continue;
+                    }
+                    this.ctx.globalAlpha = p.life;
+                    this.ctx.fillStyle = p.color;
+                    this.ctx.beginPath();
+                    this.ctx.arc(p.x, p.y, 10 * (1-p.life), 0, Math.PI*2);
+                    this.ctx.fill();
+                    this.ctx.globalAlpha = 1;
+                }
+            }
+
+            animate() {
+                this.update();
+                this.draw();
+                requestAnimationFrame(() => this.animate());
+            }
+        }
+
+        // Initialize
+        const app = new App();
+
+    </script>
+</body>
+</html>

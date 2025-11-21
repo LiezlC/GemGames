@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dream Spire: Pearl Protector</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;600;800&display=swap');
+
+        :root {
+            --primary-pink: #ff9a9e;
+            --deep-purple: #2d1b4e;
+            --sky-blue: #a18cd1;
+            --orb-glow: #fbc2eb;
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: linear-gradient(to bottom, #a18cd1 0%, #fbc2eb 100%);
+            font-family: 'Outfit', sans-serif;
+            user-select: none;
+            touch-action: none;
+        }
+
+        /* --- The Environment --- */
+        .world-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            perspective: 1000px;
+            overflow: hidden;
+        }
+
+        /* Clouds */
+        .cloud {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 50%;
+            filter: blur(20px);
+            animation: floatCloud 20s infinite linear;
+            z-index: 0;
+        }
+
+        @keyframes floatCloud {
+            0% { transform: translateX(-100px); }
+            50% { transform: translateX(20px); }
+            100% { transform: translateX(-100px); }
+        }
+
+        /* The Spire (Abstract CSS Art) */
+        .spire-container {
+            position: absolute;
+            bottom: -50px; /* Anchored to bottom */
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 1;
+            filter: drop-shadow(0 0 20px rgba(161, 140, 209, 0.6));
+        }
+
+        .spire-top {
+            width: 120px;
+            height: 120px;
+            background: radial-gradient(circle at 30% 30%, #fff, #a18cd1, #4a3b75);
+            border-radius: 50%;
+            position: relative;
+            box-shadow: 0 0 30px var(--primary-pink);
+            z-index: 5;
+        }
+        
+        /* Spikes on top orb */
+        .spire-top::after {
+            content: '';
+            position: absolute;
+            top: -20px; left: 50%; transform: translateX(-50%);
+            width: 10px; height: 40px;
+            background: #4a3b75;
+            clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+        }
+
+        .spire-neck {
+            width: 40px;
+            height: 60px;
+            background: linear-gradient(to right, #2d1b4e, #6b5b95, #2d1b4e);
+            margin-top: -10px;
+            z-index: 4;
+            border-left: 2px solid rgba(255,255,255,0.3);
+            border-right: 2px solid rgba(255,255,255,0.3);
+        }
+
+        .spire-mid {
+            width: 160px;
+            height: 100px;
+            background: #2d1b4e;
+            clip-path: polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 3;
+            position: relative;
+        }
+
+        .spire-mid-detail {
+            width: 40px; height: 40px;
+            background: #ff9a9e;
+            border-radius: 50%;
+            box-shadow: 0 0 15px #ff9a9e;
+        }
+
+        .spire-base {
+            width: 240px;
+            height: 200px;
+            background: linear-gradient(180deg, #4a3b75 0%, #2d1b4e 100%);
+            clip-path: polygon(20% 0, 80% 0, 100% 100%, 0% 100%);
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            padding-bottom: 20px;
+            z-index: 2;
+            position: relative;
+        }
+
+        .spire-door {
+            width: 60px;
+            height: 80px;
+            background: #1a0f2e;
+            border-radius: 30px 30px 0 0;
+            box-shadow: inset 0 0 20px #ff9a9e;
+        }
+
+        /* --- Game Entities --- */
+        .game-layer {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 10;
+            pointer-events: none; /* Let clicks pass through to entities */
+        }
+
+        .entity {
+            position: absolute;
+            pointer-events: auto;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        
+        .entity:active {
+            transform: scale(0.9);
+        }
+
+        /* The Pearl (Orb) */
+        .pearl {
+            width: 30px;
+            height: 30px;
+            background: radial-gradient(circle at 30% 30%, #fff, #ffc0cb, #ff69b4);
+            border-radius: 50%;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            animation: bounce 2s infinite ease-in-out;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* The Gremlin */
+        .gremlin {
+            width: 50px;
+            height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            filter: drop-shadow(0 5px 5px rgba(0,0,0,0.3));
+        }
+        
+        /* SVG Construction for Gremlin */
+        .gremlin svg {
+            width: 100%;
+            height: 100%;
+            fill: #fff0f5; /* Pale pink skin */
+        }
+
+        /* --- UI Overlay --- */
+        .ui-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 100;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+        }
+
+        .hud-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 16px;
+            padding: 12px 24px;
+            color: white;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .score-display {
+            font-size: 1.5rem;
+            font-weight: 800;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.8;
+        }
+
+        .start-screen, .game-over-screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(45, 27, 78, 0.85);
+            backdrop-filter: blur(8px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            pointer-events: auto;
+            text-align: center;
+            color: white;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #ff9a9e, #fad0c4);
+            border: none;
+            padding: 16px 40px;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #2d1b4e;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 0 20px rgba(255, 154, 158, 0.5);
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(255, 154, 158, 0.8);
+        }
+
+        /* Particle Effects */
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            border-radius: 50%;
+            animation: fadeOut 0.8s forwards;
+        }
+
+        @keyframes fadeOut {
+            0% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(2); }
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Background World -->
+    <div class="world-container">
+        <!-- Decorative Clouds -->
+        <div class="cloud" style="width: 300px; height: 300px; top: -50px; left: -50px;"></div>
+        <div class="cloud" style="width: 400px; height: 400px; top: 20%; right: -100px;"></div>
+        <div class="cloud" style="width: 200px; height: 200px; top: 60%; left: 10%;"></div>
+
+        <!-- The Spire -->
+        <div class="spire-container">
+            <div class="spire-top"></div>
+            <div class="spire-neck"></div>
+            <div class="spire-mid">
+                <div class="spire-mid-detail"></div>
+            </div>
+            <div class="spire-base">
+                <div class="spire-door"></div>
+            </div>
+        </div>
+
+        <!-- Game Layer -->
+        <div id="game-layer" class="game-layer"></div>
+    </div>
+
+    <!-- UI Overlay -->
+    <div class="ui-overlay">
+        <div class="hud-top">
+            <div class="glass-panel">
+                <div class="label">Dream Pearls</div>
+                <div class="score-display" id="score">0</div>
+            </div>
+            <div class="glass-panel">
+                <div class="label">Gremlins Banished</div>
+                <div class="score-display" id="banished">0</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Start Screen -->
+    <div id="start-screen" class="start-screen">
+        <h1 class="text-5xl font-bold mb-2" style="text-shadow: 0 0 20px #ff9a9e;">Dream Spire</h1>
+        <p class="text-xl opacity-80 mb-8 max-w-md">The Cloud Gremlins are stealing the Dream Pearls! <br>Click Pearls to collect them. Click Gremlins to banish them.</p>
+        <button class="btn" onclick="startGame()">Enter the Dream</button>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="game-over-screen" class="game-over-screen" style="display: none;">
+        <h1 class="text-5xl font-bold mb-2">Dream Collapse</h1>
+        <p class="text-xl opacity-80 mb-4">The Gremlins took too many pearls.</p>
+        <div class="text-3xl font-bold mb-8">Final Score: <span id="final-score">0</span></div>
+        <button class="btn" onclick="resetGame()">Try Again</button>
+    </div>
+
+    <script>
+        // --- Game State ---
+        const state = {
+            isPlaying: false,
+            score: 0,
+            banished: 0,
+            missed: 0,
+            maxMissed: 5,
+            entities: [], // { id, type, x, y, el, speedX, speedY }
+            lastTime: 0,
+            spawnTimer: 0,
+            difficulty: 1
+        };
+
+        const gameLayer = document.getElementById('game-layer');
+        const scoreEl = document.getElementById('score');
+        const banishedEl = document.getElementById('banished');
+        const finalScoreEl = document.getElementById('final-score');
+        const startScreen = document.getElementById('start-screen');
+        const gameOverScreen = document.getElementById('game-over-screen');
+
+        // --- SVG Assets ---
+        // A cute but mischievous gremlin face
+        const gremlinSVG = `
+        <svg viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="45" fill="#ffc0cb" stroke="#d87093" stroke-width="3"/>
+            <circle cx="35" cy="40" r="5" fill="#900"/>
+            <circle cx="65" cy="40" r="5" fill="#900"/>
+            <path d="M 30 65 Q 50 80 70 65" stroke="#900" stroke-width="3" fill="none"/>
+            <path d="M 20 20 L 30 35 L 15 40 Z" fill="#d87093"/>
+            <path d="M 80 20 L 70 35 L 85 40 Z" fill="#d87093"/>
+        </svg>`;
+
+        // --- Game Logic ---
+
+        function startGame() {
+            state.isPlaying = true;
+            state.score = 0;
+            state.banished = 0;
+            state.missed = 0;
+            state.entities = [];
+            state.difficulty = 1;
+            gameLayer.innerHTML = '';
+            updateUI();
+            
+            startScreen.style.display = 'none';
+            gameOverScreen.style.display = 'none';
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function resetGame() {
+            startGame();
+        }
+
+        function gameOver() {
+            state.isPlaying = false;
+            finalScoreEl.innerText = state.score;
+            gameOverScreen.style.display = 'flex';
+        }
+
+        function updateUI() {
+            scoreEl.innerText = state.score;
+            banishedEl.innerText = state.banished;
+        }
+
+        function spawnEntity() {
+            const type = Math.random() > 0.4 ? 'pearl' : 'gremlin';
+            const id = Date.now() + Math.random();
+            const el = document.createElement('div');
+            
+            // Random start position (bottom half of screen mostly)
+            // We want a pseudo-3D floor effect. 
+            // Y: 50% to 90% of screen height.
+            // X: 10% to 90% of screen width.
+            const y = window.innerHeight * 0.5 + Math.random() * (window.innerHeight * 0.4);
+            const x = Math.random() * (window.innerWidth - 60);
+
+            // Scale based on Y (perspective)
+            // Lower Y (further back) = smaller scale
+            const scale = 0.5 + ((y - window.innerHeight * 0.5) / (window.innerHeight * 0.5)) * 0.5;
+
+            el.className = `entity ${type}`;
+            el.style.left = `${x}px`;
+            el.style.top = `${y}px`;
+            el.style.transform = `scale(${scale})`;
+            el.style.zIndex = Math.floor(y); // Layering based on depth
+
+            if (type === 'gremlin') {
+                el.innerHTML = gremlinSVG;
+                // Gremlins move randomly
+                el.onclick = (e) => handleGremlinClick(e, id);
+            } else {
+                // Pearls are static but expire
+                el.onclick = (e) => handlePearlClick(e, id);
+            }
+
+            gameLayer.appendChild(el);
+
+            state.entities.push({
+                id,
+                type,
+                x,
+                y,
+                el,
+                scale,
+                life: type === 'pearl' ? 300 : 1000, // Pearls disappear fast
+                speedX: type === 'gremlin' ? (Math.random() - 0.5) * 2 : 0,
+                speedY: type === 'gremlin' ? (Math.random() - 0.5) * 1 : 0
+            });
+        }
+
+        function createParticles(x, y, color) {
+            for(let i=0; i<8; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                p.style.left = x + 'px';
+                p.style.top = y + 'px';
+                p.style.width = '10px';
+                p.style.height = '10px';
+                p.style.background = color;
+                
+                // Random direction
+                const angle = Math.random() * Math.PI * 2;
+                const velocity = 2 + Math.random() * 3;
+                const tx = Math.cos(angle) * velocity * 20;
+                const ty = Math.sin(angle) * velocity * 20;
+
+                p.style.transition = 'all 0.8s ease-out';
+                
+                gameLayer.appendChild(p);
+                
+                // Trigger animation next frame
+                requestAnimationFrame(() => {
+                    p.style.transform = `translate(${tx}px, ${ty}px) scale(0)`;
+                });
+
+                setTimeout(() => p.remove(), 800);
+            }
+        }
+
+        function handlePearlClick(e, id) {
+            e.stopPropagation();
+            if (!state.isPlaying) return;
+            
+            const entIndex = state.entities.findIndex(e => e.id === id);
+            if (entIndex > -1) {
+                const ent = state.entities[entIndex];
+                createParticles(ent.x, ent.y, '#fff');
+                ent.el.remove();
+                state.entities.splice(entIndex, 1);
+                state.score += 10;
+                updateUI();
+            }
+        }
+
+        function handleGremlinClick(e, id) {
+            e.stopPropagation();
+            if (!state.isPlaying) return;
+
+            const entIndex = state.entities.findIndex(e => e.id === id);
+            if (entIndex > -1) {
+                const ent = state.entities[entIndex];
+                createParticles(ent.x, ent.y, '#d87093');
+                ent.el.remove();
+                state.entities.splice(entIndex, 1);
+                state.banished += 1;
+                updateUI();
+            }
+        }
+
+        function gameLoop(timestamp) {
+            if (!state.isPlaying) return;
+
+            const dt = timestamp - state.lastTime;
+            state.lastTime = timestamp;
+
+            // Spawning Logic
+            // Difficulty increases spawn rate
+            const spawnRate = Math.max(500, 2000 - (state.score * 10));
+            if (timestamp - state.spawnTimer > spawnRate) {
+                spawnEntity();
+                state.spawnTimer = timestamp;
+            }
+
+            // Update Entities
+            for (let i = state.entities.length - 1; i >= 0; i--) {
+                let ent = state.entities[i];
+                
+                // Movement for Gremlins
+                if (ent.type === 'gremlin') {
+                    ent.x += ent.speedX;
+                    ent.y += ent.speedY;
+
+                    // Bounce off edges
+                    if (ent.x < 0 || ent.x > window.innerWidth) ent.speedX *= -1;
+                    if (ent.y < window.innerHeight * 0.4 || ent.y > window.innerHeight) ent.speedY *= -1;
+
+                    ent.el.style.left = `${ent.x}px`;
+                    ent.el.style.top = `${ent.y}px`;
+                    
+                    // Update Z-index based on Y for depth sorting
+                    ent.el.style.zIndex = Math.floor(ent.y);
+                }
+
+                // Life Cycle
+                ent.life--;
+                
+                // Fade out effect near death
+                if (ent.life < 50) {
+                    ent.el.style.opacity = ent.life / 50;
+                }
+
+                if (ent.life <= 0) {
+                    // Entity expired
+                    ent.el.remove();
+                    state.entities.splice(i, 1);
+
+                    if (ent.type === 'pearl') {
+                        // Missed a pearl!
+                        // Flash red screen maybe?
+                        state.missed++;
+                        if (state.missed >= state.maxMissed) {
+                            gameOver();
+                        }
+                    }
+                }
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Primer: Interactive Experience</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@300;500&family=Inter:wght@300;400;600&display=swap');
+
+        :root {
+            --desk-color: #4a3b2a;
+            --wall-color: #1a1a1a;
+            --screen-bg: #0f172a;
+            --screen-glow: rgba(56, 189, 248, 0.1);
+            --lamp-light: rgba(255, 223, 128, 0.0);
+            --lamp-active: rgba(255, 223, 128, 0.4);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            width: 100vw;
+            background-color: var(--wall-color);
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            transition: background-color 2s ease;
+        }
+
+        /* --- The Room Environment --- */
+        .window {
+            position: absolute;
+            top: 10%;
+            right: 15%;
+            width: 200px;
+            height: 300px;
+            background: linear-gradient(to bottom, #0f172a, #1e293b);
+            border: 12px solid #2d2d2d;
+            border-radius: 4px;
+            box-shadow: inset 0 0 20px #000;
+            z-index: 0;
+            transition: background 3s ease;
+            overflow: hidden;
+        }
+        
+        .window::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 8px;
+            background: #2d2d2d;
+        }
+        .window::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 0;
+            height: 100%;
+            width: 8px;
+            background: #2d2d2d;
+            transform: translateX(-50%);
+        }
+
+        .rain {
+            position: absolute;
+            top: -100%;
+            left: 0;
+            width: 100%;
+            height: 200%;
+            background: url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.1' fill-rule='evenodd'%3E%3Ccircle cx='3' cy='3' r='1'/%3E%3Ccircle cx='13' cy='13' r='1'/%3E%3C/g%3E%3C/svg%3E");
+            animation: rain 1s linear infinite;
+            opacity: 0.5;
+        }
+
+        @keyframes rain {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(50%); }
+        }
+
+        .desk {
+            width: 100%;
+            height: 35vh;
+            background: linear-gradient(to bottom, #5c4033, #3e2b22);
+            position: relative;
+            z-index: 10;
+            box-shadow: 0 -10px 30px rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+        }
+
+        /* --- The Monitor --- */
+        .monitor-stand {
+            width: 120px;
+            height: 80px;
+            background: #334155;
+            margin-bottom: 0;
+            position: absolute;
+            bottom: 35vh;
+            z-index: 15;
+            border-radius: 4px 4px 0 0;
+            box-shadow: inset 0 5px 10px rgba(0,0,0,0.3);
+        }
+        
+        .monitor-base {
+            width: 200px;
+            height: 20px;
+            background: #1e293b;
+            position: absolute;
+            bottom: 35vh;
+            z-index: 16;
+            border-radius: 4px;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.5);
+        }
+
+        .monitor-casing {
+            width: 800px;
+            height: 500px;
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 16px;
+            position: absolute;
+            bottom: calc(35vh + 60px);
+            z-index: 20;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+            transition: transform 0.3s ease;
+        }
+
+        .screen {
+            width: 100%;
+            height: 100%;
+            background-color: var(--screen-bg);
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 0 40px rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .screen-glare {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 60%;
+            height: 100%;
+            background: linear-gradient(120deg, rgba(255,255,255,0) 40%, rgba(255,255,255,0.03) 50%, rgba(255,255,255,0) 60%);
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        /* --- The Lamp --- */
+        .lamp-container {
+            position: absolute;
+            bottom: 38vh;
+            left: 10%;
+            z-index: 15;
+            width: 150px;
+            height: 300px;
+            pointer-events: none; /* Click handled by button */
+        }
+        
+        .lamp-base {
+            position: absolute;
+            bottom: 0;
+            left: 40px;
+            width: 60px;
+            height: 20px;
+            background: #b45309;
+            border-radius: 50%;
+        }
+        .lamp-neck {
+            position: absolute;
+            bottom: 10px;
+            left: 65px;
+            width: 10px;
+            height: 150px;
+            background: #d97706;
+            transform: rotate(-10deg);
+            transform-origin: bottom center;
+        }
+        .lamp-head {
+            position: absolute;
+            top: 80px;
+            left: 20px;
+            width: 80px;
+            height: 60px;
+            background: #f59e0b;
+            border-radius: 40px 40px 0 0;
+            transform: rotate(-30deg);
+            cursor: pointer;
+            pointer-events: auto;
+            z-index: 30;
+            box-shadow: inset -5px -5px 10px rgba(0,0,0,0.2);
+        }
+        
+        .light-cone {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: radial-gradient(circle at 25% 60%, var(--lamp-light) 0%, transparent 40%);
+            pointer-events: none;
+            z-index: 100;
+            mix-blend-mode: overlay;
+            transition: background 0.5s ease;
+        }
+
+        /* --- UI Elements inside Screen --- */
+        .primer-ui {
+            flex: 1;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #e2e8f0;
+            font-family: 'Cormorant Garamond', serif;
+            opacity: 0;
+            animation: fadeIn 2s forwards;
+        }
+
+        .primer-text {
+            font-size: 1.5rem;
+            line-height: 1.6;
+            max-width: 600px;
+            text-align: center;
+            margin-bottom: 30px;
+            min-height: 100px;
+        }
+
+        .primer-input-area {
+            width: 100%;
+            max-width: 500px;
+            position: relative;
+            display: none; /* Hidden by default */
+        }
+
+        .primer-input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid #475569;
+            color: #38bdf8;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.1rem;
+            padding: 10px 0;
+            outline: none;
+            text-align: center;
+        }
+
+        .primer-cursor {
+            display: inline-block;
+            width: 8px;
+            height: 18px;
+            background: #38bdf8;
+            animation: blink 1s infinite;
+            vertical-align: middle;
+            margin-left: 5px;
+        }
+
+        .btn-next {
+            margin-top: 20px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #fff;
+            padding: 8px 24px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        .btn-next:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        .btn-next.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* --- Headlamp Game Mode --- */
+        .headlamp-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 200;
+            display: none;
+            cursor: none;
+        }
+        
+        .thicket {
+            position: absolute;
+            color: #22c55e;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            opacity: 0.3;
+            user-select: none;
+            transition: opacity 0.2s;
+        }
+
+        .hidden-msg {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #fff;
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.8rem;
+            text-align: center;
+            width: 80%;
+            opacity: 0;
+            transition: opacity 1s;
+            pointer-events: none;
+        }
+
+        /* --- Animations --- */
+        @keyframes blink { 50% { opacity: 0; } }
+        @keyframes fadeIn { to { opacity: 1; } }
+        @keyframes type { from { width: 0; } to { width: 100%; } }
+
+        .typing-effect::after {
+            content: '|';
+            animation: blink 1s infinite;
+        }
+
+        .book-cover {
+            width: 200px;
+            height: 300px;
+            background: linear-gradient(135deg, #fcd34d, #f59e0b);
+            border-radius: 4px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+            color: #451a03;
+            transform: scale(0.8);
+            opacity: 0;
+            transition: all 1s ease;
+        }
+        .book-cover.show {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        /* Misc Objects */
+        .coffee-cup {
+            position: absolute;
+            bottom: 20px;
+            right: 20%;
+            font-size: 3rem;
+            filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5));
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .coffee-cup:hover { transform: translateY(-5px); }
+
+        .keyboard {
+            position: absolute;
+            bottom: 40px;
+            width: 400px;
+            height: 120px;
+            background: #27272a;
+            border-radius: 8px;
+            transform: perspective(500px) rotateX(20deg);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            display: grid;
+            grid-template-columns: repeat(15, 1fr);
+            grid-gap: 4px;
+            padding: 10px;
+        }
+        .key {
+            background: #3f3f46;
+            border-radius: 2px;
+            height: 100%;
+        }
+        .key:active { background: #38bdf8; }
+
+    </style>
+</head>
+<body>
+
+    <!-- Ambient Light Overlay -->
+    <div class="light-cone" id="lightCone"></div>
+
+    <!-- Background Window -->
+    <div class="window" id="window">
+        <div class="rain" id="rain"></div>
+    </div>
+
+    <!-- The Desk -->
+    <div class="desk">
+        <!-- Lamp -->
+        <div class="lamp-container">
+            <div class="lamp-base"></div>
+            <div class="lamp-neck"></div>
+            <div class="lamp-head" id="lampSwitch" title="Toggle Light"></div>
+        </div>
+
+        <!-- Monitor -->
+        <div class="monitor-casing">
+            <div class="screen">
+                <div class="screen-glare"></div>
+                
+                <!-- The Content -->
+                <div class="primer-ui" id="primerUI">
+                    <div class="primer-text" id="storyText"></div>
+                    
+                    <div class="primer-input-area" id="inputArea">
+                        <input type="text" class="primer-input" id="playerInput" placeholder="Type your response..." autocomplete="off">
+                    </div>
+
+                    <div id="bookDisplay" style="display:none;">
+                        <div class="book-cover show">
+                            <div style="font-size: 0.8rem; font-family:'Inter'; letter-spacing: 2px; margin-bottom: 10px;">THE</div>
+                            <h2 style="font-size: 1.8rem; line-height: 1.1; margin-bottom: 10px;">HEADLAMP PHILOSOPHY</h2>
+                            <div style="font-size: 0.7rem; margin-top:auto;">By Eliza</div>
+                        </div>
+                    </div>
+
+                    <button class="btn-next" id="nextBtn">Continue</button>
+                </div>
+            </div>
+        </div>
+        <div class="monitor-stand"></div>
+        <div class="monitor-base"></div>
+
+        <!-- Keyboard -->
+        <div class="keyboard">
+            <!-- Generating keys via JS for simplicity or just simple divs -->
+            <script>
+                for(let i=0; i<45; i++) {
+                    document.write('<div class="key"></div>');
+                }
+            </script>
+        </div>
+
+        <!-- Coffee -->
+        <div class="coffee-cup" onclick="alert('Caffeine levels stabilized.')">☕</div>
+    </div>
+
+    <!-- Headlamp Game Overlay -->
+    <div class="headlamp-overlay" id="headlampGame">
+        <div class="hidden-msg" id="headlampMsg">
+            "I go out at night with just a headlamp. It's the only way I don't feel overwhelmed."
+        </div>
+    </div>
+
+    <script>
+        // --- State Management ---
+        const state = {
+            step: 0,
+            lampOn: false,
+            thicketsCleared: 0
+        };
+
+        // --- DOM Elements ---
+        const storyText = document.getElementById('storyText');
+        const inputArea = document.getElementById('inputArea');
+        const playerInput = document.getElementById('playerInput');
+        const nextBtn = document.getElementById('nextBtn');
+        const lampSwitch = document.getElementById('lampSwitch');
+        const lightCone = document.getElementById('lightCone');
+        const windowEl = document.getElementById('window');
+        const rainEl = document.getElementById('rain');
+        const headlampGame = document.getElementById('headlampGame');
+        const headlampMsg = document.getElementById('headlampMsg');
+        const bookDisplay = document.getElementById('bookDisplay');
+
+        // --- Story Data ---
+        const story = [
+            {
+                text: "Eliza sat in the deep quiet of her study. On her screen, an icon pulsed. It was the Primer, an AI designed not for answers, but for guidance.",
+                type: "narrative",
+                action: "next"
+            },
+            {
+                text: "She typed into the prompt:",
+                type: "narrative",
+                action: "input",
+                placeholder: "I can't do this anymore",
+                expected: "I can't do this anymore"
+            },
+            {
+                text: "The Primer responded not with text, but with an illustration of a crossroads. <br><br><em>'When a well-worn path no longer leads to a place of energy, it is a sign of evolution, not failure. Tell me, Lady Eliza, what path does call to you?'</em>",
+                type: "ai",
+                action: "next"
+            },
+            {
+                text: "Eliza thought not of work, but of the farm. She thought of the invasive species in the newly fenced quarter.",
+                type: "narrative",
+                action: "game_intro"
+            },
+            {
+                text: "", // Game happens here
+                type: "game",
+                action: "next"
+            },
+            {
+                text: "The Primer's screen illuminated. <br><br><strong>THE HEADLAMP PHILOSOPHY</strong><br><em>'You illuminate only the next possible step. You are not clearing, you are revealing.'</em>",
+                type: "ai",
+                action: "next"
+            },
+            {
+                text: "Encouraged, Eliza wrote about the rhythm of the work, of focusing on 'one branch at a time'.",
+                type: "narrative",
+                action: "next"
+            },
+            {
+                text: "The screen flickered, displaying a map of the thicket traced with glowing lines. <br><br><em>'You are a Complexity Navigator. A Revealer of Hidden Structures.'</em>",
+                type: "ai",
+                action: "next"
+            },
+            {
+                text: "Eliza typed, old anxieties returning: <br><em>'But that isn't a career. My experience is in data systems.'</em>",
+                type: "narrative",
+                action: "next"
+            },
+            {
+                text: "The Primer responded: <br><em>'Wisdom is the most valuable commodity. The world is full of people lost in their own thickets. They do not need another data analyst. They need a guide.'</em>",
+                type: "ai",
+                action: "next"
+            },
+            {
+                text: "A profound shift occurred. The dread of the job hunt was replaced by a spark of creative energy.",
+                type: "narrative",
+                action: "dawn"
+            },
+            {
+                text: "The first light of dawn touched the real thicket outside her window. Eliza began to type, not a cover letter, but a story.",
+                type: "finale",
+                action: "show_book"
+            }
+        ];
+
+        // --- Logic ---
+
+        function renderStep() {
+            const current = story[state.step];
+            
+            // Reset UI
+            inputArea.style.display = 'none';
+            nextBtn.classList.remove('visible');
+            storyText.innerHTML = '';
+            bookDisplay.style.display = 'none';
+
+            // Typewriter effect
+            if (current.type !== 'game' && current.type !== 'finale_display') {
+                typeWriter(current.text, () => {
+                    handleAction(current);
+                });
+            } else {
+                handleAction(current);
+            }
+        }
+
+        function typeWriter(text, callback) {
+            storyText.innerHTML = text; // Simple fade in via CSS transition on opacity
+            storyText.style.opacity = 0;
+            setTimeout(() => {
+                storyText.style.transition = "opacity 1s";
+                storyText.style.opacity = 1;
+                setTimeout(callback, 1000);
+            }, 100);
+        }
+
+        function handleAction(current) {
+            if (current.action === 'next') {
+                nextBtn.classList.add('visible');
+            } else if (current.action === 'input') {
+                inputArea.style.display = 'block';
+                playerInput.value = '';
+                playerInput.placeholder = current.placeholder;
+                playerInput.focus();
+            } else if (current.action === 'game_intro') {
+                nextBtn.innerText = "Go Out at Night";
+                nextBtn.classList.add('visible');
+                nextBtn.onclick = startHeadlampGame;
+                return; // Override default click
+            } else if (current.action === 'dawn') {
+                // Change environment
+                windowEl.style.background = "linear-gradient(to bottom, #fcd34d, #f97316)";
+                rainEl.style.display = "none";
+                nextBtn.classList.add('visible');
+            } else if (current.action === 'show_book') {
+                bookDisplay.style.display = 'flex';
+            }
+        }
+
+        // --- Interaction Handlers ---
+
+        nextBtn.addEventListener('click', () => {
+            if (nextBtn.innerText === "Go Out at Night") return; // Handled by specific function
+            state.step++;
+            if (state.step < story.length) {
+                renderStep();
+            }
+        });
+
+        playerInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                state.step++;
+                renderStep();
+            }
+        });
+
+        // Lamp Toggle
+        lampSwitch.addEventListener('click', () => {
+            state.lampOn = !state.lampOn;
+            if (state.lampOn) {
+                lightCone.style.background = "radial-gradient(circle at 25% 60%, var(--lamp-active) 0%, transparent 50%)";
+            } else {
+                lightCone.style.background = "radial-gradient(circle at 25% 60%, var(--lamp-light) 0%, transparent 40%)";
+            }
+        });
+
+        // --- Headlamp Minigame ---
+        function startHeadlampGame() {
+            headlampGame.style.display = 'block';
+            
+            // Create "Thicket" elements
+            for(let i=0; i<50; i++) {
+                let el = document.createElement('div');
+                el.className = 'thicket';
+                el.innerText = getRandomChar();
+                el.style.top = Math.random() * 100 + '%';
+                el.style.left = Math.random() * 100 + '%';
+                el.style.fontSize = (Math.random() * 20 + 10) + 'px';
+                headlampGame.appendChild(el);
+            }
+
+            // Mouse tracking for flashlight effect
+            headlampGame.addEventListener('mousemove', (e) => {
+                const x = e.clientX;
+                const y = e.clientY;
+                headlampGame.style.background = `radial-gradient(circle 150px at ${x}px ${y}px, transparent 0%, black 100%)`;
+                
+                // Reveal logic
+                const elements = document.querySelectorAll('.thicket');
+                elements.forEach(el => {
+                    const rect = el.getBoundingClientRect();
+                    const dist = Math.hypot(rect.x - x, rect.y - y);
+                    if(dist < 100) {
+                        el.style.opacity = 0; // Clear the thicket
+                        if(!el.classList.contains('cleared')) {
+                            el.classList.add('cleared');
+                            state.thicketsCleared++;
+                            checkGameWin();
+                        }
+                    }
+                });
+            });
+        }
+
+        function getRandomChar() {
+            const chars = "ComplexityChaosThicketDoubtFear";
+            return chars[Math.floor(Math.random() * chars.length)];
+        }
+
+        function checkGameWin() {
+            if(state.thicketsCleared > 30) {
+                headlampMsg.style.opacity = 1;
+                setTimeout(() => {
+                    headlampGame.style.opacity = 0;
+                    setTimeout(() => {
+                        headlampGame.style.display = 'none';
+                        state.step += 2; // Skip the blank game step
+                        renderStep();
+                    }, 2000);
+                }, 2000);
+            }
+        }
+
+        // --- Init ---
+        // Start with lamp off
+        setTimeout(() => {
+            renderStep();
+        }, 1000);
+
+    </script>
+</body>
+</html>

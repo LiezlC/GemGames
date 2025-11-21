@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Core Stabilizer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --core-orange: #ff9d00;
+            --core-gold: #ffd700;
+            --core-red: #ff3333;
+            --core-dark: #0a0500;
+            --glass-bg: rgba(20, 10, 5, 0.6);
+            --glass-border: rgba(255, 165, 0, 0.3);
+        }
+
+        body {
+            background-color: var(--core-dark);
+            color: var(--core-gold);
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Background Grid */
+        .bg-grid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(255, 140, 0, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 140, 0, 0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: -1;
+        }
+
+        /* The Reactor Core */
+        .reactor-container {
+            position: relative;
+            width: 600px;
+            height: 600px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: filter 0.3s ease;
+        }
+
+        .ring {
+            position: absolute;
+            border-radius: 50%;
+            border: 2px solid var(--core-orange);
+            box-shadow: 0 0 15px var(--core-orange);
+            opacity: 0.8;
+            transition: border-color 0.5s, box-shadow 0.5s;
+        }
+
+        .ring-1 { width: 100px; height: 100px; border-width: 4px; animation: spin 10s linear infinite; border-style: dashed; }
+        .ring-2 { width: 200px; height: 200px; border-width: 2px; animation: spin-reverse 15s linear infinite; border-left-color: transparent; border-right-color: transparent; }
+        .ring-3 { width: 320px; height: 320px; border-width: 1px; animation: spin 25s linear infinite; opacity: 0.5; }
+        .ring-4 { width: 450px; height: 450px; border: 10px solid rgba(255, 140, 0, 0.1); border-top: 10px solid var(--core-orange); animation: spin-reverse 8s linear infinite; }
+        .ring-5 { width: 580px; height: 580px; border: 1px dashed rgba(255, 215, 0, 0.3); animation: pulse 4s ease-in-out infinite; }
+
+        .core-center {
+            width: 60px;
+            height: 60px;
+            background: radial-gradient(circle, #fff, var(--core-orange));
+            border-radius: 50%;
+            box-shadow: 0 0 50px var(--core-orange), 0 0 100px var(--core-gold);
+            z-index: 10;
+            animation: breathe 3s infinite ease-in-out;
+        }
+
+        /* Interactive Nodes */
+        .node {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background-color: var(--core-dark);
+            border: 2px solid var(--core-gold);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.2s, background-color 0.2s;
+            z-index: 5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .node:hover {
+            transform: scale(1.5);
+            background-color: var(--core-gold);
+            box-shadow: 0 0 15px var(--core-gold);
+        }
+        .node::after {
+            content: '';
+            width: 4px;
+            height: 4px;
+            background: white;
+            border-radius: 50%;
+        }
+
+        /* UI Overlay */
+        .hud-panel {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            color: white;
+        }
+
+        .slider-container {
+            margin-bottom: 15px;
+        }
+        
+        input[type=range] {
+            width: 100%;
+            -webkit-appearance: none;
+            background: rgba(255,255,255,0.1);
+            height: 6px;
+            border-radius: 3px;
+            outline: none;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: var(--core-orange);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--core-orange);
+        }
+
+        /* Animations */
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes spin-reverse { 100% { transform: rotate(-360deg); } }
+        @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 0.3; } 50% { transform: scale(1.02); opacity: 0.6; } }
+        @keyframes breathe { 0%, 100% { transform: scale(1); box-shadow: 0 0 50px var(--core-orange); } 50% { transform: scale(1.2); box-shadow: 0 0 80px var(--core-gold); } }
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+
+        .critical-state {
+            animation: shake 0.5s infinite;
+        }
+        .critical-text {
+            color: var(--core-red);
+            text-shadow: 0 0 10px var(--core-red);
+        }
+        
+        .status-bar {
+            height: 4px;
+            background: #333;
+            width: 100%;
+            margin-top: 5px;
+            position: relative;
+            overflow: hidden;
+        }
+        .status-fill {
+            height: 100%;
+            background: var(--core-orange);
+            width: 50%;
+            transition: width 0.2s, background-color 0.2s;
+        }
+
+        /* Particle effects */
+        .particle {
+            position: absolute;
+            background: var(--core-gold);
+            border-radius: 50%;
+            pointer-events: none;
+            opacity: 0;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="bg-grid"></div>
+
+    <!-- Top Status Bar -->
+    <div class="absolute top-6 w-full max-w-4xl flex justify-between px-6 z-20">
+        <div class="hud-panel w-64">
+            <div class="text-xs text-gray-400 uppercase tracking-widest mb-1">System Integrity</div>
+            <div class="text-2xl font-bold tracking-tighter" id="integrity-display">100%</div>
+            <div class="status-bar"><div class="status-fill" id="integrity-bar" style="width: 100%; background: #00ffaa;"></div></div>
+        </div>
+        
+        <div class="hud-panel w-64 text-right">
+            <div class="text-xs text-gray-400 uppercase tracking-widest mb-1">Core Output</div>
+            <div class="text-2xl font-bold tracking-tighter" id="output-display">0 MW</div>
+            <div class="text-xs text-orange-400 animate-pulse mt-1" id="status-msg">SYSTEM STABLE</div>
+        </div>
+    </div>
+
+    <!-- Main Reactor Visual -->
+    <div class="reactor-container" id="reactor">
+        <!-- Rings -->
+        <div class="ring ring-5"></div>
+        <div class="ring ring-4"></div>
+        <div class="ring ring-3"></div>
+        <div class="ring ring-2">
+            <!-- Nodes on Ring 2 -->
+            <div class="node" style="top: -10px; left: 50%; transform: translateX(-50%);" onclick="stabilizeNode(this)"></div>
+            <div class="node" style="bottom: -10px; left: 50%; transform: translateX(-50%);" onclick="stabilizeNode(this)"></div>
+            <div class="node" style="left: -10px; top: 50%; transform: translateY(-50%);" onclick="stabilizeNode(this)"></div>
+            <div class="node" style="right: -10px; top: 50%; transform: translateY(-50%);" onclick="stabilizeNode(this)"></div>
+        </div>
+        <div class="ring ring-1"></div>
+        
+        <!-- Center -->
+        <div class="core-center" id="core-center"></div>
+    </div>
+
+    <!-- Bottom Controls -->
+    <div class="absolute bottom-6 w-full max-w-2xl z-20">
+        <div class="hud-panel">
+            <div class="flex justify-between items-end mb-4 border-b border-gray-700 pb-2">
+                <h2 class="text-lg font-bold text-orange-400">MANUAL OVERRIDE</h2>
+                <span class="text-xs text-gray-500">V.2.0.4</span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-8">
+                <!-- Left Column: Sliders -->
+                <div>
+                    <div class="slider-container">
+                        <div class="flex justify-between text-xs mb-1">
+                            <span>MAGNETIC FLUX</span>
+                            <span id="flux-val">50%</span>
+                        </div>
+                        <input type="range" min="0" max="100" value="50" id="flux-slider">
+                    </div>
+
+                    <div class="slider-container">
+                        <div class="flex justify-between text-xs mb-1">
+                            <span>COOLANT FLOW</span>
+                            <span id="coolant-val">50%</span>
+                        </div>
+                        <input type="range" min="0" max="100" value="50" id="coolant-slider">
+                    </div>
+                </div>
+
+                <!-- Right Column: Instructions/Log -->
+                <div class="text-xs font-mono text-gray-400 flex flex-col justify-between h-full">
+                    <div id="log-console" class="h-20 overflow-hidden border-l-2 border-orange-500 pl-2">
+                        > System Initialized...<br>
+                        > Awaiting Input...
+                    </div>
+                    <div class="mt-2 text-orange-300">
+                        ⚠️ INSTRUCTIONS: <br>
+                        1. Balance FLUX & COOLANT.<br>
+                        2. Click NODES on rings to vent excess energy.<br>
+                        3. Don't let Integrity reach 0%.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game State
+        let state = {
+            integrity: 100,
+            temperature: 50, // 0-100
+            flux: 50,        // 0-100
+            output: 0,
+            instability: 0,
+            active: true
+        };
+
+        // DOM Elements
+        const reactor = document.getElementById('reactor');
+        const coreCenter = document.getElementById('core-center');
+        const integrityDisplay = document.getElementById('integrity-display');
+        const integrityBar = document.getElementById('integrity-bar');
+        const outputDisplay = document.getElementById('output-display');
+        const statusMsg = document.getElementById('status-msg');
+        const logConsole = document.getElementById('log-console');
+        
+        const fluxSlider = document.getElementById('flux-slider');
+        const coolantSlider = document.getElementById('coolant-slider');
+        const fluxVal = document.getElementById('flux-val');
+        const coolantVal = document.getElementById('coolant-val');
+
+        // Helper: Add Log
+        function addLog(msg) {
+            const line = document.createElement('div');
+            line.innerText = `> ${msg}`;
+            logConsole.prepend(line);
+            if (logConsole.children.length > 5) logConsole.lastChild.remove();
+        }
+
+        // Helper: Create Particle
+        function createParticle(x, y) {
+            const p = document.createElement('div');
+            p.classList.add('particle');
+            p.style.left = x + 'px';
+            p.style.top = y + 'px';
+            p.style.width = Math.random() * 10 + 5 + 'px';
+            p.style.height = p.style.width;
+            document.body.appendChild(p);
+
+            // Animate
+            const destX = (Math.random() - 0.5) * 200;
+            const destY = (Math.random() - 0.5) * 200;
+
+            const anim = p.animate([
+                { transform: 'translate(0,0) scale(1)', opacity: 1 },
+                { transform: `translate(${destX}px, ${destY}px) scale(0)`, opacity: 0 }
+            ], {
+                duration: 1000,
+                easing: 'ease-out'
+            });
+
+            anim.onfinish = () => p.remove();
+        }
+
+        // Interaction: Stabilize Node
+        window.stabilizeNode = function(el) {
+            if (!state.active) return;
+            
+            // Visual feedback
+            const rect = el.getBoundingClientRect();
+            createParticle(rect.left + 8, rect.top + 8);
+            createParticle(rect.left + 8, rect.top + 8);
+            createParticle(rect.left + 8, rect.top + 8);
+
+            // Logic
+            state.instability = Math.max(0, state.instability - 15);
+            state.output += 50;
+            addLog("Node Venting Successful");
+            
+            // Reset node visual temporarily
+            el.style.backgroundColor = "#fff";
+            el.style.boxShadow = "0 0 20px #fff";
+            setTimeout(() => {
+                el.style.backgroundColor = "";
+                el.style.boxShadow = "";
+            }, 200);
+        };
+
+        // Input Listeners
+        fluxSlider.addEventListener('input', (e) => {
+            state.flux = parseInt(e.target.value);
+            fluxVal.innerText = state.flux + '%';
+        });
+
+        coolantSlider.addEventListener('input', (e) => {
+            state.temperature = Math.max(0, state.temperature - 5); // Immediate cooling burst
+            state.flux = parseInt(fluxSlider.value); // Re-read flux to be safe
+            coolantVal.innerText = e.target.value + '%';
+        });
+
+        // Game Loop
+        setInterval(() => {
+            if (!state.active) return;
+
+            const coolantLevel = parseInt(coolantSlider.value);
+            
+            // Physics Simulation
+            // Flux increases output but increases instability
+            // Coolant decreases instability but lowers output efficiency
+            
+            // Calculate Heat
+            const heatGeneration = (state.flux * 0.8);
+            const coolingPower = (coolantLevel * 0.9);
+            const netHeat = heatGeneration - coolingPower;
+            
+            state.temperature += netHeat * 0.05;
+            
+            // Natural Instability Creep
+            state.instability += (state.temperature > 70 ? 0.5 : 0.1);
+            if (state.temperature > 90) state.instability += 1;
+
+            // Clamp values
+            state.temperature = Math.max(0, Math.min(100, state.temperature));
+            state.instability = Math.max(0, Math.min(100, state.instability));
+
+            // Damage Calculation
+            if (state.instability > 80 || state.temperature > 95) {
+                state.integrity -= 0.5;
+            } else if (state.integrity < 100 && state.instability < 20) {
+                state.integrity += 0.1; // Repair if stable
+            }
+
+            // Output Calculation
+            const efficiency = 1 - (state.instability / 100);
+            const currentOutput = (state.flux * 10) * efficiency;
+            state.output = Math.floor(currentOutput);
+
+            // Visual Updates
+            updateVisuals();
+
+            // Game Over
+            if (state.integrity <= 0) {
+                gameOver();
+            }
+
+        }, 100);
+
+        function updateVisuals() {
+            // Update Text
+            integrityDisplay.innerText = Math.floor(state.integrity) + '%';
+            integrityBar.style.width = state.integrity + '%';
+            outputDisplay.innerText = state.output + ' MW';
+
+            // Color Logic
+            let mainColor = '--core-orange';
+            if (state.instability > 50) mainColor = '--core-gold';
+            if (state.instability > 80) mainColor = '--core-red';
+
+            // Apply colors via CSS variables manipulation or class toggling
+            // For simplicity, we'll manipulate specific properties
+            
+            if (state.instability > 80) {
+                document.documentElement.style.setProperty('--core-orange', '#ff0000');
+                reactor.classList.add('critical-state');
+                statusMsg.innerText = "CRITICAL WARNING";
+                statusMsg.classList.add('critical-text');
+                integrityBar.style.background = '#ff0000';
+            } else if (state.instability > 50) {
+                document.documentElement.style.setProperty('--core-orange', '#ffaa00');
+                reactor.classList.remove('critical-state');
+                statusMsg.innerText = "UNSTABLE";
+                statusMsg.classList.remove('critical-text');
+                integrityBar.style.background = '#ffaa00';
+            } else {
+                document.documentElement.style.setProperty('--core-orange', '#ff9d00');
+                reactor.classList.remove('critical-state');
+                statusMsg.innerText = "SYSTEM STABLE";
+                statusMsg.classList.remove('critical-text');
+                integrityBar.style.background = '#00ffaa';
+            }
+
+            // Core Center Pulse Speed
+            const pulseSpeed = 3 - (state.flux / 50);
+            coreCenter.style.animationDuration = `${Math.max(0.2, pulseSpeed)}s`;
+            
+            // Ring Rotation Speed
+            document.querySelectorAll('.ring').forEach(r => {
+                // This is a bit hacky for performance, but works for visual flair
+                // Ideally we'd use CSS variables for duration
+            });
+        }
+
+        function gameOver() {
+            state.active = false;
+            document.body.style.backgroundColor = "white";
+            setTimeout(() => {
+                document.body.style.backgroundColor = "black";
+                document.body.innerHTML = `
+                    <div class="text-center text-red-600 font-mono">
+                        <h1 class="text-6xl mb-4">CORE MELTDOWN</h1>
+                        <p class="text-xl text-white">Final Output: ${state.output} MW</p>
+                        <button onclick="location.reload()" class="mt-8 px-6 py-2 border border-red-600 text-red-600 hover:bg-red-600 hover:text-white transition">REBOOT SYSTEM</button>
+                    </div>
+                `;
+            }, 100);
+        }
+
+        // Random events
+        setInterval(() => {
+            if(!state.active) return;
+            if(Math.random() > 0.7) {
+                state.instability += 5;
+                addLog("Energy Spike Detected!");
+            }
+        }, 3000);
+
+    </script>
+</body>
+</html>

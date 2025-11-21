@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neural Sync Protocol</title>
+    <style>
+        :root {
+            --neon-blue: #00f3ff;
+            --neon-pink: #ff00aa;
+            --deep-purple: #1a0b2e;
+            --bg-gradient: radial-gradient(circle at 50% 30%, #2d1b4e 0%, #000000 100%);
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: var(--bg-gradient);
+            font-family: 'Courier New', Courier, monospace;
+            color: white;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        canvas {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        /* UI Overlay */
+        #ui-layer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 250px;
+            z-index: 10;
+            background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            padding-bottom: 20px;
+            pointer-events: none; /* Let clicks pass through to canvas if needed, but enable for controls */
+        }
+
+        .controls {
+            pointer-events: auto;
+            display: flex;
+            gap: 40px;
+            background: rgba(20, 10, 40, 0.6);
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid var(--neon-blue);
+            box-shadow: 0 0 15px var(--neon-blue);
+            backdrop-filter: blur(5px);
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--neon-blue);
+            text-shadow: 0 0 5px var(--neon-blue);
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 150px;
+            height: 6px;
+            background: #333;
+            border-radius: 3px;
+            outline: none;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--neon-pink);
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--neon-pink);
+            transition: transform 0.1s;
+        }
+
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        /* Status Display */
+        #status-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 24px;
+            color: var(--neon-pink);
+            text-shadow: 0 0 10px var(--neon-pink);
+            letter-spacing: 4px;
+        }
+
+        .status-bar-container {
+            width: 300px;
+            height: 10px;
+            background: #333;
+            margin-top: 10px;
+            border-radius: 5px;
+            overflow: hidden;
+            border: 1px solid #555;
+        }
+
+        #sync-bar {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, var(--neon-blue), var(--neon-pink));
+            transition: width 0.2s;
+            box-shadow: 0 0 10px var(--neon-blue);
+        }
+
+        #sync-text {
+            margin-top: 5px;
+            font-size: 14px;
+            color: #ccc;
+        }
+
+        /* Floating SVG Elements */
+        .svg-overlay {
+            position: absolute;
+            z-index: 5;
+            pointer-events: none;
+            opacity: 0.8;
+        }
+
+        #robot-head {
+            bottom: 10%;
+            right: 5%;
+            width: 300px;
+            height: auto;
+            filter: drop-shadow(0 0 15px var(--neon-blue));
+            animation: floatHead 6s ease-in-out infinite;
+        }
+
+        #core-source {
+            top: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: auto;
+            filter: drop-shadow(0 0 20px var(--neon-pink));
+            animation: pulseCore 4s ease-in-out infinite;
+        }
+
+        @keyframes floatHead {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+
+        @keyframes pulseCore {
+            0%, 100% { transform: translateX(-50%) scale(1); filter: drop-shadow(0 0 20px var(--neon-pink)); }
+            50% { transform: translateX(-50%) scale(1.1); filter: drop-shadow(0 0 40px var(--neon-pink)); }
+        }
+
+        #message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 40px;
+            color: white;
+            text-shadow: 0 0 20px white, 0 0 40px var(--neon-blue);
+            z-index: 20;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s;
+            text-align: center;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <!-- Background Canvas -->
+        <canvas id="bgCanvas"></canvas>
+
+        <!-- SVG Graphics (Recreating the visual elements) -->
+        <!-- The Source (Top Jellyfish/Core) -->
+        <svg id="core-source" class="svg-overlay" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <radialGradient id="coreGrad" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                    <stop offset="0%" style="stop-color:#ffccff;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#ff00aa;stop-opacity:0.8" />
+                </radialGradient>
+            </defs>
+            <circle cx="50" cy="40" r="25" fill="url(#coreGrad)" />
+            <path d="M25 40 Q 50 90 75 40" stroke="#ff00aa" stroke-width="2" fill="none" opacity="0.5"/>
+            <path d="M35 40 Q 50 80 65 40" stroke="#ff00aa" stroke-width="2" fill="none" opacity="0.7"/>
+            <line x1="50" y1="40" x2="50" y2="100" stroke="url(#coreGrad)" stroke-width="4" stroke-linecap="round" />
+        </svg>
+
+        <!-- The Android (Right Side Profile) -->
+        <svg id="robot-head" class="svg-overlay" viewBox="0 0 200 250" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="robotGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:#00f3ff;stop-opacity:0.8" />
+                    <stop offset="100%" style="stop-color:#000066;stop-opacity:0.9" />
+                </linearGradient>
+            </defs>
+            <!-- Head Shape -->
+            <path d="M100 50 C 160 50, 180 100, 180 150 C 180 220, 140 250, 100 250 L 100 250 L 80 250 C 40 250, 40 200, 60 150 C 70 120, 80 50, 100 50" fill="url(#robotGrad)" />
+            <!-- Brain details -->
+            <circle cx="130" cy="100" r="2" fill="white" class="blink" style="animation-delay:0s"/>
+            <circle cx="140" cy="110" r="2" fill="white" class="blink" style="animation-delay:0.5s"/>
+            <circle cx="120" cy="115" r="2" fill="white" class="blink" style="animation-delay:1s"/>
+            <path d="M120 100 L 140 110 L 130 130" stroke="white" stroke-width="0.5" opacity="0.5"/>
+            <!-- Eye light -->
+            <path d="M165 140 L 175 140" stroke="#00f3ff" stroke-width="3" filter="drop-shadow(0 0 5px cyan)"/>
+        </svg>
+
+        <!-- UI -->
+        <div id="status-panel">
+            <h1>NEURAL SYNC</h1>
+            <div class="status-bar-container">
+                <div id="sync-bar"></div>
+            </div>
+            <div id="sync-text">SYNC STABILITY: 0%</div>
+        </div>
+
+        <div id="message">CONNECTION ESTABLISHED<br><span style="font-size:20px">Neural Link Stable</span></div>
+
+        <div id="ui-layer">
+            <div class="controls">
+                <div class="control-group">
+                    <label>Frequency</label>
+                    <input type="range" id="freqSlider" min="0.01" max="0.2" step="0.001" value="0.05">
+                </div>
+                <div class="control-group">
+                    <label>Amplitude</label>
+                    <input type="range" id="ampSlider" min="10" max="100" step="1" value="50">
+                </div>
+                <div class="control-group">
+                    <label>Phase</label>
+                    <input type="range" id="phaseSlider" min="0" max="100" step="1" value="0">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('bgCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // UI Elements
+        const freqSlider = document.getElementById('freqSlider');
+        const ampSlider = document.getElementById('ampSlider');
+        const phaseSlider = document.getElementById('phaseSlider');
+        const syncBar = document.getElementById('sync-bar');
+        const syncText = document.getElementById('sync-text');
+        const messageEl = document.getElementById('message');
+
+        let width, height;
+        
+        // Game State
+        let syncScore = 0;
+        let targetFreq = 0.1;
+        let targetAmp = 60;
+        let targetPhase = 50;
+        let lastTargetChange = 0;
+        
+        // Particles
+        const particles = [];
+        const orbs = [];
+
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Classes
+        class Particle {
+            constructor(x, y, type) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 2;
+                this.vy = (Math.random() - 0.5) * 2;
+                this.life = 1.0;
+                this.type = type; // 'sync' (blue) or 'chaos' (red)
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.life -= 0.02;
+            }
+
+            draw(ctx) {
+                ctx.globalAlpha = this.life;
+                ctx.fillStyle = this.type === 'sync' ? '#00f3ff' : '#ff0055';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.type === 'sync' ? 2 : 3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        class Orb {
+            constructor() {
+                this.reset();
+                this.y = Math.random() * height; // Start anywhere initially
+            }
+
+            reset() {
+                this.x = Math.random() * width;
+                this.y = height + 50;
+                this.size = Math.random() * 20 + 5;
+                this.speed = Math.random() * 1 + 0.2;
+                this.color = Math.random() > 0.5 ? 'rgba(255, 0, 170, 0.1)' : 'rgba(0, 243, 255, 0.1)';
+            }
+
+            update() {
+                this.y -= this.speed;
+                if (this.y < -50) this.reset();
+            }
+
+            draw(ctx) {
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // Initialize Orbs
+        for(let i=0; i<15; i++) {
+            orbs.push(new Orb());
+        }
+
+        // Game Logic
+        function updateGame() {
+            const time = Date.now();
+
+            // Change target occasionally
+            if (time - lastTargetChange > 5000 && syncScore < 90) {
+                targetFreq = 0.05 + Math.random() * 0.1;
+                targetAmp = 30 + Math.random() * 50;
+                targetPhase = Math.random() * 100;
+                lastTargetChange = time;
+            }
+
+            // Get user values
+            const userFreq = parseFloat(freqSlider.value);
+            const userAmp = parseFloat(ampSlider.value);
+            const userPhase = parseFloat(phaseSlider.value);
+
+            // Calculate difference
+            const freqDiff = Math.abs(userFreq - targetFreq);
+            const ampDiff = Math.abs(userAmp - targetAmp);
+            const phaseDiff = Math.abs(userPhase - targetPhase);
+
+            // Determine Sync Quality
+            let isSyncing = false;
+            if (freqDiff < 0.02 && ampDiff < 15 && phaseDiff < 20) {
+                isSyncing = true;
+                syncScore += 0.5;
+            } else {
+                syncScore -= 0.2;
+            }
+
+            // Clamp Score
+            syncScore = Math.max(0, Math.min(100, syncScore));
+
+            // Update UI
+            syncBar.style.width = `${syncScore}%`;
+            syncText.innerText = `SYNC STABILITY: ${Math.floor(syncScore)}%`;
+
+            if (syncScore > 98) {
+                syncBar.style.background = "white";
+                syncBar.style.boxShadow = "0 0 20px white";
+                messageEl.style.opacity = 1;
+            } else {
+                syncBar.style.background = "linear-gradient(90deg, var(--neon-blue), var(--neon-pink))";
+                syncBar.style.boxShadow = "0 0 10px var(--neon-blue)";
+                messageEl.style.opacity = 0;
+            }
+
+            return isSyncing;
+        }
+
+        function drawWave(ctx, freq, amp, phase, color, lineWidth, isDashed) {
+            ctx.beginPath();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = lineWidth;
+            if (isDashed) ctx.setLineDash([5, 15]);
+            else ctx.setLineDash([]);
+
+            const centerY = height / 2;
+            const startX = width * 0.2;
+            const endX = width * 0.8;
+            
+            // Draw wave from Core (top center) to Robot (bottom right) roughly
+            // Actually, let's draw it in the center visualization area
+            
+            for (let x = 0; x < width; x += 5) {
+                // Combine sine waves for complexity
+                const y = centerY + Math.sin(x * freq + (Date.now()/1000 * 2) + phase) * amp;
+                if (x === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+        }
+
+        function drawConnection(ctx, isSyncing) {
+            // Draw the main energy stream from Top Center to Robot Head
+            const startX = width / 2;
+            const startY = 80; // Core position
+            const endX = width * 0.85; // Robot head approx X
+            const endY = height * 0.75; // Robot head approx Y
+
+            ctx.beginPath();
+            
+            // Color based on sync
+            const color = isSyncing ? '#00f3ff' : '#ff0055';
+            const glow = isSyncing ? 20 : 5;
+            
+            ctx.strokeStyle = color;
+            ctx.lineWidth = isSyncing ? 4 : 2;
+            ctx.shadowBlur = glow;
+            ctx.shadowColor = color;
+            ctx.setLineDash([]);
+
+            // Bezier curve for the stream
+            const cp1x = startX;
+            const cp1y = height / 2;
+            const cp2x = endX - 100;
+            const cp2y = height / 2;
+
+            // Jitter effect for electricity
+            const jitter = isSyncing ? 2 : 10;
+            
+            ctx.moveTo(startX, startY);
+            
+            // Simulate lightning/energy with segments
+            let cx = startX;
+            let cy = startY;
+            let t = 0;
+            while(t <= 1) {
+                t += 0.05;
+                // Cubic Bezier formula
+                const bx = Math.pow(1-t, 3)*startX + 3*Math.pow(1-t, 2)*t*cp1x + 3*(1-t)*Math.pow(t, 2)*cp2x + Math.pow(t, 3)*endX;
+                const by = Math.pow(1-t, 3)*startY + 3*Math.pow(1-t, 2)*t*cp1y + 3*(1-t)*Math.pow(t, 2)*cp2y + Math.pow(t, 3)*endY;
+                
+                const jx = (Math.random() - 0.5) * jitter;
+                const jy = (Math.random() - 0.5) * jitter;
+                
+                ctx.lineTo(bx + jx, by + jy);
+                
+                // Chance to spawn particle
+                if (Math.random() < 0.3) {
+                    particles.push(new Particle(bx, by, isSyncing ? 'sync' : 'chaos'));
+                }
+            }
+            
+            ctx.stroke();
+            ctx.shadowBlur = 0; // Reset
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+
+            // Draw Background Orbs
+            orbs.forEach(orb => {
+                orb.update();
+                orb.draw(ctx);
+            });
+
+            const isSyncing = updateGame();
+
+            // Draw Target Wave (Ghost)
+            // We project this in the background as a guide
+            ctx.globalAlpha = 0.3;
+            drawWave(ctx, targetFreq, targetAmp, targetPhase, '#ff00aa', 2, true);
+            ctx.globalAlpha = 1.0;
+
+            // Draw User Wave
+            // This visualizes the slider inputs
+            const userFreq = parseFloat(freqSlider.value);
+            const userAmp = parseFloat(ampSlider.value);
+            const userPhase = parseFloat(phaseSlider.value);
+            drawWave(ctx, userFreq, userAmp, userPhase, '#00f3ff', 3, false);
+
+            // Draw Connection Stream
+            drawConnection(ctx, isSyncing);
+
+            // Particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.update();
+                p.draw(ctx);
+                if (p.life <= 0) particles.splice(i, 1);
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+
+    </script>
+</body>
+</html>
