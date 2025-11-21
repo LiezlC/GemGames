@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SYNTH_MIND // Neural Interface</title>
+    <style>
+        :root {
+            --neon-pink: #ff2a6d;
+            --neon-blue: #05d9e8;
+            --deep-purple: #1a0b2e;
+            --glow-white: #f0f0f0;
+            --grid-color: rgba(255, 42, 109, 0.1);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--deep-purple);
+            background-image: 
+                radial-gradient(circle at 50% 50%, #2d1b4e 0%, #000000 100%);
+            color: var(--glow-white);
+            font-family: 'Courier New', Courier, monospace;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+        }
+
+        /* Background Grid Effect */
+        .grid-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 200%;
+            height: 200%;
+            background-image: 
+                linear-gradient(var(--grid-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+            background-size: 40px 40px;
+            transform: perspective(500px) rotateX(60deg) translateY(-100px) translateZ(-200px);
+            animation: gridMove 20s linear infinite;
+            opacity: 0.3;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        @keyframes gridMove {
+            0% { transform: perspective(500px) rotateX(60deg) translateY(0) translateZ(-200px); }
+            100% { transform: perspective(500px) rotateX(60deg) translateY(40px) translateZ(-200px); }
+        }
+
+        /* Main Container */
+        #interface-container {
+            position: relative;
+            width: 600px;
+            height: 600px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+
+        /* Canvas for dynamic lines */
+        #connection-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* The Wireframe Head */
+        .cyber-head {
+            width: 220px;
+            height: 300px;
+            position: relative;
+            z-index: 2;
+            filter: drop-shadow(0 0 15px var(--neon-pink));
+            transition: transform 0.1s ease;
+            cursor: pointer;
+        }
+
+        .cyber-head svg {
+            width: 100%;
+            height: 100%;
+            fill: rgba(255, 255, 255, 0.05);
+            stroke: var(--glow-white);
+            stroke-width: 1.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            transition: all 0.3s ease;
+        }
+
+        .cyber-head.active svg {
+            stroke: var(--neon-pink);
+            fill: rgba(255, 42, 109, 0.1);
+            filter: drop-shadow(0 0 10px var(--neon-pink));
+        }
+
+        .cyber-head.success svg {
+            stroke: var(--neon-blue);
+            fill: rgba(5, 217, 232, 0.1);
+            filter: drop-shadow(0 0 20px var(--neon-blue));
+        }
+
+        /* Orbiting Nodes */
+        .node {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background: var(--deep-purple);
+            border: 2px solid var(--glow-white);
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 3;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+        }
+
+        .node:hover {
+            transform: scale(1.5);
+            background: var(--neon-blue);
+            box-shadow: 0 0 20px var(--neon-blue);
+            border-color: var(--neon-blue);
+        }
+
+        .node.lit {
+            background: var(--neon-pink);
+            border-color: var(--neon-pink);
+            box-shadow: 0 0 30px var(--neon-pink), 0 0 60px var(--neon-pink);
+            transform: scale(1.8);
+        }
+
+        /* UI Overlay */
+        #ui-layer {
+            position: absolute;
+            bottom: 30px;
+            text-align: center;
+            z-index: 20;
+            width: 100%;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin: 0;
+            letter-spacing: 4px;
+            text-shadow: 0 0 10px var(--neon-pink);
+            opacity: 0.9;
+        }
+
+        p {
+            font-size: 0.9rem;
+            color: var(--neon-blue);
+            margin-top: 10px;
+            letter-spacing: 1px;
+        }
+
+        button {
+            background: transparent;
+            border: 1px solid var(--neon-blue);
+            color: var(--neon-blue);
+            padding: 10px 30px;
+            font-family: inherit;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            box-shadow: 0 0 10px rgba(5, 217, 232, 0.2);
+        }
+
+        button:hover {
+            background: var(--neon-blue);
+            color: var(--deep-purple);
+            box-shadow: 0 0 30px var(--neon-blue);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            filter: grayscale(1);
+        }
+
+        .status-text {
+            height: 20px;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        /* Scanline effect */
+        .scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1));
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 100;
+            opacity: 0.6;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="grid-bg"></div>
+    <div class="scanlines"></div>
+
+    <div id="interface-container">
+        <canvas id="connection-layer"></canvas>
+        
+        <!-- The Wireframe Head SVG -->
+        <div class="cyber-head" id="brain">
+            <svg viewBox="0 0 100 140" xmlns="http://www.w3.org/2000/svg">
+                <!-- Outer Contour -->
+                <path d="M20,40 Q10,60 20,90 L35,120 L50,130 L65,120 L80,90 Q90,60 80,40 Q70,10 50,10 Q30,10 20,40 Z" fill="none" />
+                
+                <!-- Jaw/Chin Detail -->
+                <path d="M35,120 L50,115 L65,120 M50,130 L50,115" fill="none" />
+                
+                <!-- Cheekbones -->
+                <path d="M20,60 L35,70 L35,90 M80,60 L65,70 L65,90" fill="none" />
+                
+                <!-- Eyes/Visor -->
+                <path d="M25,50 L40,55 L35,45 Z M75,50 L60,55 L65,45 Z" fill="none" />
+                <path d="M40,55 L60,55" fill="none" opacity="0.5" stroke-dasharray="2 2"/>
+                
+                <!-- Forehead/Brain Mesh -->
+                <path d="M50,10 L50,40 M30,25 L70,25 M35,45 L50,40 L65,45" fill="none" opacity="0.7"/>
+                <circle cx="50" cy="30" r="5" fill="none" />
+                
+                <!-- Nose -->
+                <path d="M50,55 L45,80 L50,85 L55,80 Z" fill="none" />
+                
+                <!-- Mouth -->
+                <path d="M40,100 L50,105 L60,100" fill="none" />
+                <path d="M40,100 L40,95 L60,95 L60,100" fill="none" opacity="0.5"/>
+            </svg>
+        </div>
+    </div>
+
+    <div id="ui-layer">
+        <h1>SYNTH_MIND</h1>
+        <div class="status-text" id="status">INITIALIZING...</div>
+        <p>Level: <span id="level-display">1</span> | Score: <span id="score-display">0</span></p>
+        <button id="start-btn">INITIATE SEQUENCE</button>
+    </div>
+
+    <script>
+        // --- Configuration ---
+        const NODE_COUNT = 12;
+        const RADIUS = 220; // Distance of nodes from center
+        const CENTER_X = 300;
+        const CENTER_Y = 300;
+        
+        // --- State ---
+        let nodes = [];
+        let sequence = [];
+        let playerSequence = [];
+        let level = 1;
+        let score = 0;
+        let isPlaying = false;
+        let isDemonstrating = false;
+        
+        // --- Audio Context ---
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioContext();
+        
+        // --- DOM Elements ---
+        const container = document.getElementById('interface-container');
+        const canvas = document.getElementById('connection-layer');
+        const ctx = canvas.getContext('2d');
+        const statusEl = document.getElementById('status');
+        const startBtn = document.getElementById('start-btn');
+        const brainEl = document.getElementById('brain');
+        const levelEl = document.getElementById('level-display');
+        const scoreEl = document.getElementById('score-display');
+
+        // --- Initialization ---
+        function init() {
+            canvas.width = 600;
+            canvas.height = 600;
+            createNodes();
+            animate();
+            statusEl.innerText = "SYSTEM READY. AWAITING INPUT.";
+        }
+
+        // --- Create Nodes ---
+        function createNodes() {
+            for (let i = 0; i < NODE_COUNT; i++) {
+                const angle = (i / NODE_COUNT) * Math.PI * 2 - (Math.PI / 2); // Start from top
+                const x = CENTER_X + Math.cos(angle) * RADIUS;
+                const y = CENTER_Y + Math.sin(angle) * RADIUS;
+
+                const node = document.createElement('div');
+                node.classList.add('node');
+                node.style.left = (x - 8) + 'px'; // Center the div (16px width)
+                node.style.top = (y - 8) + 'px';
+                node.dataset.index = i;
+                node.dataset.x = x;
+                node.dataset.y = y;
+                
+                // Interaction
+                node.addEventListener('mousedown', () => handleNodeClick(i));
+                
+                container.appendChild(node);
+                nodes.push(node);
+            }
+        }
+
+        // --- Audio Synth ---
+        function playTone(index, type = 'sine', duration = 0.3) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
+            // Pentatonic Scale Logic
+            const baseFreq = 220;
+            const scale = [1, 1.125, 1.25, 1.5, 1.66]; // Major Pentatonic ratios
+            const octave = Math.floor(index / 5);
+            const note = index % 5;
+            const freq = baseFreq * scale[note] * Math.pow(2, octave);
+
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        function playErrorSound() {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(100, audioCtx.currentTime);
+            osc.frequency.linearRampToValueAtTime(50, audioCtx.currentTime + 0.5);
+            gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.5);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.5);
+        }
+
+        // --- Game Logic ---
+
+        startBtn.addEventListener('click', startGame);
+
+        function startGame() {
+            level = 1;
+            score = 0;
+            sequence = [];
+            updateUI();
+            startBtn.disabled = true;
+            startBtn.innerText = "SEQUENCE RUNNING...";
+            nextRound();
+        }
+
+        function nextRound() {
+            playerSequence = [];
+            isPlaying = false;
+            isDemonstrating = true;
+            statusEl.innerText = "OBSERVE PATTERN";
+            
+            // Add new step
+            const nextNode = Math.floor(Math.random() * NODE_COUNT);
+            sequence.push(nextNode);
+
+            // Play sequence
+            let i = 0;
+            const interval = setInterval(() => {
+                activateNode(sequence[i]);
+                i++;
+                if (i >= sequence.length) {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        isDemonstrating = false;
+                        isPlaying = true;
+                        statusEl.innerText = "REPEAT PATTERN";
+                        brainEl.classList.remove('active');
+                    }, 500);
+                }
+            }, 800 - (Math.min(level * 30, 400))); // Speed up as levels go
+        }
+
+        function activateNode(index) {
+            const node = nodes[index];
+            node.classList.add('lit');
+            playTone(index, 'triangle');
+            
+            // Visual connection to brain
+            drawConnection(index);
+            brainEl.classList.add('active');
+
+            setTimeout(() => {
+                node.classList.remove('lit');
+                brainEl.classList.remove('active');
+            }, 400);
+        }
+
+        function handleNodeClick(index) {
+            if (!isPlaying || isDemonstrating) return;
+
+            // Visual Feedback
+            const node = nodes[index];
+            node.classList.add('lit');
+            playTone(index, 'sine');
+            drawConnection(index);
+            
+            setTimeout(() => node.classList.remove('lit'), 200);
+
+            // Logic
+            playerSequence.push(index);
+            
+            // Check correctness
+            const currentStep = playerSequence.length - 1;
+            if (playerSequence[currentStep] !== sequence[currentStep]) {
+                gameOver();
+                return;
+            }
+
+            // Check if round complete
+            if (playerSequence.length === sequence.length) {
+                isPlaying = false;
+                score += level * 10;
+                level++;
+                updateUI();
+                brainEl.classList.add('success');
+                statusEl.innerText = "PATTERN MATCHED";
+                playTone(15, 'sine', 0.6); // High pitch success
+                
+                setTimeout(() => {
+                    brainEl.classList.remove('success');
+                    nextRound();
+                }, 1000);
+            }
+        }
+
+        function gameOver() {
+            isPlaying = false;
+            statusEl.innerText = "CRITICAL FAILURE. SYSTEM RESET.";
+            statusEl.style.color = "red";
+            playErrorSound();
+            brainEl.style.filter = "drop-shadow(0 0 20px red)";
+            
+            nodes.forEach(n => {
+                n.style.borderColor = "red";
+                n.style.background = "#500";
+            });
+
+            setTimeout(() => {
+                brainEl.style.filter = "";
+                statusEl.style.color = "";
+                nodes.forEach(n => {
+                    n.style.borderColor = "";
+                    n.style.background = "";
+                });
+                startBtn.disabled = false;
+                startBtn.innerText = "RETRY SEQUENCE";
+            }, 2000);
+        }
+
+        function updateUI() {
+            levelEl.innerText = level;
+            scoreEl.innerText = score;
+        }
+
+        // --- Canvas Animation ---
+        let activeConnections = []; // {x, y, life}
+
+        function drawConnection(nodeIndex) {
+            const node = nodes[nodeIndex];
+            activeConnections.push({
+                x: parseFloat(node.dataset.x),
+                y: parseFloat(node.dataset.y),
+                life: 1.0
+            });
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw active connections
+            for (let i = activeConnections.length - 1; i >= 0; i--) {
+                const conn = activeConnections[i];
+                
+                ctx.beginPath();
+                ctx.moveTo(CENTER_X, CENTER_Y);
+                ctx.lineTo(conn.x, conn.y);
+                
+                const alpha = conn.life;
+                ctx.strokeStyle = `rgba(255, 42, 109, ${alpha})`;
+                ctx.lineWidth = 3 * alpha;
+                ctx.stroke();
+                
+                // Draw particle on line
+                const px = CENTER_X + (conn.x - CENTER_X) * (1 - conn.life);
+                const py = CENTER_Y + (conn.y - CENTER_Y) * (1 - conn.life);
+                
+                ctx.beginPath();
+                ctx.arc(px, py, 4, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(5, 217, 232, ${alpha})`;
+                ctx.fill();
+
+                conn.life -= 0.05;
+                if (conn.life <= 0) {
+                    activeConnections.splice(i, 1);
+                }
+            }
+
+            // Idle idle rotation of head
+            if (!isDemonstrating && !isPlaying) {
+                const time = Date.now() * 0.001;
+                brainEl.style.transform = `translateY(${Math.sin(time) * 5}px)`;
+            } else {
+                brainEl.style.transform = `scale(1.05)`;
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        // Start
+        init();
+
+    </script>
+</body>
+</html>
