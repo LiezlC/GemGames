@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyber-Organic Synthesis Protocol</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Space+Mono:wght@400;700&display=swap');
+
+        :root {
+            --ink: #1a1a1a;
+            --paper: #f4f1ea;
+            --accent-red: #d62828;
+            --accent-teal: #2a9d8f;
+            --gold: #d4a373;
+        }
+
+        body {
+            background-color: var(--paper);
+            color: var(--ink);
+            font-family: 'Space Mono', monospace;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        /* Neo-Traditional Tattoo Styling */
+        .tattoo-border {
+            border: 4px solid var(--ink);
+            box-shadow: 8px 8px 0px rgba(0,0,0,0.1);
+            border-radius: 12px;
+        }
+
+        .panel {
+            background: white;
+            padding: 20px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        /* Character Avatars via CSS */
+        .avatar-container {
+            width: 150px;
+            height: 150px;
+            position: relative;
+            margin: 0 auto;
+        }
+
+        /* The Architect (Left) */
+        .head-human {
+            width: 100px;
+            height: 120px;
+            background: #f5d0b5;
+            border: 3px solid var(--ink);
+            border-radius: 40px 40px 60px 60px;
+            position: absolute;
+            left: 25px;
+            top: 10px;
+            z-index: 2;
+        }
+        .glasses {
+            width: 70px;
+            height: 20px;
+            background: var(--ink);
+            position: absolute;
+            top: 40px;
+            left: 15px;
+            border-radius: 4px;
+        }
+        .glasses::before { /* Bridge */
+            content: '';
+            width: 10px;
+            height: 4px;
+            background: var(--ink);
+            position: absolute;
+            left: 30px;
+            top: 5px;
+        }
+        .tattoo-arm {
+            position: absolute;
+            bottom: -20px;
+            left: -10px;
+            font-size: 40px;
+            transform: rotate(-10deg);
+            z-index: 3;
+            filter: drop-shadow(2px 2px 0 var(--ink));
+        }
+
+        /* The Android (Right) */
+        .head-robot {
+            width: 100px;
+            height: 120px;
+            background: linear-gradient(135deg, #e0e0e0 0%, #ffffff 50%, #b0b0b0 100%);
+            border: 3px solid var(--ink);
+            border-radius: 50px 50px 60px 60px;
+            position: absolute;
+            left: 25px;
+            top: 10px;
+            z-index: 2;
+            overflow: hidden;
+        }
+        .robot-eye {
+            width: 24px;
+            height: 24px;
+            background: var(--accent-red);
+            border: 2px solid var(--ink);
+            border-radius: 50%;
+            position: absolute;
+            top: 40px;
+            left: 20px;
+            box-shadow: 0 0 10px var(--accent-red);
+        }
+        .robot-detail {
+            position: absolute;
+            top: 35px;
+            right: -10px;
+            width: 40px;
+            height: 40px;
+            background: var(--ink);
+            border-radius: 50%;
+        }
+        .robot-pattern {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            width: 80px;
+            height: 2px;
+            background: var(--ink);
+            box-shadow: 0 5px 0 var(--ink), 0 10px 0 var(--ink);
+        }
+
+        /* Game UI */
+        .oscilloscope {
+            background: #000;
+            border: 4px solid var(--ink);
+            border-radius: 8px;
+            width: 100%;
+            height: 150px;
+            margin: 20px 0;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .slider-container {
+            margin: 15px 0;
+        }
+        
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 8px;
+            background: #ddd;
+            border: 2px solid var(--ink);
+            border-radius: 4px;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: var(--accent-teal);
+            border: 2px solid var(--ink);
+            cursor: pointer;
+            border-radius: 50%;
+        }
+
+        .dialogue-box {
+            min-height: 60px;
+            font-style: italic;
+            text-align: center;
+            color: #555;
+            margin-bottom: 10px;
+            font-family: 'Cinzel', serif;
+            font-weight: 700;
+        }
+
+        .flower-overlay {
+            position: absolute;
+            pointer-events: none;
+            animation: grow 1s ease-out forwards;
+            font-size: 2rem;
+            z-index: 10;
+        }
+
+        @keyframes grow {
+            0% { transform: scale(0) rotate(0deg); opacity: 0; }
+            100% { transform: scale(1) rotate(360deg); opacity: 1; }
+        }
+
+        .status-light {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ccc;
+            border: 2px solid var(--ink);
+            display: inline-block;
+            margin-right: 5px;
+        }
+        .status-light.active {
+            background: #4cc9f0;
+            box-shadow: 0 0 8px #4cc9f0;
+        }
+        .status-light.synced {
+            background: #2a9d8f;
+            box-shadow: 0 0 8px #2a9d8f;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="max-w-4xl w-full p-4 flex flex-col md:flex-row gap-8 items-center justify-center">
+        
+        <!-- Left: The Architect -->
+        <div class="flex flex-col items-center">
+            <div class="avatar-container">
+                <div class="head-human">
+                    <div class="glasses"></div>
+                </div>
+                <div class="tattoo-arm">🌹</div>
+            </div>
+            <h2 class="mt-4 font-bold text-xl uppercase tracking-widest">Architect</h2>
+            <div class="text-xs text-gray-500">Organic Intelligence</div>
+        </div>
+
+        <!-- Center: The Machine Interface -->
+        <div class="flex-1 w-full max-w-md panel tattoo-border">
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-xs font-bold uppercase">Neural Link Protocol</span>
+                <div class="flex items-center">
+                    <div id="statusLight" class="status-light"></div>
+                    <span id="syncPercent" class="text-xs font-bold">0% SYNC</span>
+                </div>
+            </div>
+
+            <!-- Oscilloscope Canvas -->
+            <div class="oscilloscope">
+                <canvas id="waveCanvas" width="400" height="150"></canvas>
+            </div>
+
+            <!-- Dialogue -->
+            <div id="dialogue" class="dialogue-box flex items-center justify-center">
+                "Initiating handshake protocol..."
+            </div>
+
+            <!-- Controls -->
+            <div class="slider-container">
+                <label class="flex justify-between text-xs font-bold mb-1">
+                    <span>EMPATHY FREQUENCY</span>
+                    <span class="text-teal-600">WAVE</span>
+                </label>
+                <input type="range" id="freqSlider" min="1" max="100" value="50">
+            </div>
+
+            <div class="slider-container">
+                <label class="flex justify-between text-xs font-bold mb-1">
+                    <span>LOGIC AMPLITUDE</span>
+                    <span class="text-red-600">PULSE</span>
+                </label>
+                <input type="range" id="ampSlider" min="1" max="100" value="20">
+            </div>
+
+            <div class="slider-container">
+                <label class="flex justify-between text-xs font-bold mb-1">
+                    <span>PHASE ALIGNMENT</span>
+                    <span class="text-yellow-600">SHIFT</span>
+                </label>
+                <input type="range" id="phaseSlider" min="0" max="100" value="0">
+            </div>
+
+            <button id="resetBtn" class="w-full mt-4 bg-gray-800 text-white py-2 font-bold hover:bg-black transition-colors border-2 border-transparent hover:border-gray-600 rounded">
+                RECALIBRATE
+            </button>
+        </div>
+
+        <!-- Right: The Automaton -->
+        <div class="flex flex-col items-center">
+            <div class="avatar-container">
+                <div class="head-robot">
+                    <div class="robot-eye"></div>
+                    <div class="robot-detail"></div>
+                    <div class="robot-pattern"></div>
+                </div>
+                <div class="tattoo-arm" style="right: -10px; left: auto; transform: rotate(10deg);">⚙️</div>
+            </div>
+            <h2 class="mt-4 font-bold text-xl uppercase tracking-widest">Automaton</h2>
+            <div class="text-xs text-gray-500">Synthetic Soul</div>
+        </div>
+
+    </div>
+
+    <script>
+        // Game State
+        const canvas = document.getElementById('waveCanvas');
+        const ctx = canvas.getContext('2d');
+        const dialogueEl = document.getElementById('dialogue');
+        const syncEl = document.getElementById('syncPercent');
+        const statusLight = document.getElementById('statusLight');
+        
+        // Target values (Goal)
+        let targetFreq = 0;
+        let targetAmp = 0;
+        let targetPhase = 0;
+
+        // User values
+        const freqSlider = document.getElementById('freqSlider');
+        const ampSlider = document.getElementById('ampSlider');
+        const phaseSlider = document.getElementById('phaseSlider');
+
+        let time = 0;
+        let syncScore = 0;
+        let isSynced = false;
+
+        // Dialogue Progression
+        const dialogues = [
+            "Connection unstable. Adjust frequencies.",
+            "I detect a heartbeat. Is this... fear?",
+            "Logic circuits aligning. I understand the concept of 'blue'.",
+            "My sensors are picking up... warmth?",
+            "Neural pathways bridged. We are one.",
+            "SYSTEM SYNCHRONIZED. LIFE DETECTED."
+        ];
+
+        function initGame() {
+            // Randomize targets slightly for replayability
+            targetFreq = 30 + Math.random() * 40; // range 30-70
+            targetAmp = 40 + Math.random() * 40;  // range 40-80
+            targetPhase = Math.random() * 50;
+            
+            isSynced = false;
+            syncScore = 0;
+            
+            // Reset sliders visually not logically to force user movement
+            freqSlider.value = 50;
+            ampSlider.value = 20;
+            phaseSlider.value = 0;
+            
+            dialogueEl.innerText = dialogues[0];
+            
+            // Clear flowers
+            document.querySelectorAll('.flower-overlay').forEach(e => e.remove());
+        }
+
+        function draw() {
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Grid lines
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            for(let i=0; i<canvas.width; i+=20) { ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); }
+            for(let i=0; i<canvas.height; i+=20) { ctx.moveTo(0,i); ctx.lineTo(canvas.width,i); }
+            ctx.stroke();
+
+            // User Inputs
+            const userFreq = parseInt(freqSlider.value);
+            const userAmp = parseInt(ampSlider.value);
+            const userPhase = parseInt(phaseSlider.value);
+
+            // Calculate Sync
+            // We map slider 0-100 to appropriate ranges
+            // Freq: 1-100 -> roughly match target
+            // Amp: 1-100 -> roughly match target
+            
+            // Normalize for comparison
+            const diffFreq = Math.abs(userFreq - targetFreq);
+            const diffAmp = Math.abs(userAmp - targetAmp);
+            const diffPhase = Math.abs(userPhase - targetPhase);
+
+            // Calculate percentage (simple inverse distance)
+            let currentSync = 100 - (diffFreq + diffAmp + diffPhase)/1.5;
+            if (currentSync < 0) currentSync = 0;
+            if (currentSync > 100) currentSync = 100;
+            
+            // Smoothing the score display
+            syncScore += (currentSync - syncScore) * 0.1;
+            
+            syncEl.innerText = Math.floor(syncScore) + "% SYNC";
+            
+            // Update Dialogue based on score
+            const dialogueIndex = Math.min(Math.floor(syncScore / 20), dialogues.length - 1);
+            if (!isSynced) {
+                dialogueEl.innerText = dialogues[dialogueIndex];
+            }
+
+            // Status Light
+            if (syncScore > 95) {
+                statusLight.className = "status-light synced";
+                if (!isSynced) triggerWin();
+            } else if (syncScore > 50) {
+                statusLight.className = "status-light active";
+            } else {
+                statusLight.className = "status-light";
+            }
+
+            // Draw Target Wave (Ghost)
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.lineWidth = 4;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            for (let x = 0; x < canvas.width; x++) {
+                // Frequency factor, Amplitude factor
+                const y = canvas.height/2 + Math.sin((x + time) * (targetFreq * 0.002) + targetPhase/10) * (targetAmp * 0.8);
+                if (x===0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Draw User Wave
+            // Color shifts from Red (bad) to Teal (good)
+            const r = 214 - (syncScore * 1.7);
+            const g = 40 + (syncScore * 1.1);
+            const b = 40 + (syncScore * 1.0);
+            ctx.strokeStyle = `rgb(${r},${g},${b})`;
+            ctx.lineWidth = 3;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = `rgb(${r},${g},${b})`;
+
+            ctx.beginPath();
+            for (let x = 0; x < canvas.width; x++) {
+                const y = canvas.height/2 + Math.sin((x + time) * (userFreq * 0.002) + userPhase/10) * (userAmp * 0.8);
+                if (x===0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            time += 2;
+            requestAnimationFrame(draw);
+        }
+
+        function triggerWin() {
+            if (isSynced) return;
+            isSynced = true;
+            dialogueEl.innerText = dialogues[dialogues.length - 1];
+            
+            // Bloom flowers
+            const flowers = ['🌹', '🌸', '🌺', '🌷', '⚙️', '❤️'];
+            const container = document.body;
+            
+            for(let i=0; i<30; i++) {
+                setTimeout(() => {
+                    const el = document.createElement('div');
+                    el.className = 'flower-overlay';
+                    el.innerText = flowers[Math.floor(Math.random() * flowers.length)];
+                    el.style.left = Math.random() * 100 + 'vw';
+                    el.style.top = Math.random() * 100 + 'vh';
+                    el.style.fontSize = (Math.random() * 3 + 1) + 'rem';
+                    container.appendChild(el);
+                }, i * 100);
+            }
+        }
+
+        document.getElementById('resetBtn').addEventListener('click', initGame);
+
+        // Init
+        initGame();
+        draw();
+
+    </script>
+</body>
+</html>

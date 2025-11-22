@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Serpent's Corridor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;600&display=swap');
+
+        :root {
+            --color-bg: #0f172a;
+            --color-snake: #14b8a6;
+            --color-snake-dark: #0f766e;
+            --color-gold: #fbbf24;
+            --color-gold-glow: #f59e0b;
+            --door-width: 70px;
+            --door-height: 100px;
+        }
+
+        body {
+            background-color: var(--color-bg);
+            background-image: 
+                radial-gradient(circle at 50% 0%, #134e4a 0%, transparent 60%),
+                radial-gradient(circle at 80% 80%, #0f172a 0%, #020617 100%);
+            color: white;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            margin: 0;
+            user-select: none;
+        }
+
+        /* Typography */
+        h1, h2, .cinzel {
+            font-family: 'Cinzel', serif;
+        }
+
+        /* The Snake Path Container */
+        #world {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* SVG Snake */
+        .snake-svg {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 800px;
+            height: 800px;
+            pointer-events: none;
+            z-index: 0;
+            filter: drop-shadow(0 0 20px rgba(20, 184, 166, 0.3));
+        }
+
+        .snake-body {
+            fill: none;
+            stroke: url(#snakeGradient);
+            stroke-width: 80;
+            stroke-linecap: round;
+        }
+        
+        .snake-detail {
+            fill: none;
+            stroke: rgba(0,0,0,0.3);
+            stroke-width: 2;
+            stroke-dasharray: 10 5;
+        }
+
+        /* The Portals (Doors) */
+        .portal {
+            position: absolute;
+            width: var(--door-width);
+            height: var(--door-height);
+            background: linear-gradient(to bottom, #451a03, #78350f);
+            border-radius: 50px 50px 0 0; /* Arch shape */
+            border: 2px solid #92400e;
+            box-shadow: 0 0 15px rgba(251, 191, 36, 0.2);
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 10;
+            overflow: hidden;
+        }
+
+        .portal:hover {
+            transform: scale(1.15) translateY(-5px);
+            box-shadow: 0 0 30px rgba(251, 191, 36, 0.6);
+            border-color: var(--color-gold);
+        }
+
+        .portal-inner {
+            width: 80%;
+            height: 90%;
+            background: linear-gradient(to bottom, #fcd34d, #d97706);
+            border-radius: 40px 40px 0 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            box-shadow: inset 0 0 10px #78350f;
+            opacity: 0.8;
+        }
+        
+        .portal.locked .portal-inner {
+            background: #334155;
+            opacity: 1;
+        }
+        
+        .portal.locked::after {
+            content: "🔒";
+            position: absolute;
+            font-size: 24px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .portal-content {
+            font-size: 28px;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s ease;
+        }
+
+        .portal:hover .portal-content {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Special Trust Portal */
+        .portal.trust-portal {
+            border: 2px solid #f472b6;
+            box-shadow: 0 0 20px rgba(244, 114, 182, 0.4);
+        }
+        .portal.trust-portal .portal-inner {
+            background: linear-gradient(to bottom, #fbcfe8, #db2777);
+        }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal-card {
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid var(--color-gold);
+            border-radius: 16px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 0 50px rgba(251, 191, 36, 0.15);
+            transform: scale(0.9);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .modal-overlay.active .modal-card {
+            transform: scale(1);
+        }
+
+        .modal-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 4px;
+            background: linear-gradient(90deg, transparent, var(--color-gold), transparent);
+        }
+
+        .btn {
+            background: transparent;
+            border: 1px solid var(--color-snake);
+            color: var(--color-snake);
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-family: 'Cinzel', serif;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin: 0.5rem;
+        }
+
+        .btn:hover {
+            background: var(--color-snake);
+            color: #0f172a;
+            box-shadow: 0 0 15px var(--color-snake);
+        }
+
+        .btn-primary {
+            background: var(--color-gold);
+            color: #451a03;
+            border-color: var(--color-gold);
+        }
+        
+        .btn-primary:hover {
+            background: #f59e0b;
+            box-shadow: 0 0 15px var(--color-gold);
+        }
+
+        /* Particles */
+        .particle {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            opacity: 0.3;
+            pointer-events: none;
+            animation: floatUp linear infinite;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(0) translateX(0); opacity: 0; }
+            20% { opacity: 0.5; }
+            100% { transform: translateY(-100px) translateX(20px); opacity: 0; }
+        }
+
+        /* HUD */
+        .hud {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 50;
+            display: flex;
+            gap: 20px;
+        }
+        
+        .stat-box {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 10px 20px;
+            border-radius: 30px;
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .trust-meter {
+            width: 100px;
+            height: 6px;
+            background: #334155;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .trust-fill {
+            height: 100%;
+            background: var(--color-gold);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- HUD -->
+    <div class="hud">
+        <div class="stat-box">
+            <span style="font-size: 1.2rem">🗝️</span>
+            <span class="cinzel" id="keys-display">0 / 6</span>
+        </div>
+        <div class="stat-box">
+            <span style="font-size: 1.2rem">✨</span>
+            <div class="trust-meter">
+                <div class="trust-fill" id="trust-fill"></div>
+            </div>
+            <span class="cinzel text-xs text-gray-400">TRUST</span>
+        </div>
+    </div>
+
+    <!-- Game World -->
+    <div id="world">
+        <!-- The Snake SVG -->
+        <svg class="snake-svg" viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="snakeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:#115e59;stop-opacity:1" />
+                    <stop offset="50%" style="stop-color:#14b8a6;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#0f172a;stop-opacity:1" />
+                </linearGradient>
+                <filter id="glow">
+                    <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+                    <feMerge>
+                        <feMergeNode in="coloredBlur"/>
+                        <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                </filter>
+            </defs>
+            
+            <!-- The Body Path -->
+            <path id="snakePath" class="snake-body" d="M 200 700 C 50 700, 50 500, 200 500 C 350 500, 400 600, 500 600 C 650 600, 750 500, 650 400 C 550 300, 300 400, 250 300 C 200 200, 300 100, 400 150 C 500 200, 550 100, 500 50" />
+            
+            <!-- Detail lines for scales effect -->
+            <path class="snake-detail" d="M 200 700 C 50 700, 50 500, 200 500 C 350 500, 400 600, 500 600 C 650 600, 750 500, 650 400 C 550 300, 300 400, 250 300 C 200 200, 300 100, 400 150 C 500 200, 550 100, 500 50" />
+
+            <!-- Snake Head -->
+            <g transform="translate(500, 50)">
+                <path d="M -20 0 Q 0 -30 20 0 Q 30 40 0 50 Q -30 40 -20 0" fill="#115e59" stroke="#14b8a6" stroke-width="2" />
+                <!-- Eyes -->
+                <circle cx="-10" cy="10" r="3" fill="#fbbf24" filter="url(#glow)" />
+                <circle cx="10" cy="10" r="3" fill="#fbbf24" filter="url(#glow)" />
+                <!-- Tongue -->
+                <path d="M 0 50 Q 5 60 0 70 L -5 80 M 0 70 L 5 80" stroke="#ef4444" stroke-width="2" fill="none" />
+            </g>
+        </svg>
+
+        <!-- Portals will be injected here by JS -->
+        <div id="portals-container" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 800px; height: 800px; pointer-events: none;">
+            <!-- Portals are absolute relative to this container which matches SVG viewBox -->
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal-overlay" id="modal">
+        <div class="modal-card">
+            <h2 class="text-2xl text-amber-400 mb-2" id="modal-title">Title</h2>
+            <div class="text-4xl mb-4" id="modal-emoji">✨</div>
+            <p class="text-gray-300 mb-6 leading-relaxed" id="modal-desc">Description text goes here.</p>
+            
+            <div id="modal-actions" class="flex justify-center gap-4">
+                <!-- Buttons injected via JS -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Configuration & Data ---
+        const portalsData = [
+            {
+                id: 1,
+                title: "The Solitary Guardian",
+                emoji: "🕯️",
+                desc: "A figure stands alone in the dim light, guarding a secret not yet spoken. Do you approach with caution or boldness?",
+                pos: { x: 180, y: 680 }, // Approx coordinates along the path
+                locked: false,
+                type: "narrative",
+                choices: [
+                    { text: "Approach Boldly", outcome: "bold", trust: 10 },
+                    { text: "Observe Quietly", outcome: "quiet", trust: 5 }
+                ]
+            },
+            {
+                id: 2,
+                title: "The Reflection",
+                emoji: "🪞",
+                desc: "You see yourself in a mirror, but the reflection is smiling while you are not. It offers you a hand.",
+                pos: { x: 200, y: 480 },
+                locked: true,
+                type: "narrative",
+                choices: [
+                    { text: "Take the Hand", outcome: "trust", trust: 20 },
+                    { text: "Break the Mirror", outcome: "distrust", trust: -10 }
+                ]
+            },
+            {
+                id: 3,
+                title: "The Union",
+                emoji: "🤝",
+                desc: "Two ancient houses are forging a pact. They ask for your witness. A lie here could save a kingdom, but cost your soul.",
+                pos: { x: 500, y: 580 },
+                locked: true,
+                type: "narrative",
+                choices: [
+                    { text: "Witness Truthfully", outcome: "truth", trust: 15 },
+                    { text: "Weave a Lie", outcome: "lie", trust: -5 }
+                ]
+            },
+            {
+                id: 4,
+                title: "TRUST TRUST",
+                emoji: "👁️",
+                desc: "The Serpent speaks directly to your mind. 'Surrender your control,' it hisses. 'Trust in the fall.'",
+                pos: { x: 650, y: 380 },
+                locked: true,
+                type: "trust_check",
+                choices: [
+                    { text: "I Trust You", outcome: "success", trust: 30 },
+                    { text: "I Resist", outcome: "fail", trust: 0 }
+                ]
+            },
+            {
+                id: 5,
+                title: "The Feast of Memory",
+                emoji: "🍷",
+                desc: "A banquet of your fondest memories. But one plate is poisoned with regret.",
+                pos: { x: 250, y: 280 },
+                locked: true,
+                type: "narrative",
+                choices: [
+                    { text: "Eat Nothing", outcome: "safe", trust: 5 },
+                    { text: "Feast Blindly", outcome: "risk", trust: 10 }
+                ]
+            },
+            {
+                id: 6,
+                title: "The Final Vow",
+                emoji: "💍",
+                desc: "The end of the path. A vow to bind the Serpent's power to your own.",
+                pos: { x: 400, y: 130 },
+                locked: true,
+                type: "final",
+                choices: [
+                    { text: "Make the Vow", outcome: "win", trust: 0 }
+                ]
+            }
+        ];
+
+        // --- State ---
+        let state = {
+            trust: 0,
+            unlockedIds: [1],
+            completedIds: []
+        };
+
+        // --- DOM Elements ---
+        const container = document.getElementById('portals-container');
+        const modal = document.getElementById('modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalDesc = document.getElementById('modal-desc');
+        const modalEmoji = document.getElementById('modal-emoji');
+        const modalActions = document.getElementById('modal-actions');
+        const trustFill = document.getElementById('trust-fill');
+        const keysDisplay = document.getElementById('keys-display');
+
+        // --- Initialization ---
+        function init() {
+            renderPortals();
+            createParticles();
+            updateHUD();
+        }
+
+        // --- Rendering ---
+        function renderPortals() {
+            container.innerHTML = ''; // Clear existing
+            portalsData.forEach(portal => {
+                const el = document.createElement('div');
+                const isLocked = !state.unlockedIds.includes(portal.id);
+                const isCompleted = state.completedIds.includes(portal.id);
+                
+                el.className = `portal ${isLocked ? 'locked' : ''} ${portal.type === 'trust_check' ? 'trust-portal' : ''}`;
+                el.style.left = (portal.pos.x - 35) + 'px'; // Center anchor
+                el.style.top = (portal.pos.y - 100) + 'px'; // Bottom anchor
+                el.style.pointerEvents = 'all';
+                
+                // Inner Content
+                const inner = document.createElement('div');
+                inner.className = 'portal-inner';
+                
+                if (!isLocked) {
+                    const content = document.createElement('div');
+                    content.className = 'portal-content';
+                    content.textContent = isCompleted ? '✅' : portal.emoji;
+                    inner.appendChild(content);
+                }
+
+                el.appendChild(inner);
+
+                // Interaction
+                el.onclick = () => handlePortalClick(portal);
+
+                container.appendChild(el);
+            });
+        }
+
+        function createParticles() {
+            const world = document.getElementById('world');
+            for(let i=0; i<50; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                const size = Math.random() * 4 + 1;
+                p.style.width = size + 'px';
+                p.style.height = size + 'px';
+                p.style.left = Math.random() * 100 + '%';
+                p.style.top = Math.random() * 100 + '%';
+                p.style.animationDuration = (Math.random() * 5 + 5) + 's';
+                p.style.animationDelay = (Math.random() * 5) + 's';
+                world.appendChild(p);
+            }
+        }
+
+        // --- Logic ---
+        function handlePortalClick(portal) {
+            if (!state.unlockedIds.includes(portal.id)) return;
+            if (state.completedIds.includes(portal.id)) {
+                // Re-read memory
+                openModal(portal, true);
+            } else {
+                // Play level
+                openModal(portal, false);
+            }
+        }
+
+        function openModal(portal, isReplay) {
+            modalTitle.textContent = portal.title;
+            modalEmoji.textContent = portal.emoji;
+            modalDesc.textContent = portal.desc;
+            modalActions.innerHTML = '';
+
+            if (isReplay) {
+                modalDesc.textContent = "You have already visited this memory.";
+                const btn = document.createElement('button');
+                btn.className = 'btn';
+                btn.textContent = "Close";
+                btn.onclick = closeModal;
+                modalActions.appendChild(btn);
+            } else {
+                portal.choices.forEach(choice => {
+                    const btn = document.createElement('button');
+                    btn.className = 'btn btn-primary';
+                    btn.textContent = choice.text;
+                    btn.onclick = () => makeChoice(portal, choice);
+                    modalActions.appendChild(btn);
+                });
+            }
+
+            modal.classList.add('active');
+        }
+
+        function closeModal() {
+            modal.classList.remove('active');
+        }
+
+        function makeChoice(portal, choice) {
+            // Update State
+            state.trust += choice.trust;
+            if (state.trust < 0) state.trust = 0;
+            if (state.trust > 100) state.trust = 100;
+
+            state.completedIds.push(portal.id);
+
+            // Unlock next door logic
+            const nextId = portal.id + 1;
+            if (nextId <= portalsData.length && !state.unlockedIds.includes(nextId)) {
+                state.unlockedIds.push(nextId);
+            }
+
+            // Special handling for Final
+            if (portal.type === 'final') {
+                modalTitle.textContent = "Ascension";
+                modalDesc.textContent = `You have traversed the Serpent's Corridor. Your Trust Level: ${state.trust}%. The cycle is complete.`;
+                modalActions.innerHTML = '<button class="btn" onclick="location.reload()">Rebirth</button>';
+                updateHUD();
+                renderPortals();
+                return;
+            }
+
+            closeModal();
+            updateHUD();
+            renderPortals();
+        }
+
+        function updateHUD() {
+            trustFill.style.width = state.trust + '%';
+            keysDisplay.textContent = `${state.completedIds.length} / ${portalsData.length}`;
+        }
+
+        // Start
+        init();
+
+    </script>
+</body>
+</html>

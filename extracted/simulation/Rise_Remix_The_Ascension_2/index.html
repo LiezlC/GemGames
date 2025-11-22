@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rise & Remix: The Ascension</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&family=Inter:wght@400;600&display=swap');
+
+        :root {
+            --ground-color: #ff9a44;
+            --sky-start: #fc6767;
+            --sky-mid: #8e2de2;
+            --sky-end: #0f0c29;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            background: #0f0c29;
+            color: white;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* Dynamic Background representing the ascent from Earth to Space */
+        .world-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to top, 
+                var(--ground-color) 0%, 
+                var(--sky-start) 20%, 
+                var(--sky-mid) 50%, 
+                var(--sky-end) 100%);
+            z-index: -2;
+            transition: background-position 2s ease;
+        }
+
+        /* Stars */
+        .stars {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 50%;
+            background-image: 
+                radial-gradient(2px 2px at 20px 30px, #eee, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 50px 160px, #ddd, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 90px 40px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 130px 80px, #fff, rgba(0,0,0,0));
+            background-repeat: repeat;
+            background-size: 200px 200px;
+            opacity: 0.8;
+            animation: twinkle 5s infinite;
+            z-index: -1;
+        }
+
+        @keyframes twinkle {
+            0% { opacity: 0.5; }
+            50% { opacity: 1; }
+            100% { opacity: 0.5; }
+        }
+
+        /* Glassmorphism Panels */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .glass-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.2s ease;
+        }
+        .glass-btn:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+        }
+        .glass-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* The Chore Pit */
+        .chore-item {
+            transition: all 0.3s ease;
+            cursor: pointer;
+            animation: float 3s ease-in-out infinite;
+        }
+        .chore-item:hover {
+            transform: scale(1.2) rotate(5deg);
+        }
+        .chore-cleared {
+            transform: scale(0) rotate(180deg);
+            opacity: 0;
+        }
+
+        /* Robot Animation */
+        .robot-worker {
+            position: absolute;
+            transition: all 1s linear;
+            font-size: 1.5rem;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        /* Ladder/Ascent Animation */
+        .climber {
+            position: absolute;
+            transition: bottom 0.5s ease;
+            font-size: 2rem;
+            filter: drop-shadow(0 0 5px gold);
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-5px); }
+            100% { transform: translateY(0px); }
+        }
+
+        .title-font {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            background: rgba(0,0,0,0.3);
+            border-radius: 999px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            background: linear-gradient(90deg, #ff9a44, #8e2de2);
+            transition: width 0.5s ease;
+        }
+
+        /* Floating Text Feedback */
+        .float-text {
+            position: absolute;
+            color: white;
+            font-weight: bold;
+            pointer-events: none;
+            animation: floatUp 1s forwards;
+        }
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-50px); }
+        }
+
+    </style>
+</head>
+<body class="relative">
+
+    <!-- Background Layers -->
+    <div class="world-container" id="worldBg"></div>
+    <div class="stars"></div>
+
+    <!-- Main Layout -->
+    <div class="relative z-10 h-full flex flex-col p-4 md:p-8 max-w-7xl mx-auto">
+        
+        <!-- Header -->
+        <header class="flex justify-between items-center mb-6 glass-panel p-4">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-bold title-font bg-clip-text text-transparent bg-gradient-to-r from-orange-300 to-purple-300">
+                    Rise & Remix
+                </h1>
+                <p class="text-xs text-gray-300 opacity-80">AI clears the chores. You touch the stars.</p>
+            </div>
+            <div class="flex gap-6 text-center">
+                <div>
+                    <div class="text-xs text-gray-400 uppercase tracking-widest">Chores Left</div>
+                    <div class="text-xl font-mono text-red-300" id="choreCount">1000</div>
+                </div>
+                <div>
+                    <div class="text-xs text-gray-400 uppercase tracking-widest">Inspiration</div>
+                    <div class="text-xl font-mono text-cyan-300" id="inspirationCount">0</div>
+                </div>
+                <div>
+                    <div class="text-xs text-gray-400 uppercase tracking-widest">Altitude</div>
+                    <div class="text-xl font-mono text-yellow-300" id="altitudeCount">0m</div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Game Area -->
+        <div class="flex-1 flex flex-col md:flex-row gap-6 overflow-hidden">
+            
+            <!-- Left: The Ground (Automation) -->
+            <div class="w-full md:w-1/3 flex flex-col gap-4">
+                <div class="glass-panel p-4 flex-1 overflow-hidden relative flex flex-col">
+                    <div class="flex justify-between items-center mb-2">
+                        <h2 class="text-lg font-semibold text-orange-200">The Grind</h2>
+                        <span class="text-xs bg-orange-500/20 text-orange-200 px-2 py-1 rounded-full" id="robotCount">0 Bots</span>
+                    </div>
+                    
+                    <!-- The Chore Pit Visualization -->
+                    <div id="chorePit" class="flex-1 bg-black/20 rounded-lg p-2 relative overflow-hidden grid grid-cols-6 gap-1 content-start overflow-y-auto">
+                        <!-- Chores will be injected here -->
+                    </div>
+
+                    <!-- Controls -->
+                    <div class="mt-4 grid grid-cols-2 gap-2">
+                        <button onclick="doChore()" class="glass-btn p-3 rounded-lg text-sm font-bold text-white active:scale-95">
+                            🧹 Do Chore
+                        </button>
+                        <button id="btnBuyBot" onclick="buyBot()" class="glass-btn p-3 rounded-lg text-sm font-bold text-blue-200 flex flex-col items-center justify-center disabled:opacity-50">
+                            <span>🤖 Hire Bot</span>
+                            <span class="text-xs opacity-70">Cost: 10 Inspiration</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Center: The Ascent (Visualizer) -->
+            <div class="w-full md:w-1/3 glass-panel relative overflow-hidden flex flex-col justify-end p-4">
+                <div class="absolute inset-0 pointer-events-none">
+                    <!-- Ladders and structural elements drawn with CSS -->
+                    <div class="absolute bottom-0 left-1/4 w-8 h-full border-l-2 border-r-2 border-white/20" style="background-image: linear-gradient(to bottom, rgba(255,255,255,0.2) 50%, transparent 50%); background-size: 100% 40px;"></div>
+                    <div class="absolute bottom-0 right-1/4 w-8 h-full border-l-2 border-r-2 border-white/20" style="background-image: linear-gradient(to bottom, rgba(255,255,255,0.2) 50%, transparent 50%); background-size: 100% 40px;"></div>
+                    
+                    <!-- Archway -->
+                    <div class="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-64 h-32 border-t-4 border-l-4 border-r-4 border-orange-500/30 rounded-t-full"></div>
+                </div>
+
+                <!-- Climbers -->
+                <div id="skyContainer" class="absolute inset-0">
+                    <!-- Humans/Robots will appear here -->
+                </div>
+
+                <div class="relative z-10 text-center">
+                    <p class="text-sm text-white/60 mb-2 italic" id="storyText">"The work is heavy..."</p>
+                </div>
+            </div>
+
+            <!-- Right: The Dream (Creativity) -->
+            <div class="w-full md:w-1/3 flex flex-col gap-4">
+                <div class="glass-panel p-4 flex-1 flex flex-col">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-semibold text-purple-200">The Dream</h2>
+                        <span class="text-xs bg-purple-500/20 text-purple-200 px-2 py-1 rounded-full" id="creativityLevel">Level 1</span>
+                    </div>
+
+                    <div class="space-y-3">
+                        <!-- Action 1: Generate Inspiration -->
+                        <div class="p-3 rounded-lg bg-white/5 border border-white/10">
+                            <div class="flex justify-between mb-2">
+                                <span class="text-sm font-medium">Remix Reality</span>
+                                <span class="text-xs text-gray-400">Requires < 800 Chores</span>
+                            </div>
+                            <button id="btnRemix" onclick="remix()" class="w-full glass-btn py-2 rounded text-purple-300 font-bold disabled:opacity-30">
+                                ✨ Create Inspiration
+                            </button>
+                        </div>
+
+                        <!-- Action 2: Build Ladder -->
+                        <div class="p-3 rounded-lg bg-white/5 border border-white/10">
+                            <div class="flex justify-between mb-2">
+                                <span class="text-sm font-medium">Build Ladder</span>
+                                <span class="text-xs text-gray-400">Cost: 50 Insp.</span>
+                            </div>
+                            <button id="btnBuild" onclick="buildLadder()" class="w-full glass-btn py-2 rounded text-yellow-300 font-bold disabled:opacity-30">
+                                🪜 Rise Higher
+                            </button>
+                        </div>
+
+                        <!-- Action 3: Wings -->
+                        <div class="p-3 rounded-lg bg-white/5 border border-white/10 opacity-50" id="wingUnlock">
+                            <div class="flex justify-between mb-2">
+                                <span class="text-sm font-medium">Synthesize Wings</span>
+                                <span class="text-xs text-gray-400">Locked (Reach 500m)</span>
+                            </div>
+                            <button id="btnWings" onclick="buyWings()" class="w-full glass-btn py-2 rounded text-cyan-300 font-bold disabled:opacity-30" disabled>
+                                🧚 Fly
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Flavor Art -->
+                    <div class="mt-auto flex justify-center items-center h-32 relative">
+                        <div class="absolute w-24 h-24 bg-gradient-to-tr from-blue-500 to-purple-600 rounded-full blur-xl opacity-50 animate-pulse"></div>
+                        <div class="text-6xl animate-bounce">🎨</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Intro Modal -->
+    <div id="introModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm transition-opacity duration-500">
+        <div class="max-w-md p-8 glass-panel text-center relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-orange-400 via-purple-500 to-blue-500"></div>
+            <h1 class="text-4xl font-bold mb-4 title-font text-white">The Shift</h1>
+            <p class="text-gray-300 mb-6 leading-relaxed">
+                "AI cleared the chores. Now it's our turn."<br><br>
+                We are no longer bound by drudgery. <br>
+                <span class="text-orange-300">Rise.</span> 
+                <span class="text-purple-300">Remix.</span> 
+                <span class="text-blue-300">Reach Higher.</span>
+            </p>
+            <button onclick="startGame()" class="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full font-bold text-white hover:scale-105 transition-transform shadow-lg shadow-purple-500/30">
+                Begin the Ascent
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Game State
+        const state = {
+            chores: 1000,
+            maxChores: 1000,
+            inspiration: 0,
+            altitude: 0,
+            robots: 0,
+            robotCost: 10,
+            hasWings: false,
+            gameStarted: false
+        };
+
+        // DOM Elements
+        const ui = {
+            chores: document.getElementById('choreCount'),
+            inspiration: document.getElementById('inspirationCount'),
+            altitude: document.getElementById('altitudeCount'),
+            robotCount: document.getElementById('robotCount'),
+            chorePit: document.getElementById('chorePit'),
+            sky: document.getElementById('skyContainer'),
+            btnBuyBot: document.getElementById('btnBuyBot'),
+            btnRemix: document.getElementById('btnRemix'),
+            btnBuild: document.getElementById('btnBuild'),
+            btnWings: document.getElementById('btnWings'),
+            story: document.getElementById('storyText'),
+            wingUnlock: document.getElementById('wingUnlock')
+        };
+
+        const choreIcons = ['📦', '📄', '🧹', '🍽️', '🧺', '🗑️'];
+        const robotIcons = ['🤖', '🦾'];
+
+        // Initialize Chore Pit
+        function initChores() {
+            ui.chorePit.innerHTML = '';
+            // Render a subset visually so we don't crash the DOM with 1000 elements
+            renderChores();
+        }
+
+        function renderChores() {
+            const visibleChores = Math.min(state.chores, 100); // Cap visual elements
+            const currentCount = ui.chorePit.childElementCount;
+            
+            if (currentCount < visibleChores) {
+                for (let i = 0; i < visibleChores - currentCount; i++) {
+                    const el = document.createElement('div');
+                    el.className = 'chore-item text-xl select-none';
+                    el.innerText = choreIcons[Math.floor(Math.random() * choreIcons.length)];
+                    el.onclick = () => {
+                        doChore(el);
+                    };
+                    ui.chorePit.appendChild(el);
+                }
+            } else if (currentCount > visibleChores) {
+                // Remove excess
+                for (let i = 0; i < currentCount - visibleChores; i++) {
+                    if(ui.chorePit.lastChild) ui.chorePit.removeChild(ui.chorePit.lastChild);
+                }
+            }
+        }
+
+        function startGame() {
+            document.getElementById('introModal').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('introModal').style.display = 'none';
+            }, 500);
+            state.gameStarted = true;
+            initChores();
+            gameLoop();
+        }
+
+        // Actions
+        function doChore(element = null) {
+            if (state.chores > 0) {
+                state.chores--;
+                
+                // Visual feedback
+                if (element) {
+                    element.classList.add('chore-cleared');
+                    setTimeout(() => element.remove(), 300);
+                } else {
+                    // If clicked via button, remove a random visual element
+                    const child = ui.chorePit.firstElementChild;
+                    if (child) {
+                        child.classList.add('chore-cleared');
+                        setTimeout(() => child.remove(), 300);
+                    }
+                }
+                
+                // Small chance to find inspiration in the mundane
+                if (Math.random() > 0.9) {
+                    state.inspiration++;
+                    spawnFloatingText(event ? event.clientX : window.innerWidth/2, event ? event.clientY : window.innerHeight/2, "+1 ✨");
+                }
+
+                updateUI();
+            }
+        }
+
+        function buyBot() {
+            if (state.inspiration >= state.robotCost) {
+                state.inspiration -= state.robotCost;
+                state.robots++;
+                state.robotCost = Math.floor(state.robotCost * 1.2);
+                
+                // Visual Robot
+                const bot = document.createElement('div');
+                bot.className = 'robot-worker';
+                bot.innerText = '🤖';
+                // Random position in the chore pit area visually
+                bot.style.left = Math.random() * 80 + 10 + '%';
+                bot.style.top = Math.random() * 80 + 10 + '%';
+                ui.chorePit.parentElement.appendChild(bot);
+                
+                updateUI();
+            }
+        }
+
+        function remix() {
+            if (state.chores < 800) {
+                const gain = 5 + (state.robots * 0.5); // Robots help process data for inspiration
+                state.inspiration += Math.floor(gain);
+                spawnFloatingText(event.clientX, event.clientY, `+${Math.floor(gain)} 💡`);
+                updateUI();
+            }
+        }
+
+        function buildLadder() {
+            if (state.inspiration >= 50) {
+                state.inspiration -= 50;
+                const climbAmount = state.hasWings ? 50 : 10;
+                state.altitude += climbAmount;
+                
+                // Visual Climber
+                const climber = document.createElement('div');
+                climber.className = 'climber';
+                climber.innerText = state.hasWings ? '🧚' : '🧗';
+                climber.style.left = Math.random() * 60 + 20 + '%';
+                climber.style.bottom = '0px';
+                ui.sky.appendChild(climber);
+                
+                // Animate climber going up
+                setTimeout(() => {
+                    climber.style.bottom = Math.random() * 80 + 20 + '%';
+                    climber.style.opacity = 0;
+                }, 100);
+                
+                // Clean up DOM
+                setTimeout(() => climber.remove(), 2000);
+
+                updateUI();
+            }
+        }
+
+        function buyWings() {
+            if (state.inspiration >= 1000) {
+                state.inspiration -= 1000;
+                state.hasWings = true;
+                ui.btnWings.innerText = "Wings Equipped (5x Climb Speed)";
+                ui.btnWings.disabled = true;
+                
+                // Change background to space
+                document.body.style.setProperty('--ground-color', '#000000');
+                document.body.style.setProperty('--sky-start', '#2c3e50');
+                
+                updateUI();
+            }
+        }
+
+        function spawnFloatingText(x, y, text) {
+            const el = document.createElement('div');
+            el.className = 'float-text';
+            el.innerText = text;
+            el.style.left = x + 'px';
+            el.style.top = y + 'px';
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 1000);
+        }
+
+        // Main Loop
+        function gameLoop() {
+            if (!state.gameStarted) return;
+
+            // Robots work
+            if (state.robots > 0 && state.chores > 0) {
+                // Robots clear chores per second
+                const workRate = state.robots * 0.1; // 1 bot = 1 chore every 10 ticks (approx 1 sec)
+                if (Math.random() < workRate) {
+                    doChore();
+                }
+            }
+
+            // Passive Inspiration if chores are low (The "Freedom" bonus)
+            if (state.chores === 0) {
+                state.inspiration += 0.1;
+            }
+
+            updateUI();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function updateUI() {
+            // Update Counters
+            ui.chores.innerText = Math.floor(state.chores);
+            ui.inspiration.innerText = Math.floor(state.inspiration);
+            ui.altitude.innerText = state.altitude + 'm';
+            ui.robotCount.innerText = state.robots + ' Bots';
+            ui.btnBuyBot.querySelector('span:last-child').innerText = `Cost: ${state.robotCost} Insp`;
+
+            // Button States
+            ui.btnBuyBot.disabled = state.inspiration < state.robotCost;
+            ui.btnRemix.disabled = state.chores >= 800;
+            ui.btnBuild.disabled = state.inspiration < 50;
+
+            // Story / Atmosphere Updates
+            if (state.chores < 800 && state.chores > 500) {
+                ui.story.innerText = "The pile is shrinking. We can breathe.";
+            } else if (state.chores <= 500 && state.chores > 100) {
+                ui.story.innerText = "Machines handle the grit. We handle the dream.";
+            } else if (state.chores < 100 && state.altitude < 100) {
+                ui.story.innerText = "The ground is clear. Look up.";
+            } else if (state.altitude > 200) {
+                ui.story.innerText = "We are ascending.";
+            }
+
+            // Unlock Wings
+            if (state.altitude >= 500) {
+                ui.wingUnlock.classList.remove('opacity-50');
+                if (!state.hasWings) ui.btnWings.disabled = state.inspiration < 1000;
+            }
+
+            // Background Parallax based on Altitude
+            const bgPos = Math.min(state.altitude / 10, 100);
+            document.getElementById('worldBg').style.backgroundPosition = `0% ${bgPos}%`;
+            
+            // Keep visual chore pit in sync occasionally
+            if (Math.random() > 0.95) renderChores();
+        }
+
+    </script>
+</body>
+</html>

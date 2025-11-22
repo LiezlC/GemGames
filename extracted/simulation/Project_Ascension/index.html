@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Ascension</title>
+    <style>
+        :root {
+            --bg-color: #4a3b4e;
+            --wall-color: #6d5e72;
+            --beam-core: rgba(255, 253, 208, 0.8);
+            --beam-glow: rgba(255, 223, 100, 0.3);
+            --accent: #ffb703;
+            --glass: rgba(255, 255, 255, 0.1);
+            --text-main: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, var(--bg-color), #2a1f2d);
+            height: 100vh;
+            overflow: hidden;
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* --- The Scene Container --- */
+        .scene {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            perspective: 1000px;
+            overflow: hidden;
+        }
+
+        /* --- The Beam of Light --- */
+        .beam-container {
+            position: absolute;
+            top: -20%;
+            left: 20%;
+            width: 200px;
+            height: 150%;
+            transform: rotate(25deg);
+            pointer-events: none;
+            z-index: 10;
+            mix-blend-mode: overlay;
+        }
+
+        .beam {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, 
+                rgba(255, 255, 255, 0) 0%, 
+                var(--beam-core) 20%, 
+                var(--beam-core) 80%, 
+                rgba(255, 255, 255, 0) 100%);
+            box-shadow: 0 0 50px var(--beam-glow), inset 0 0 30px var(--beam-glow);
+            filter: blur(5px);
+            opacity: 0.6;
+            animation: pulseBeam 4s infinite alternate;
+        }
+
+        .beam-particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .particle {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            opacity: 0.7;
+            animation: floatUp linear infinite;
+        }
+
+        /* --- The Ascending Person --- */
+        .ascender-track {
+            position: absolute;
+            top: -20%;
+            left: 20%;
+            width: 200px;
+            height: 150%;
+            transform: rotate(25deg);
+            pointer-events: none;
+            z-index: 20;
+            display: flex;
+            align-items: flex-end; /* Start at bottom */
+            justify-content: center;
+            padding-bottom: 20%;
+        }
+
+        .person {
+            width: 60px;
+            height: 120px;
+            transform: rotate(-25deg); /* Counter-rotate to stand upright */
+            transition: transform 1s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.5s;
+            position: relative;
+            filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.5));
+        }
+
+        .person svg {
+            width: 100%;
+            height: 100%;
+            fill: #3e2a47; /* Silhouette color */
+        }
+
+        /* --- The Room (Foreground) --- */
+        .room-floor {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 150px;
+            background: linear-gradient(to top, rgba(0,0,0,0.3), transparent);
+            z-index: 5;
+        }
+
+        .tv-setup {
+            position: absolute;
+            bottom: 100px;
+            right: 10%;
+            width: 200px;
+            height: 140px;
+            z-index: 15;
+        }
+
+        .tv-screen {
+            width: 100%;
+            height: 110px;
+            background: #111;
+            border: 4px solid #333;
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        .tv-content {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(120deg, #a1c4fd 0%, #c2e9fb 100%);
+            position: relative;
+            display: flex;
+            align-items: flex-end;
+            padding: 10px;
+        }
+
+        .chart-line {
+            fill: none;
+            stroke: #ff6b6b;
+            stroke-width: 3;
+            stroke-linecap: round;
+            filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2));
+        }
+
+        .tv-stand {
+            width: 80%;
+            height: 40px;
+            background: #ccc;
+            margin: 0 auto;
+            border: 1px solid #999;
+            position: relative;
+            top: -2px;
+            display: flex;
+        }
+        .tv-leg {
+            width: 10px;
+            height: 100%;
+            background: #bbb;
+            border-right: 1px solid #999;
+        }
+        .tv-stand-body {
+            flex-grow: 1;
+            background: #ddd;
+            border-top: 2px solid #bbb;
+        }
+
+        /* --- UI Controls (The "Game" Interface) --- */
+        .controls {
+            position: absolute;
+            bottom: 40px;
+            left: 40px;
+            width: 320px;
+            background: rgba(20, 20, 30, 0.85);
+            backdrop-filter: blur(12px);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            z-index: 100;
+            transform: translateY(0);
+            transition: transform 0.3s ease;
+        }
+
+        .controls h2 {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"] {
+            flex-grow: 1;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: white;
+            outline: none;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--accent);
+        }
+
+        button.add-btn {
+            background: var(--accent);
+            border: none;
+            border-radius: 8px;
+            width: 36px;
+            height: 36px;
+            cursor: pointer;
+            color: #2a1f2d;
+            font-weight: bold;
+            font-size: 1.2rem;
+            transition: transform 0.2s;
+        }
+
+        button.add-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .task-list {
+            list-style: none;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .task-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            animation: slideIn 0.3s ease;
+        }
+
+        .task-item:last-child {
+            border-bottom: none;
+        }
+
+        .checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.5);
+            border-radius: 6px;
+            margin-right: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .checkbox.checked {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+
+        .checkbox.checked::after {
+            content: '✓';
+            color: #2a1f2d;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .task-text {
+            font-size: 0.9rem;
+            color: #ddd;
+            transition: color 0.2s;
+        }
+
+        .task-item.completed .task-text {
+            text-decoration: line-through;
+            color: rgba(255,255,255,0.3);
+        }
+
+        .delete-btn {
+            margin-left: auto;
+            background: none;
+            border: none;
+            color: rgba(255,255,255,0.3);
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+
+        .delete-btn:hover {
+            color: #ff6b6b;
+        }
+
+        /* --- Animations --- */
+        @keyframes pulseBeam {
+            0% { opacity: 0.5; transform: scaleX(1); }
+            100% { opacity: 0.7; transform: scaleX(1.05); }
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(100vh) scale(0.5); opacity: 0; }
+            20% { opacity: 0.8; }
+            80% { opacity: 0.8; }
+            100% { transform: translateY(-20vh) scale(1.5); opacity: 0; }
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* Rug */
+        .rug {
+            position: absolute;
+            bottom: 50px;
+            right: 20%;
+            width: 250px;
+            height: 80px;
+            background: #3a3a4a;
+            transform: skewX(-40deg);
+            border-radius: 4px;
+            border: 2px solid #555;
+            z-index: 6;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+        }
+
+        /* Plant (Abstract) */
+        .plant {
+            position: absolute;
+            bottom: 100px;
+            right: 35%;
+            z-index: 14;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .plant-leaf {
+            width: 20px;
+            height: 60px;
+            background: #4a6b4a;
+            border-radius: 50% 50% 0 0;
+            transform-origin: bottom center;
+            position: absolute;
+            bottom: 0;
+        }
+        
+        /* Status Overlay */
+        .status-overlay {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            text-align: right;
+            z-index: 200;
+        }
+        .level-badge {
+            background: rgba(255, 183, 3, 0.2);
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="scene">
+        
+        <!-- Background Elements -->
+        <div class="rug"></div>
+        
+        <div class="plant">
+            <div class="plant-leaf" style="transform: rotate(-20deg); height: 50px;"></div>
+            <div class="plant-leaf" style="transform: rotate(0deg); height: 70px; background: #5a7b5a;"></div>
+            <div class="plant-leaf" style="transform: rotate(20deg); height: 50px;"></div>
+        </div>
+
+        <!-- TV Set -->
+        <div class="tv-setup">
+            <div class="tv-screen">
+                <div class="tv-content" id="tv-display">
+                    <!-- SVG Chart -->
+                    <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+                        <defs>
+                            <linearGradient id="chartGradient" x1="0" x2="0" y1="0" y2="1">
+                                <stop offset="0%" stop-color="#ff9a9e"/>
+                                <stop offset="100%" stop-color="#fad0c4"/>
+                            </linearGradient>
+                        </defs>
+                        <path id="chart-path" d="M0,100 L20,80 L40,90 L60,60 L80,70 L100,50 V100 H0 Z" fill="url(#chartGradient)" opacity="0.6"></path>
+                        <polyline id="chart-line" points="0,100 20,80 40,90 60,60 80,70 100,50" fill="none" stroke="#fff" stroke-width="2"></polyline>
+                    </svg>
+                </div>
+            </div>
+            <div class="tv-stand">
+                <div class="tv-leg"></div>
+                <div class="tv-stand-body"></div>
+                <div class="tv-leg"></div>
+            </div>
+        </div>
+
+        <!-- The Beam -->
+        <div class="beam-container">
+            <div class="beam"></div>
+            <div class="beam-particles" id="particles"></div>
+        </div>
+
+        <!-- The Person Track -->
+        <div class="ascender-track">
+            <div class="person" id="person">
+                <!-- Simple Silhouette SVG -->
+                <svg viewBox="0 0 100 200">
+                    <g transform="translate(20,0)">
+                        <circle cx="30" cy="20" r="15" /> <!-- Head -->
+                        <path d="M15,40 Q30,35 45,40 L55,90 L65,180 L45,180 L40,100 L20,100 L15,180 L-5,180 L5,90 Z" /> <!-- Body/Legs -->
+                        <path d="M15,45 L-10,80" stroke-width="8" stroke="currentColor" stroke-linecap="round" /> <!-- Arm L -->
+                        <path d="M45,45 L70,70" stroke-width="8" stroke="currentColor" stroke-linecap="round" /> <!-- Arm R -->
+                    </g>
+                </svg>
+            </div>
+        </div>
+
+        <div class="room-floor"></div>
+
+    </div>
+
+    <!-- UI Overlay -->
+    <div class="status-overlay">
+        <div class="level-badge" id="ascension-level">Ascension: 0%</div>
+    </div>
+
+    <div class="controls">
+        <h2>✨ Ascension Tasks</h2>
+        <div class="input-group">
+            <input type="text" id="task-input" placeholder="What is holding you back?">
+            <button class="add-btn" id="add-btn">+</button>
+        </div>
+        <ul class="task-list" id="task-list">
+            <!-- Tasks go here -->
+        </ul>
+    </div>
+
+    <script>
+        // --- State Management ---
+        const state = {
+            tasks: [
+                { id: 1, text: "Answer emails", completed: false },
+                { id: 2, text: "Clean the desk", completed: false },
+                { id: 3, text: "Drink water", completed: true }
+            ]
+        };
+
+        // --- DOM Elements ---
+        const taskListEl = document.getElementById('task-list');
+        const taskInput = document.getElementById('task-input');
+        const addBtn = document.getElementById('add-btn');
+        const personEl = document.getElementById('person');
+        const levelBadge = document.getElementById('ascension-level');
+        const chartLine = document.getElementById('chart-line');
+        const chartPath = document.getElementById('chart-path');
+
+        // --- Particle System ---
+        function createParticles() {
+            const container = document.getElementById('particles');
+            const particleCount = 20;
+
+            for (let i = 0; i < particleCount; i++) {
+                const p = document.createElement('div');
+                p.classList.add('particle');
+                
+                // Randomize properties
+                const size = Math.random() * 6 + 2;
+                p.style.width = `${size}px`;
+                p.style.height = `${size}px`;
+                p.style.left = `${Math.random() * 100}%`;
+                p.style.animationDuration = `${Math.random() * 3 + 2}s`;
+                p.style.animationDelay = `${Math.random() * 2}s`;
+                
+                container.appendChild(p);
+            }
+        }
+
+        // --- Rendering Logic ---
+        function renderTasks() {
+            taskListEl.innerHTML = '';
+            state.tasks.forEach(task => {
+                const li = document.createElement('li');
+                li.className = `task-item ${task.completed ? 'completed' : ''}`;
+                
+                const checkbox = document.createElement('div');
+                checkbox.className = `checkbox ${task.completed ? 'checked' : ''}`;
+                checkbox.onclick = () => toggleTask(task.id);
+
+                const text = document.createElement('span');
+                text.className = 'task-text';
+                text.innerText = task.text;
+
+                const del = document.createElement('button');
+                del.className = 'delete-btn';
+                del.innerHTML = '&times;';
+                del.onclick = () => deleteTask(task.id);
+
+                li.appendChild(checkbox);
+                li.appendChild(text);
+                li.appendChild(del);
+                taskListEl.appendChild(li);
+            });
+            updateVisuals();
+        }
+
+        function updateVisuals() {
+            const total = state.tasks.length;
+            const completed = state.tasks.filter(t => t.completed).length;
+            const percentage = total === 0 ? 0 : (completed / total) * 100;
+
+            // Update Badge
+            levelBadge.innerText = `Ascension: ${Math.round(percentage)}%`;
+
+            // Move Person
+            // We translate Y negative to go UP. 
+            // Max height roughly -400px relative to start container
+            const moveAmount = (percentage / 100) * 400; 
+            personEl.style.transform = `translateY(-${moveAmount}px) rotate(-25deg)`;
+            
+            // Visual flair: if 100%, glow harder
+            if (percentage === 100 && total > 0) {
+                personEl.style.filter = "drop-shadow(0 0 30px #ffb703)";
+            } else {
+                personEl.style.filter = "drop-shadow(0 0 10px rgba(255, 215, 0, 0.5))";
+            }
+
+            // Update TV Chart (Randomized slightly based on progress for effect)
+            updateChart(percentage);
+        }
+
+        function updateChart(percentage) {
+            // Generate a simple chart path based on percentage
+            // Base line is 100 (bottom). Top is 0.
+            const yBase = 100;
+            const yTarget = 100 - percentage; 
+            
+            // Create a jagged line leading to the target
+            const points = [
+                `0,${yBase}`,
+                `20,${yBase - (percentage * 0.2)}`,
+                `40,${yBase - (percentage * 0.1)}`, // dip
+                `60,${yBase - (percentage * 0.6)}`,
+                `80,${yBase - (percentage * 0.5)}`, // dip
+                `100,${yTarget}`
+            ];
+
+            const polylinePoints = points.join(' ');
+            const pathD = `M0,100 L0,${yBase} ${points.map(p => 'L'+p).join(' ')} L100,100 Z`;
+
+            chartLine.setAttribute('points', polylinePoints);
+            chartPath.setAttribute('d', pathD);
+        }
+
+        // --- Actions ---
+        function addTask() {
+            const text = taskInput.value.trim();
+            if (!text) return;
+            
+            const newTask = {
+                id: Date.now(),
+                text: text,
+                completed: false
+            };
+            
+            state.tasks.push(newTask);
+            taskInput.value = '';
+            renderTasks();
+        }
+
+        function toggleTask(id) {
+            const task = state.tasks.find(t => t.id === id);
+            if (task) {
+                task.completed = !task.completed;
+                renderTasks();
+            }
+        }
+
+        function deleteTask(id) {
+            state.tasks = state.tasks.filter(t => t.id !== id);
+            renderTasks();
+        }
+
+        // --- Event Listeners ---
+        addBtn.addEventListener('click', addTask);
+        taskInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addTask();
+        });
+
+        // --- Init ---
+        createParticles();
+        renderTasks();
+
+    </script>
+</body>
+</html>

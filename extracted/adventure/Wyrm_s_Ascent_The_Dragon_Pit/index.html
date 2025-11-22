@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wyrm's Ascent: The Dragon Pit</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;600&display=swap');
+
+        :root {
+            --sky-top: #1a1a2e;
+            --sky-bottom: #c17f56;
+            --mountain-color: #2d2d2d;
+            --spire-color: #1f1f1f;
+            --pit-color: #3e3e3e;
+            --ui-glass: rgba(20, 20, 20, 0.6);
+            --accent: #eab308;
+            --danger: #ef4444;
+            --heal: #22c55e;
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(to bottom, var(--sky-top), #4a3b69, var(--sky-bottom));
+            color: white;
+            height: 100vh;
+            width: 100vw;
+            user-select: none;
+        }
+
+        /* --- Landscape CSS Art --- */
+        .scene {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .sun {
+            position: absolute;
+            top: 10%;
+            right: 30%;
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle, #ffd700, transparent 70%);
+            opacity: 0.6;
+            filter: blur(20px);
+        }
+
+        .clouds {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 20%, rgba(255,255,255,0.1) 0%, transparent 20%),
+                radial-gradient(circle at 80% 10%, rgba(255,255,255,0.1) 0%, transparent 25%);
+            filter: blur(40px);
+        }
+
+        .mountains-bg {
+            position: absolute;
+            bottom: 20%;
+            left: 0;
+            width: 100%;
+            height: 40%;
+            background: #373754;
+            clip-path: polygon(0% 100%, 15% 40%, 35% 80%, 50% 30%, 70% 70%, 85% 20%, 100% 100%);
+            opacity: 0.7;
+        }
+
+        .mountains-fg {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 50%;
+            background: linear-gradient(to bottom, #2d2d2d, #1a1a1a);
+            clip-path: polygon(0% 100%, 0% 60%, 20% 30%, 40% 50%, 60% 20%, 80% 40%, 100% 10%, 100% 100%);
+        }
+
+        /* The Spire (Right side) */
+        .spire {
+            position: absolute;
+            bottom: 0;
+            right: 5%;
+            width: 20%;
+            height: 70%;
+            background: linear-gradient(90deg, #1a1a1a, #333);
+            clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+            z-index: 2;
+        }
+        
+        /* The Pit (Left/Center) */
+        .pit {
+            position: absolute;
+            bottom: -10%;
+            left: 10%;
+            width: 50%;
+            height: 40%;
+            background: repeating-radial-gradient(
+                circle at 50% 0%,
+                #2a2a2a,
+                #2a2a2a 10px,
+                #1f1f1f 10px,
+                #1f1f1f 20px
+            );
+            border-radius: 50%;
+            transform: rotateX(60deg);
+            box-shadow: inset 0 0 50px #000;
+            z-index: 2;
+        }
+
+        /* --- Dragons --- */
+        .dragon {
+            position: absolute;
+            font-size: 8rem;
+            filter: drop-shadow(0 10px 10px rgba(0,0,0,0.5));
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 10;
+            cursor: pointer;
+        }
+
+        #guardian {
+            top: 15%;
+            right: 10%;
+            transform: scaleX(-1); /* Face left */
+            animation: hover 4s infinite ease-in-out;
+        }
+
+        #challenger {
+            bottom: 15%;
+            left: 25%;
+            animation: hover 5s infinite ease-in-out reverse;
+        }
+
+        @keyframes hover {
+            0%, 100% { transform: translateY(0) scaleX(var(--dir, 1)); }
+            50% { transform: translateY(-20px) scaleX(var(--dir, 1)); }
+        }
+
+        .hit-shake {
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-2px, 0, 0) scaleX(var(--dir, 1)); }
+            20%, 80% { transform: translate3d(4px, 0, 0) scaleX(var(--dir, 1)); }
+            30%, 50%, 70% { transform: translate3d(-8px, 0, 0) scaleX(var(--dir, 1)); }
+            40%, 60% { transform: translate3d(8px, 0, 0) scaleX(var(--dir, 1)); }
+        }
+
+        /* --- UI Overlay --- */
+        .ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 50;
+            pointer-events: none; /* Let clicks pass through to scene */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+        }
+
+        .hud-panel {
+            background: var(--ui-glass);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 16px;
+            pointer-events: auto;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+
+        .health-bar {
+            width: 100%;
+            height: 12px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 6px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        
+        .health-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ef4444, #f87171);
+            width: 100%;
+            transition: width 0.5s ease-out;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .btn-action {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            padding: 15px;
+            border-radius: 12px;
+            font-family: 'Cinzel', serif;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .btn-action:hover {
+            background: rgba(255,255,255,0.2);
+            transform: translateY(-2px);
+            border-color: var(--accent);
+        }
+
+        .btn-action:active {
+            transform: translateY(0);
+        }
+
+        .btn-action span {
+            font-size: 1.5rem;
+        }
+
+        .log-area {
+            height: 100px;
+            overflow-y: auto;
+            font-size: 0.9rem;
+            color: #ccc;
+            font-family: monospace;
+            margin-bottom: 10px;
+            scrollbar-width: thin;
+        }
+
+        /* Particles */
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            font-size: 2rem;
+            animation: fly 0.8s forwards ease-in;
+            z-index: 20;
+        }
+
+        @keyframes fly {
+            0% { transform: translate(0, 0) scale(0.5); opacity: 1; }
+            100% { transform: translate(var(--tx), var(--ty)) scale(1.5); opacity: 0; }
+        }
+
+        .damage-text {
+            position: absolute;
+            color: #ef4444;
+            font-weight: bold;
+            font-size: 2rem;
+            animation: floatUp 1s forwards;
+            z-index: 30;
+            text-shadow: 0 2px 4px black;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-50px); opacity: 0; }
+        }
+
+        /* Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(5px);
+            z-index: 100;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s;
+        }
+        .modal.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .modal-content {
+            background: #1a1a1a;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            border: 2px solid var(--accent);
+            max-width: 400px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Background Art -->
+    <div class="scene">
+        <div class="sun"></div>
+        <div class="clouds"></div>
+        <div class="mountains-bg"></div>
+        <div class="mountains-fg"></div>
+        <div class="spire"></div>
+        <div class="pit"></div>
+    </div>
+
+    <!-- Game Entities -->
+    <div id="guardian" class="dragon" style="--dir: -1">🐲</div> <!-- Enemy -->
+    <div id="challenger" class="dragon" style="--dir: 1">🐉</div> <!-- Player -->
+
+    <!-- UI Layer -->
+    <div class="ui-layer">
+        <!-- Top Bar: Enemy Stats -->
+        <div class="flex justify-between items-start w-full">
+            <div class="hud-panel w-64">
+                <div class="flex justify-between items-center mb-1">
+                    <span class="font-bold font-cinzel text-yellow-500">Guardian of the Spire</span>
+                    <span id="enemy-hp-text" class="text-sm">1000/1000</span>
+                </div>
+                <div class="health-bar"><div id="enemy-hp-bar" class="health-fill"></div></div>
+            </div>
+        </div>
+
+        <!-- Center: Battle Log -->
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+            <div id="battle-message" class="text-3xl font-cinzel font-bold text-white drop-shadow-lg opacity-0 transition-opacity duration-300 text-center">
+                Battle Start!
+            </div>
+        </div>
+
+        <!-- Bottom Bar: Player Stats & Controls -->
+        <div class="w-full flex flex-col items-center gap-4 mb-4">
+            
+            <!-- Log -->
+            <div class="hud-panel w-full max-w-2xl">
+                <div id="combat-log" class="log-area">
+                    <p>> You have entered the Dragon Pit.</p>
+                    <p>> The Guardian watches from the Spire.</p>
+                </div>
+            </div>
+
+            <!-- Player Panel -->
+            <div class="hud-panel w-full max-w-2xl">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="font-bold font-cinzel text-green-400">The Challenger (You)</span>
+                    <span id="player-hp-text" class="text-sm">800/800</span>
+                </div>
+                <div class="health-bar mb-4"><div id="player-hp-bar" class="health-fill" style="background: linear-gradient(90deg, #22c55e, #4ade80);"></div></div>
+
+                <div class="controls">
+                    <button class="btn-action" onclick="game.playerAction('attack')">
+                        <span>🔥</span> Attack
+                    </button>
+                    <button class="btn-action" onclick="game.playerAction('heavy')">
+                        <span>☄️</span> Dive Bomb
+                    </button>
+                    <button class="btn-action" onclick="game.playerAction('heal')">
+                        <span>🍖</span> Roost
+                    </button>
+                    <button class="btn-action" onclick="game.playerAction('shield')">
+                        <span>🛡️</span> Scales
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <h2 id="modal-title" class="text-3xl font-cinzel text-yellow-500 mb-4">Victory!</h2>
+            <p id="modal-desc" class="mb-6 text-gray-300">The Guardian has fallen. The Spire is yours.</p>
+            <button onclick="location.reload()" class="bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-2 px-6 rounded-full transition">
+                Play Again
+            </button>
+        </div>
+    </div>
+
+    <script>
+        class Game {
+            constructor() {
+                this.player = { maxHp: 800, hp: 800, shield: 0 };
+                this.enemy = { maxHp: 1000, hp: 1000, shield: 0 };
+                this.turn = 'player'; // player or enemy
+                this.isAnimating = false;
+                
+                this.els = {
+                    playerHpBar: document.getElementById('player-hp-bar'),
+                    playerHpText: document.getElementById('player-hp-text'),
+                    enemyHpBar: document.getElementById('enemy-hp-bar'),
+                    enemyHpText: document.getElementById('enemy-hp-text'),
+                    log: document.getElementById('combat-log'),
+                    msg: document.getElementById('battle-message'),
+                    playerDragon: document.getElementById('challenger'),
+                    enemyDragon: document.getElementById('guardian'),
+                    modal: document.getElementById('modal'),
+                    modalTitle: document.getElementById('modal-title'),
+                    modalDesc: document.getElementById('modal-desc')
+                };
+            }
+
+            log(msg, type = 'neutral') {
+                const p = document.createElement('p');
+                p.textContent = `> ${msg}`;
+                if (type === 'bad') p.style.color = '#f87171';
+                if (type === 'good') p.style.color = '#4ade80';
+                if (type === 'info') p.style.color = '#60a5fa';
+                this.els.log.prepend(p);
+            }
+
+            showFloatingText(text, targetEl) {
+                const rect = targetEl.getBoundingClientRect();
+                const div = document.createElement('div');
+                div.className = 'damage-text';
+                div.textContent = text;
+                div.style.left = (rect.left + rect.width/2) + 'px';
+                div.style.top = (rect.top) + 'px';
+                document.body.appendChild(div);
+                setTimeout(() => div.remove(), 1000);
+            }
+
+            spawnProjectile(emoji, startEl, endEl) {
+                const startRect = startEl.getBoundingClientRect();
+                const endRect = endEl.getBoundingClientRect();
+                
+                const p = document.createElement('div');
+                p.className = 'particle';
+                p.textContent = emoji;
+                p.style.left = (startRect.left + startRect.width/2) + 'px';
+                p.style.top = (startRect.top + startRect.height/2) + 'px';
+                
+                const tx = (endRect.left + endRect.width/2) - (startRect.left + startRect.width/2);
+                const ty = (endRect.top + endRect.height/2) - (startRect.top + startRect.height/2);
+                
+                p.style.setProperty('--tx', `${tx}px`);
+                p.style.setProperty('--ty', `${ty}px`);
+                
+                document.body.appendChild(p);
+                setTimeout(() => p.remove(), 800);
+            }
+
+            updateUI() {
+                const pPct = Math.max(0, (this.player.hp / this.player.maxHp) * 100);
+                const ePct = Math.max(0, (this.enemy.hp / this.enemy.maxHp) * 100);
+                
+                this.els.playerHpBar.style.width = `${pPct}%`;
+                this.els.playerHpText.textContent = `${Math.ceil(this.player.hp)}/${this.player.maxHp}`;
+                
+                this.els.enemyHpBar.style.width = `${ePct}%`;
+                this.els.enemyHpText.textContent = `${Math.ceil(this.enemy.hp)}/${this.enemy.maxHp}`;
+            }
+
+            shake(element) {
+                element.classList.remove('hit-shake');
+                void element.offsetWidth; // trigger reflow
+                element.classList.add('hit-shake');
+            }
+
+            checkWin() {
+                if (this.enemy.hp <= 0) {
+                    this.enemy.hp = 0;
+                    this.updateUI();
+                    setTimeout(() => {
+                        this.els.modalTitle.textContent = "VICTORY!";
+                        this.els.modalDesc.textContent = "The Spire is yours. You are the new Guardian.";
+                        this.els.modal.classList.add('active');
+                    }, 1000);
+                    return true;
+                }
+                if (this.player.hp <= 0) {
+                    this.player.hp = 0;
+                    this.updateUI();
+                    setTimeout(() => {
+                        this.els.modalTitle.textContent = "DEFEAT";
+                        this.els.modalTitle.style.color = "#ef4444";
+                        this.els.modalDesc.textContent = "You have fallen into the pit, never to rise again.";
+                        this.els.modal.classList.add('active');
+                    }, 1000);
+                    return true;
+                }
+                return false;
+            }
+
+            async playerAction(action) {
+                if (this.turn !== 'player' || this.isAnimating) return;
+                this.isAnimating = true;
+
+                // Reset shields for turn
+                this.player.shield = 0;
+
+                if (action === 'attack') {
+                    this.log("You breathe fire at the Guardian!", 'good');
+                    this.spawnProjectile('🔥', this.els.playerDragon, this.els.enemyDragon);
+                    await this.wait(600);
+                    this.dealDamage(this.enemy, 80 + Math.random()*40, this.els.enemyDragon);
+                } else if (action === 'heavy') {
+                    if (Math.random() > 0.3) {
+                        this.log("You dive bomb the Spire!", 'good');
+                        this.spawnProjectile('☄️', this.els.playerDragon, this.els.enemyDragon);
+                        await this.wait(600);
+                        this.dealDamage(this.enemy, 150 + Math.random()*50, this.els.enemyDragon);
+                    } else {
+                        this.log("You missed your dive!", 'bad');
+                    }
+                } else if (action === 'heal') {
+                    const amt = 100 + Math.random()*50;
+                    this.player.hp = Math.min(this.player.maxHp, this.player.hp + amt);
+                    this.log(`You roost and recover ${Math.floor(amt)} HP.`, 'info');
+                    this.showFloatingText(`+${Math.floor(amt)}`, this.els.playerDragon);
+                    this.updateUI();
+                } else if (action === 'shield') {
+                    this.player.shield = 0.5; // 50% reduction
+                    this.log("You harden your scales.", 'info');
+                }
+
+                if (!this.checkWin()) {
+                    this.turn = 'enemy';
+                    setTimeout(() => this.enemyTurn(), 1500);
+                }
+            }
+
+            async enemyTurn() {
+                this.log("The Guardian prepares to strike...", 'bad');
+                this.enemy.shield = 0;
+                
+                await this.wait(1000);
+
+                const roll = Math.random();
+                if (this.enemy.hp < 300 && roll < 0.4) {
+                    // Heal
+                    const amt = 120;
+                    this.enemy.hp = Math.min(this.enemy.maxHp, this.enemy.hp + amt);
+                    this.log("The Guardian draws power from the Spire.", 'bad');
+                    this.showFloatingText(`+${amt}`, this.els.enemyDragon);
+                    this.updateUI();
+                } else if (roll < 0.7) {
+                    // Normal Attack
+                    this.log("Guardian spits acid!", 'bad');
+                    this.spawnProjectile('🤮', this.els.enemyDragon, this.els.playerDragon);
+                    await this.wait(600);
+                    let dmg = 90 + Math.random()*30;
+                    if (this.player.shield > 0) {
+                        dmg *= (1 - this.player.shield);
+                        this.log("Your scales deflected some damage!", 'info');
+                    }
+                    this.dealDamage(this.player, dmg, this.els.playerDragon);
+                } else {
+                    // Heavy Attack
+                    this.log("Guardian summons a lightning storm!", 'bad');
+                    this.spawnProjectile('⚡', this.els.enemyDragon, this.els.playerDragon);
+                    await this.wait(600);
+                    let dmg = 140 + Math.random()*40;
+                    if (this.player.shield > 0) {
+                        dmg *= (1 - this.player.shield);
+                        this.log("Your scales deflected some damage!", 'info');
+                    }
+                    this.dealDamage(this.player, dmg, this.els.playerDragon);
+                }
+
+                if (!this.checkWin()) {
+                    this.turn = 'player';
+                    this.isAnimating = false;
+                    this.log("Your turn!", 'info');
+                }
+            }
+
+            dealDamage(target, amount, visualEl) {
+                amount = Math.floor(amount);
+                target.hp -= amount;
+                this.shake(visualEl);
+                this.showFloatingText(`-${amount}`, visualEl);
+                this.updateUI();
+            }
+
+            wait(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+        }
+
+        const game = new Game();
+    </script>
+</body>
+</html>

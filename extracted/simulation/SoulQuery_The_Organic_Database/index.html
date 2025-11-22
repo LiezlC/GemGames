@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SoulQuery: The Organic Database</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;500;700&family=Inter:wght@300;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-blue: #00f3ff;
+            --neon-pink: #bc13fe;
+            --neon-yellow: #ffd700;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            background-color: #050505;
+            color: #e0e0e0;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Custom Scrollbar for panels */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #111; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+
+        .font-mono { font-family: 'Fira Code', monospace; }
+
+        .neon-text-blue {
+            color: var(--neon-blue);
+            text-shadow: 0 0 10px rgba(0, 243, 255, 0.5), 0 0 20px rgba(0, 243, 255, 0.3);
+        }
+        
+        .neon-text-pink {
+            color: var(--neon-pink);
+            text-shadow: 0 0 10px rgba(188, 19, 254, 0.5);
+        }
+
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .soul-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .soul-card:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+            border-color: var(--neon-blue);
+        }
+
+        /* Animation for the "Mind Flow" */
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 0.8; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
+        }
+
+        .mango-icon {
+            display: inline-block;
+            filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.6));
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-5px) rotate(5deg); }
+        }
+
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none; /* Let clicks pass through to specific elements if needed, but we will handle canvas clicks via JS */
+        }
+
+        .ui-layer {
+            position: relative;
+            z-index: 10;
+            height: 100%;
+            pointer-events: none; /* Allow clicking through to canvas */
+        }
+        
+        .interactive {
+            pointer-events: auto;
+        }
+
+        /* Terminal typing cursor */
+        .cursor {
+            display: inline-block;
+            width: 8px;
+            height: 1.2em;
+            background-color: var(--neon-blue);
+            animation: blink 1s step-end infinite;
+            vertical-align: middle;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
+
+    </style>
+</head>
+<body>
+
+    <!-- Background Visualization -->
+    <div id="canvas-container">
+        <canvas id="soul-canvas"></canvas>
+    </div>
+
+    <!-- Main UI -->
+    <div class="ui-layer flex flex-col p-6">
+        
+        <!-- Header -->
+        <header class="flex justify-between items-center mb-8 interactive">
+            <div>
+                <h1 class="text-4xl font-bold tracking-tighter">
+                    <span class="text-white">SOUL</span><span class="neon-text-blue">QUERY</span>
+                </h1>
+                <p class="text-xs text-gray-400 font-mono mt-1 tracking-widest">v2.0.4 // ORGANIC_DB_CONNECTED</p>
+            </div>
+            <div class="glass-panel px-4 py-2 rounded-full flex items-center gap-3">
+                <div class="w-3 h-3 rounded-full bg-green-500 animate-pulse"></div>
+                <span class="font-mono text-sm text-green-400">SYSTEM ONLINE</span>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <div class="flex-1 flex gap-6 overflow-hidden">
+            
+            <!-- Left Panel: Query Terminal -->
+            <aside class="w-1/3 min-w-[300px] glass-panel rounded-2xl p-6 flex flex-col interactive transform transition-all hover:scale-[1.01]">
+                <div class="border-b border-gray-700 pb-4 mb-4">
+                    <h2 class="text-lg font-mono neon-text-blue mb-2">>_ TERMINAL</h2>
+                    <div class="bg-black/50 rounded-lg p-4 font-mono text-sm h-32 overflow-hidden relative">
+                        <div id="terminal-output" class="text-gray-300 space-y-1">
+                            <div class="text-green-500">Initializing connection...</div>
+                            <div>Connected to 'Mind_Garden_01'</div>
+                            <div class="text-yellow-500">Warning: High organic density detected.</div>
+                            <br>
+                        </div>
+                        <div class="absolute bottom-4 left-4 flex items-center w-full">
+                            <span class="text-blue-400 mr-2">$</span>
+                            <input type="text" id="sql-input" class="bg-transparent border-none outline-none text-white w-full font-mono" placeholder="SELECT * FROM souls..." autocomplete="off">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex-1 overflow-y-auto space-y-3">
+                    <h3 class="text-xs uppercase tracking-wider text-gray-500 font-bold">Quick Queries</h3>
+                    
+                    <button onclick="runQuery('all')" class="w-full text-left p-3 rounded bg-white/5 hover:bg-white/10 border border-transparent hover:border-blue-500 transition-all group">
+                        <div class="flex justify-between items-center">
+                            <span class="font-mono text-sm text-blue-300">SELECT * FROM souls</span>
+                            <span class="opacity-0 group-hover:opacity-100 text-xs text-blue-500">RUN</span>
+                        </div>
+                    </button>
+
+                    <button onclick="runQuery('ripe')" class="w-full text-left p-3 rounded bg-white/5 hover:bg-white/10 border border-transparent hover:border-yellow-500 transition-all group">
+                        <div class="flex justify-between items-center">
+                            <span class="font-mono text-sm text-yellow-300">WHERE status = 'RIPE'</span>
+                            <span class="opacity-0 group-hover:opacity-100 text-xs text-yellow-500">RUN</span>
+                        </div>
+                    </button>
+
+                    <button onclick="runQuery('glitch')" class="w-full text-left p-3 rounded bg-white/5 hover:bg-white/10 border border-transparent hover:border-pink-500 transition-all group">
+                        <div class="flex justify-between items-center">
+                            <span class="font-mono text-sm text-pink-300">WHERE type = 'GLITCH'</span>
+                            <span class="opacity-0 group-hover:opacity-100 text-xs text-pink-500">RUN</span>
+                        </div>
+                    </button>
+                </div>
+
+                <div class="mt-4 pt-4 border-t border-gray-700">
+                    <div class="flex justify-between text-xs font-mono text-gray-400">
+                        <span>Souls Detected:</span>
+                        <span id="soul-count" class="text-white">0</span>
+                    </div>
+                    <div class="w-full bg-gray-800 h-1 mt-2 rounded-full overflow-hidden">
+                        <div id="capacity-bar" class="bg-gradient-to-r from-blue-500 to-pink-500 h-full w-[0%] transition-all duration-1000"></div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Right Panel: Inspector (Hidden initially, shows on click) -->
+            <div id="inspector-panel" class="absolute right-6 top-24 w-80 glass-panel rounded-2xl p-6 interactive transform translate-x-[120%] transition-transform duration-500">
+                <div class="flex justify-between items-start mb-6">
+                    <div class="w-16 h-16 rounded-full bg-gradient-to-br from-yellow-400 to-orange-600 flex items-center justify-center text-3xl shadow-lg shadow-orange-500/20">
+                        🥭
+                    </div>
+                    <button onclick="closeInspector()" class="text-gray-400 hover:text-white">✕</button>
+                </div>
+                
+                <h2 id="insp-name" class="text-2xl font-bold text-white mb-1">Unknown Soul</h2>
+                <p id="insp-id" class="text-xs font-mono text-gray-500 mb-6">ID: NULL</p>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-xs text-gray-400 uppercase">Essence</label>
+                        <div class="w-full bg-gray-800 h-2 rounded-full mt-1">
+                            <div id="insp-bar-essence" class="bg-blue-500 h-full rounded-full w-[0%]"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400 uppercase">Ripeness</label>
+                        <div class="w-full bg-gray-800 h-2 rounded-full mt-1">
+                            <div id="insp-bar-ripe" class="bg-yellow-500 h-full rounded-full w-[0%]"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="p-3 bg-black/30 rounded border border-gray-700 mt-4">
+                        <label class="text-xs text-gray-500 block mb-1">DATA FRAGMENT</label>
+                        <p id="insp-data" class="font-mono text-xs text-green-400 leading-relaxed">
+                            ...
+                        </p>
+                    </div>
+                </div>
+
+                <button onclick="harvestSoul()" class="w-full mt-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold py-3 rounded-lg shadow-lg shadow-purple-500/25 transition-all active:scale-95">
+                    HARVEST DATA
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // --- Configuration ---
+        const canvas = document.getElementById('soul-canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        
+        // State
+        let souls = [];
+        let particles = [];
+        let mouse = { x: 0, y: 0, active: false };
+        let selectedSoul = null;
+        let filterType = 'all'; // all, ripe, glitch
+
+        // --- Data Generation ---
+        const firstNames = ["Neo", "Trinity", "Cipher", "Ghost", "Nyx", "Echo", "Vapor", "Glitch", "Zen", "Aura", "Flux", "Nova"];
+        const lastNames = ["Prime", "Walker", "Core", "Byte", "Soul", "Mind", "Loop", "Static", "Flow", "Mist"];
+        const fragments = [
+            "Memory of a golden sunset...",
+            "Encrypted fear of heights...",
+            "Recipe for perfect mango sticky rice...",
+            "Lost private key: 0x4F...",
+            "Dreaming of electric sheep...",
+            "Subconscious desire to fly...",
+            "Fragmented childhood laughter...",
+            "System error: Emotion overflow..."
+        ];
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.vx = (Math.random() - 0.5) * 0.5;
+                this.vy = (Math.random() - 0.5) * 0.5;
+                this.size = Math.random() * 2;
+                this.color = Math.random() > 0.5 ? '#00f3ff' : '#bc13fe'; // Blue or Pink
+                this.alpha = Math.random() * 0.5 + 0.1;
+            }
+            
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                
+                // Wrap around
+                if (this.x < 0) this.x = width;
+                if (this.x > width) this.x = 0;
+                if (this.y < 0) this.y = height;
+                if (this.y > height) this.y = 0;
+            }
+
+            draw() {
+                ctx.globalAlpha = this.alpha;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        class Soul {
+            constructor() {
+                this.id = Math.random().toString(36).substr(2, 9).toUpperCase();
+                this.name = `${firstNames[Math.floor(Math.random() * firstNames.length)]} ${lastNames[Math.floor(Math.random() * lastNames.length)]}`;
+                this.x = Math.random() * (width - 100) + 50;
+                this.y = Math.random() * (height - 100) + 50;
+                
+                // Flow towards center roughly
+                this.vx = (Math.random() - 0.5) * 0.8;
+                this.vy = (Math.random() - 0.5) * 0.8;
+                
+                this.size = 24; // Emoji size
+                this.type = Math.random() > 0.8 ? 'GLITCH' : (Math.random() > 0.5 ? 'RIPE' : 'RAW');
+                
+                this.essence = Math.floor(Math.random() * 100);
+                this.ripeness = this.type === 'RIPE' ? Math.floor(Math.random() * 20 + 80) : Math.floor(Math.random() * 60);
+                this.dataFragment = fragments[Math.floor(Math.random() * fragments.length)];
+                
+                this.angle = 0;
+                this.oscillationSpeed = Math.random() * 0.05 + 0.02;
+            }
+
+            update() {
+                // Movement
+                this.x += this.vx;
+                this.y += this.vy;
+                this.angle += this.oscillationSpeed;
+
+                // Bounce off walls
+                if (this.x < 50 || this.x > width - 50) this.vx *= -1;
+                if (this.y < 50 || this.y > height - 50) this.vy *= -1;
+
+                // Mouse interaction
+                if (mouse.active) {
+                    const dx = this.x - mouse.x;
+                    const dy = this.y - mouse.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist < 150) {
+                        const force = (150 - dist) / 150;
+                        this.vx += (dx / dist) * force * 0.5;
+                        this.vy += (dy / dist) * force * 0.5;
+                    }
+                }
+
+                // Friction
+                this.vx *= 0.99;
+                this.vy *= 0.99;
+            }
+
+            draw() {
+                // Filter visibility
+                if (filterType !== 'all') {
+                    if (filterType === 'ripe' && this.type !== 'RIPE') {
+                        ctx.globalAlpha = 0.1;
+                    } else if (filterType === 'glitch' && this.type !== 'GLITCH') {
+                        ctx.globalAlpha = 0.1;
+                    } else {
+                        ctx.globalAlpha = 1;
+                    }
+                } else {
+                    ctx.globalAlpha = 1;
+                }
+
+                ctx.save();
+                ctx.translate(this.x, this.y + Math.sin(this.angle) * 5);
+                
+                // Glow
+                if (this.type === 'GLITCH') {
+                    ctx.shadowColor = '#bc13fe'; // Pink
+                    ctx.shadowBlur = 20;
+                } else if (this.type === 'RIPE') {
+                    ctx.shadowColor = '#ffd700'; // Gold
+                    ctx.shadowBlur = 20;
+                } else {
+                    ctx.shadowColor = '#00f3ff'; // Blue
+                    ctx.shadowBlur = 10;
+                }
+
+                // Draw Emoji
+                ctx.font = "24px Arial";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                
+                if (this.type === 'GLITCH') ctx.fillText("👾", 0, 0);
+                else ctx.fillText("🥭", 0, 0);
+
+                // Selection Ring
+                if (selectedSoul === this) {
+                    ctx.strokeStyle = "white";
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 20, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+
+                ctx.restore();
+            }
+        }
+
+        // --- Initialization ---
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        function init() {
+            // Create background particles (The "Flow")
+            for(let i=0; i<100; i++) {
+                particles.push(new Particle());
+            }
+            // Create Souls (The Mangoes)
+            for(let i=0; i<15; i++) {
+                souls.push(new Soul());
+            }
+            updateStats();
+        }
+
+        // --- Animation Loop ---
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+
+            // Draw connecting lines (Neural Network Style)
+            ctx.lineWidth = 0.5;
+            for (let i = 0; i < souls.length; i++) {
+                for (let j = i + 1; j < souls.length; j++) {
+                    const dx = souls[i].x - souls[j].x;
+                    const dy = souls[i].y - souls[j].y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < 150) {
+                        const opacity = 1 - (dist / 150);
+                        // Gradient line
+                        const grad = ctx.createLinearGradient(souls[i].x, souls[i].y, souls[j].x, souls[j].y);
+                        grad.addColorStop(0, souls[i].type === 'GLITCH' ? '#bc13fe' : '#00f3ff');
+                        grad.addColorStop(1, souls[j].type === 'GLITCH' ? '#bc13fe' : '#ffd700');
+                        
+                        ctx.strokeStyle = grad;
+                        ctx.globalAlpha = opacity * 0.3;
+                        ctx.beginPath();
+                        ctx.moveTo(souls[i].x, souls[i].y);
+                        ctx.lineTo(souls[j].x, souls[j].y);
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            // Update and Draw Particles
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+
+            // Update and Draw Souls
+            souls.forEach(s => {
+                s.update();
+                s.draw();
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        // --- Interaction Logic ---
+        canvas.addEventListener('mousemove', (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+            mouse.active = true;
+            canvas.style.cursor = 'default';
+
+            // Check hover
+            souls.forEach(s => {
+                const dx = s.x - mouse.x;
+                const dy = s.y - mouse.y;
+                if (Math.sqrt(dx*dx + dy*dy) < 30) {
+                    canvas.style.cursor = 'pointer';
+                }
+            });
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            mouse.active = false;
+        });
+
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const clickY = e.clientY - rect.top;
+            
+            let clicked = false;
+            
+            souls.forEach(s => {
+                const dx = s.x - clickX;
+                const dy = s.y - clickY;
+                if (Math.sqrt(dx*dx + dy*dy) < 30) {
+                    selectSoul(s);
+                    clicked = true;
+                }
+            });
+
+            if (!clicked) {
+                closeInspector();
+            }
+        });
+
+        // --- UI Functions ---
+        const terminalOutput = document.getElementById('terminal-output');
+        const inspector = document.getElementById('inspector-panel');
+
+        function log(msg, colorClass = 'text-gray-300') {
+            const div = document.createElement('div');
+            div.className = colorClass;
+            div.innerText = `> ${msg}`;
+            terminalOutput.appendChild(div);
+            terminalOutput.scrollTop = terminalOutput.scrollHeight;
+        }
+
+        function runQuery(type) {
+            filterType = type;
+            
+            let queryText = "";
+            if(type === 'all') queryText = "SELECT * FROM souls";
+            if(type === 'ripe') queryText = "SELECT * FROM souls WHERE status = 'RIPE'";
+            if(type === 'glitch') queryText = "SELECT * FROM souls WHERE type = 'GLITCH'";
+
+            log(`Executing: ${queryText}`, 'text-blue-400');
+            
+            setTimeout(() => {
+                const count = souls.filter(s => {
+                    if(type === 'all') return true;
+                    if(type === 'ripe') return s.type === 'RIPE';
+                    if(type === 'glitch') return s.type === 'GLITCH';
+                }).length;
+                log(`Query returned ${count} rows.`, 'text-green-400');
+            }, 500);
+        }
+
+        function selectSoul(soul) {
+            selectedSoul = soul;
+            inspector.classList.remove('translate-x-[120%]');
+            
+            // Populate Data
+            document.getElementById('insp-name').innerText = soul.name;
+            document.getElementById('insp-id').innerText = `ID: ${soul.id} // TYPE: ${soul.type}`;
+            document.getElementById('insp-data').innerText = `"${soul.dataFragment}"`;
+            
+            // Animate Bars
+            document.getElementById('insp-bar-essence').style.width = `${soul.essence}%`;
+            document.getElementById('insp-bar-ripe').style.width = `${soul.ripeness}%`;
+            
+            log(`Inspecting entity: ${soul.id}`, 'text-yellow-300');
+        }
+
+        function closeInspector() {
+            selectedSoul = null;
+            inspector.classList.add('translate-x-[120%]');
+        }
+
+        function harvestSoul() {
+            if (!selectedSoul) return;
+            
+            log(`Harvesting data from ${selectedSoul.id}...`, 'text-pink-400');
+            
+            // Visual feedback
+            const index = souls.indexOf(selectedSoul);
+            if (index > -1) {
+                // Create explosion particles
+                for(let i=0; i<10; i++) {
+                    const p = new Particle();
+                    p.x = selectedSoul.x;
+                    p.y = selectedSoul.y;
+                    p.color = selectedSoul.type === 'GLITCH' ? '#bc13fe' : '#ffd700';
+                    p.size = 4;
+                    p.vx = (Math.random() - 0.5) * 5;
+                    p.vy = (Math.random() - 0.5) * 5;
+                    particles.push(p);
+                }
+                
+                souls.splice(index, 1);
+                // Respawn a new one after delay
+                setTimeout(() => souls.push(new Soul()), 2000);
+            }
+            
+            closeInspector();
+            updateStats();
+            
+            // Update capacity bar
+            const bar = document.getElementById('capacity-bar');
+            let currentW = parseInt(bar.style.width) || 0;
+            bar.style.width = Math.min(currentW + 10, 100) + '%';
+        }
+
+        function updateStats() {
+            document.getElementById('soul-count').innerText = souls.length;
+        }
+
+        // Handle Input Enter Key
+        document.getElementById('sql-input').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                const val = this.value.toLowerCase();
+                this.value = '';
+                if (val.includes('ripe')) runQuery('ripe');
+                else if (val.includes('glitch')) runQuery('glitch');
+                else runQuery('all');
+            }
+        });
+
+        // Start
+        init();
+        animate();
+
+    </script>
+</body>
+</html>

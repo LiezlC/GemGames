@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neural Void Voyager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;500;700&display=swap');
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #050011;
+            font-family: 'Rajdhani', sans-serif;
+            color: white;
+            user-select: none;
+        }
+
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .ui-layer {
+            position: absolute;
+            z-index: 10;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 2rem;
+            box-sizing: border-box;
+        }
+
+        .hud-panel {
+            background: rgba(20, 10, 40, 0.4);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 1rem 2rem;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            pointer-events: auto;
+            transition: transform 0.2s;
+        }
+
+        .hud-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .score-display {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #4fd1c5;
+            text-shadow: 0 0 10px rgba(79, 209, 197, 0.5);
+        }
+
+        .health-bar-container {
+            width: 200px;
+            height: 10px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .health-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff0055, #ff5588);
+            width: 100%;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 10px #ff0055;
+        }
+
+        .menu-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(5, 0, 17, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            pointer-events: auto;
+        }
+
+        .title-text {
+            font-size: 5rem;
+            font-weight: 700;
+            background: linear-gradient(to bottom, #fff, #a5b4fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            filter: drop-shadow(0 0 20px rgba(165, 180, 252, 0.4));
+        }
+
+        .subtitle-text {
+            font-size: 1.5rem;
+            color: #818cf8;
+            margin-bottom: 3rem;
+            letter-spacing: 2px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            border: none;
+            padding: 1rem 3rem;
+            font-size: 1.5rem;
+            color: white;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 20px rgba(124, 58, 237, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 40px rgba(124, 58, 237, 0.8);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .tutorial-icon {
+            font-size: 2rem;
+            margin: 0 10px;
+            animation: pulse 2s infinite;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Game Canvas -->
+    <div id="canvas-container">
+        <canvas id="gameCanvas"></canvas>
+    </div>
+
+    <!-- HUD (Heads Up Display) -->
+    <div id="uiLayer" class="ui-layer hidden">
+        <div class="hud-top">
+            <div class="hud-panel">
+                <div style="font-size: 0.8rem; color: #a5b4fc; text-transform: uppercase; letter-spacing: 1px;">Neural Sync</div>
+                <div class="score-display" id="scoreVal">0</div>
+            </div>
+            <div class="hud-panel">
+                <div style="font-size: 0.8rem; color: #ff5588; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;">Integrity</div>
+                <div class="health-bar-container">
+                    <div class="health-bar-fill" id="healthBar"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div style="text-align: center; opacity: 0.6; font-size: 0.9rem;">
+            <span style="color:cyan">MOUSE</span> to Steer &nbsp;|&nbsp; Avoid <span style="color:red">SKULLS</span> &nbsp;|&nbsp; Collect <span style="color:violet">GEOMETRY</span>
+        </div>
+    </div>
+
+    <!-- Start Menu -->
+    <div id="startScreen" class="menu-screen">
+        <h1 class="title-text">Neural Void</h1>
+        <p class="subtitle-text">Dive into the subconscious tunnel</p>
+        
+        <div style="display: flex; gap: 2rem; margin-bottom: 3rem;">
+            <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 10px;">
+                <div class="tutorial-icon">💠</div>
+                <div style="font-size: 0.9rem; color: #aaa;">Collect Artifacts</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 10px;">
+                <div class="tutorial-icon">💀</div>
+                <div style="font-size: 0.9rem; color: #aaa;">Avoid Nightmares</div>
+            </div>
+        </div>
+
+        <button class="btn" onclick="startGame()">Initiate Dive</button>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="gameOverScreen" class="menu-screen hidden">
+        <h1 class="title-text" style="font-size: 4rem; color: #ff5588;">Sync Lost</h1>
+        <p class="subtitle-text">The void consumed you.</p>
+        
+        <div class="hud-panel" style="margin-bottom: 2rem;">
+            <div style="font-size: 1rem; color: #ccc;">Final Score</div>
+            <div class="score-display" id="finalScore" style="font-size: 3rem;">0</div>
+        </div>
+
+        <button class="btn" onclick="resetGame()">Re-Enter</button>
+    </div>
+
+    <script>
+        /**
+         * NEURAL VOID VOYAGER
+         * A pseudo-3D tunnel runner built with HTML5 Canvas.
+         * No external assets. Everything is drawn procedurally.
+         */
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // State
+        let gameActive = false;
+        let score = 0;
+        let health = 100;
+        let frameId;
+        let speed = 15;
+        let distanceTraveled = 0;
+        
+        // Mouse interaction
+        const mouse = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+        const player = { x: 0, y: 0, radius: 10 }; // Player position in world coordinates relative to center
+
+        // Entities
+        let particles = []; // The tunnel walls
+        let objects = [];   // Interactables (Skulls, Orbs)
+        
+        // Configuration
+        const FOV = 300; // Field of view
+        const TUNNEL_RADIUS = 800; // How wide the tunnel generation is
+        
+        // Resize handler
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Mouse tracking
+        window.addEventListener('mousemove', (e) => {
+            // Map mouse screen position to player target position
+            // We want the player to move, but visually we might shift the world slightly too
+            let targetX = (e.clientX - canvas.width / 2);
+            let targetY = (e.clientY - canvas.height / 2);
+            
+            // Smooth follow
+            mouse.x = targetX;
+            mouse.y = targetY;
+        });
+
+        // --- CLASSES ---
+
+        class Particle {
+            constructor(isWall = true) {
+                this.reset(true, isWall);
+            }
+
+            reset(initial = false, isWall = true) {
+                this.z = initial ? Math.random() * 2000 : 2000;
+                this.isWall = isWall;
+                
+                if (this.isWall) {
+                    // Spawn in a ring/tunnel shape
+                    const angle = Math.random() * Math.PI * 2;
+                    // Add some noise to make it organic/cave-like
+                    const r = TUNNEL_RADIUS + (Math.random() * 400 - 200); 
+                    this.x = Math.cos(angle) * r;
+                    this.y = Math.sin(angle) * r;
+                    
+                    // Color: Red/Purple fleshy tones
+                    const hue = 320 + Math.random() * 40; // Pink to Red
+                    this.color = `hsla(${hue}, 60%, ${20 + Math.random() * 20}%,`;
+                    this.sizeBase = 50 + Math.random() * 100;
+                } else {
+                    // Dust/Atmosphere in the middle
+                    this.x = (Math.random() - 0.5) * TUNNEL_RADIUS * 1.5;
+                    this.y = (Math.random() - 0.5) * TUNNEL_RADIUS * 1.5;
+                    this.color = `hsla(200, 80%, 70%,`;
+                    this.sizeBase = 2 + Math.random() * 3;
+                }
+            }
+
+            update() {
+                this.z -= speed;
+                
+                // Tunnel curvature logic (optional, creates a winding path)
+                // const curveX = Math.sin(distanceTraveled * 0.001) * 500;
+                // const curveY = Math.cos(distanceTraveled * 0.0015) * 300;
+                
+                if (this.z <= 1) {
+                    this.reset(false, this.isWall);
+                }
+            }
+
+            draw() {
+                // Perspective projection
+                const scale = FOV / (this.z);
+                const screenX = (this.x) * scale + canvas.width / 2;
+                const screenY = (this.y) * scale + canvas.height / 2;
+                
+                // Parallax effect based on player position
+                // Move world opposite to player
+                const parallaxX = screenX - (player.x * scale * 2); 
+                const parallaxY = screenY - (player.y * scale * 2);
+
+                const size = this.sizeBase * scale;
+
+                if (this.isWall) {
+                    // Draw fleshy wall blobs
+                    ctx.beginPath();
+                    ctx.fillStyle = this.color + Math.min(1, scale) + ')';
+                    ctx.arc(parallaxX, parallaxY, size, 0, Math.PI * 2);
+                    ctx.fill();
+                } else {
+                    // Draw star/dust
+                    ctx.fillStyle = this.color + Math.min(1, scale) + ')';
+                    ctx.fillRect(parallaxX, parallaxY, size, size);
+                }
+            }
+        }
+
+        class GameEntity {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                this.z = 2000 + Math.random() * 1000;
+                // Spawn within the tunnel radius
+                const angle = Math.random() * Math.PI * 2;
+                const r = Math.random() * (TUNNEL_RADIUS * 0.6); // Keep somewhat central
+                this.x = Math.cos(angle) * r;
+                this.y = Math.sin(angle) * r;
+                
+                // Types: 0 = Skull (Bad), 1 = Orb (Score), 2 = Geometry (Bonus)
+                const rand = Math.random();
+                if (rand < 0.6) this.type = 'skull';
+                else if (rand < 0.9) this.type = 'orb';
+                else this.type = 'geo';
+
+                this.rotation = Math.random() * Math.PI;
+                this.active = true;
+            }
+
+            update() {
+                if (!this.active) return;
+                this.z -= speed;
+                this.rotation += 0.05;
+
+                if (this.z <= 10) {
+                    // Missed it
+                    this.reset();
+                }
+
+                // Collision Detection
+                // We check when Z is very close to player (FOV distance essentially)
+                if (this.z < 100 && this.z > 10) {
+                    const scale = FOV / this.z;
+                    const screenX = (this.x) * scale + canvas.width / 2 - (player.x * scale * 2);
+                    const screenY = (this.y) * scale + canvas.height / 2 - (player.y * scale * 2);
+                    
+                    // Player is always center screen visually, but we track mouse offset
+                    // Actually, let's calculate distance in World Space at Z=PlayerZ
+                    // Simplified: Check screen distance
+                    const dx = screenX - (canvas.width/2);
+                    const dy = screenY - (canvas.height/2);
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+
+                    if (dist < 50) { // Hit radius
+                        this.onHit();
+                    }
+                }
+            }
+
+            onHit() {
+                this.active = false;
+                // Effects
+                if (this.type === 'skull') {
+                    health -= 20;
+                    triggerShake();
+                    document.getElementById('healthBar').style.width = health + '%';
+                    if (health <= 0) endGame();
+                } else if (this.type === 'orb') {
+                    score += 100;
+                    updateScore();
+                } else if (this.type === 'geo') {
+                    score += 500;
+                    health = Math.min(100, health + 10);
+                    document.getElementById('healthBar').style.width = health + '%';
+                    updateScore();
+                }
+                
+                // Respawn further back immediately to keep density up
+                setTimeout(() => this.reset(), 100);
+            }
+
+            draw() {
+                if (!this.active) return;
+
+                const scale = FOV / this.z;
+                const screenX = (this.x) * scale + canvas.width / 2 - (player.x * scale * 2);
+                const screenY = (this.y) * scale + canvas.height / 2 - (player.y * scale * 2);
+                const size = 60 * scale;
+
+                ctx.save();
+                ctx.translate(screenX, screenY);
+                
+                if (this.type === 'skull') {
+                    ctx.font = `${size}px sans-serif`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.shadowColor = 'red';
+                    ctx.shadowBlur = 20;
+                    ctx.fillText('💀', 0, 0);
+                } else if (this.type === 'orb') {
+                    // Draw glowing planet
+                    ctx.beginPath();
+                    const grad = ctx.createRadialGradient(0, 0, size * 0.2, 0, 0, size);
+                    grad.addColorStop(0, '#fff');
+                    grad.addColorStop(0.5, '#4fd1c5');
+                    grad.addColorStop(1, 'rgba(79, 209, 197, 0)');
+                    ctx.fillStyle = grad;
+                    ctx.arc(0, 0, size, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (this.type === 'geo') {
+                    // Sacred Geometry
+                    ctx.rotate(this.rotation);
+                    ctx.strokeStyle = '#e0e7ff';
+                    ctx.lineWidth = 3 * scale;
+                    ctx.shadowColor = '#818cf8';
+                    ctx.shadowBlur = 15;
+                    
+                    ctx.beginPath();
+                    for (let i = 0; i < 6; i++) {
+                        const a = (i / 6) * Math.PI * 2;
+                        ctx.lineTo(Math.cos(a) * size, Math.sin(a) * size);
+                    }
+                    ctx.closePath();
+                    ctx.stroke();
+                    
+                    // Inner circle
+                    ctx.beginPath();
+                    ctx.arc(0,0, size*0.5, 0, Math.PI*2);
+                    ctx.stroke();
+                }
+
+                ctx.restore();
+            }
+        }
+
+        // --- GAME LOOP ---
+
+        let shakeIntensity = 0;
+
+        function triggerShake() {
+            shakeIntensity = 20;
+        }
+
+        function init() {
+            // Create Walls
+            for (let i = 0; i < 150; i++) {
+                particles.push(new Particle(true));
+            }
+            // Create Dust
+            for (let i = 0; i < 50; i++) {
+                particles.push(new Particle(false));
+            }
+            // Create Objects
+            for (let i = 0; i < 10; i++) {
+                objects.push(new GameEntity());
+            }
+        }
+
+        function updateScore() {
+            const scoreEl = document.getElementById('scoreVal');
+            scoreEl.innerText = score;
+            scoreEl.style.transform = "scale(1.2)";
+            setTimeout(() => scoreEl.style.transform = "scale(1)", 100);
+        }
+
+        function drawBackground() {
+            // Deep void gradient
+            const grad = ctx.createRadialGradient(
+                canvas.width / 2, canvas.height / 2, 0,
+                canvas.width / 2, canvas.height / 2, canvas.width
+            );
+            grad.addColorStop(0, '#1a202c'); // Center light (blueish grey)
+            grad.addColorStop(0.4, '#0f0518'); // Mid dark
+            grad.addColorStop(1, '#000000'); // Edge black
+            
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function drawPlayer() {
+            // The player is the "Boy" from the image, represented abstractly
+            // We draw him at the center of the screen (conceptually), 
+            // but since we move the world opposite to mouse, the player stays "visually" centered relative to camera
+            // but we can make a small avatar follow the mouse slightly to give feeling of control.
+            
+            const avatarX = canvas.width / 2 + (mouse.x * 0.1);
+            const avatarY = canvas.height / 2 + (mouse.y * 0.1) + 50; // Slightly lower
+
+            // Draw silhouette
+            ctx.save();
+            ctx.translate(avatarX, avatarY);
+            
+            // Glow
+            ctx.shadowColor = '#00ffff';
+            ctx.shadowBlur = 20;
+            
+            // Body
+            ctx.fillStyle = '#111';
+            ctx.beginPath();
+            ctx.ellipse(0, 20, 15, 30, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Head
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.arc(0, -15, 12, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Rim light (Blue from the void)
+            ctx.strokeStyle = '#4fd1c5';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function loop() {
+            if (!gameActive) return;
+
+            // Screen Shake decay
+            let shakeX = 0;
+            let shakeY = 0;
+            if (shakeIntensity > 0) {
+                shakeX = (Math.random() - 0.5) * shakeIntensity;
+                shakeY = (Math.random() - 0.5) * shakeIntensity;
+                shakeIntensity *= 0.9;
+            }
+
+            ctx.save();
+            ctx.translate(shakeX, shakeY);
+
+            drawBackground();
+
+            // Update Player Logic
+            // Lerp player position to mouse
+            player.x += (mouse.x - player.x) * 0.1;
+            player.y += (mouse.y - player.y) * 0.1;
+
+            distanceTraveled += speed;
+            speed += 0.005; // Slowly accelerate
+
+            // Sort particles by Z (painters algorithm) so far things draw first
+            // Combine walls and objects for sorting
+            const allEntities = [...particles, ...objects];
+            allEntities.sort((a, b) => b.z - a.z);
+
+            allEntities.forEach(p => {
+                p.update();
+                p.draw();
+            });
+
+            drawPlayer();
+
+            ctx.restore();
+
+            frameId = requestAnimationFrame(loop);
+        }
+
+        // --- UI FUNCTIONS ---
+
+        function startGame() {
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('gameOverScreen').classList.add('hidden');
+            document.getElementById('uiLayer').classList.remove('hidden');
+            
+            gameActive = true;
+            score = 0;
+            health = 100;
+            speed = 15;
+            document.getElementById('scoreVal').innerText = '0';
+            document.getElementById('healthBar').style.width = '100%';
+            
+            // Reset entities
+            particles = [];
+            objects = [];
+            init();
+            
+            loop();
+        }
+
+        function endGame() {
+            gameActive = false;
+            cancelAnimationFrame(frameId);
+            document.getElementById('uiLayer').classList.add('hidden');
+            document.getElementById('gameOverScreen').classList.remove('hidden');
+            document.getElementById('finalScore').innerText = score;
+        }
+
+        function resetGame() {
+            startGame();
+        }
+
+        // Initial render for background
+        drawBackground();
+
+    </script>
+</body>
+</html>

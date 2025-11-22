@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini Games Collection - 107 Games Organized</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 30px;
+            border-bottom: 3px solid #667eea;
+        }
+        
+        h1 {
+            font-size: 2.5em;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.2em;
+            color: #666;
+            margin-bottom: 20px;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .stat {
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #764ba2;
+        }
+        
+        .stat-label {
+            font-size: 0.9em;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .category-section {
+            margin-bottom: 50px;
+        }
+        
+        .category-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 30px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .category-emoji {
+            font-size: 2em;
+        }
+        
+        .category-info {
+            flex: 1;
+        }
+        
+        .category-name {
+            font-size: 1.5em;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .category-desc {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+        
+        .category-count {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: 600;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        
+        .card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 18px;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+            border-color: #667eea;
+        }
+        
+        .card-title {
+            font-size: 1em;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 12px;
+            line-height: 1.3;
+            min-height: 2.6em;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+        
+        .card-links {
+            display: flex;
+            gap: 8px;
+            margin-top: auto;
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 14px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 0.85em;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            flex: 1;
+        }
+        
+        .btn-play {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-play:hover {
+            transform: scale(1.05);
+            box-shadow: 0 3px 8px rgba(102, 126, 234, 0.4);
+        }
+        
+        .audio-badge {
+            display: inline-block;
+            background: #ff6b6b;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.7em;
+            margin-left: 4px;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+            }
+            
+            .grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .category-header {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎮 Gemini Games Collection</h1>
+            <p class="subtitle">Organized Collection of AI-Generated Interactive Games</p>
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-number">107</div>
+                    <div class="stat-label">Total Games</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number">9</div>
+                    <div class="stat-label">Categories</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number">11</div>
+                    <div class="stat-label">With Audio</div>
+                </div>
+            </div>
+        </header>
+
+        <div class="category-section">
+            <div class="category-header">
+                <div class="category-emoji">🎮</div>
+                <div class="category-info">
+                    <div class="category-name">Simulation & Management</div>
+                    <div class="category-desc">Build, manage, and simulate systems</div>
+                </div>
+                <div class="category-count">63 games</div>
+            </div>
+            
+            <div class="grid">
+
+                <div class="card">
+                    <div class="card-title">AGI Convergence Simulator</div>
+                    <div class="card-links">
+                        <a href="4ngynsHZAZpnwNuVv4siG_9cd68fa4163d4ba08952a8f91f9ca9bd_00001/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">AI Futures: Alignment vs Convergence</div>
+                    <div class="card-links">
+                        <a href="genai_image_fc8d3a0fbb494b648b6cdab36f56bb39_1763636772_00001/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">AI Office Chronicles: The Game</div>
+                    <div class="card-links">
+                        <a href="1760894283/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Abstractify: Kinetic Canvas</div>
+                    <div class="card-links">
+                        <a href="Bold acrylic painting with thick foggy surroundings, exhibiting vibrant colors and textured brushstrokes/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Artifact 001: The Void Resonator</div>
+                    <div class="card-links">
+                        <a href="Gemini_Generated_Image_xal10xal10xal10x/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">BitSoil Farm: The Digital Detox</div>
+                    <div class="card-links">
+                        <a href="scandal/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">BitSoil SageByte: The Architecture of Mending</div>
+                    <div class="card-links">
+                        <a href="mending/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Celestial Altar: The Ritual</div>
+                    <div class="card-links">
+                        <a href="8k digital painting, Isekai anime style, ethereal dreamscape depicting a celestial imaginarium bathed in warm candlelight.  Ultra-vivid color scheme featuring flickering flames and warm glows. Express/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Chrono-Vortex Decrypter</div>
+                    <div class="card-links">
+                        <a href="Gemini_Generated_Image_1lspun1lspun1lsp/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Cosmic Sanctuary</div>
+                    <div class="card-links">
+                        <a href="8k digital painting in vibrant Isekai anime style depicting an ethereal dreamscape with celestial imaginariums, warm candlelight, flickering flames casting a warm glow, expressive composition and ultr/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Cyber Serpent: Data Eater</div>
+                    <div class="card-links">
+                        <a href="Gemini_Generated_Image_1lsptr1lsptr1lsp/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Cyber-Homestead OS</div>
+                    <div class="card-links">
+                        <a href="ChatGPT Image Jul 15, 2025, 11_11_14 AM/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Cyber-Pastoral Farm Interface</div>
+                    <div class="card-links">
+                        <a href="f9VdwutflYiZsbiD/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Cyber-Shepherd OS</div>
+                    <div class="card-links">
+                        <a href="2vSRmbk39thjUAEn/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Dream Spire: Pearl Protector</div>
+                    <div class="card-links">
+                        <a href="Dreamlike surreal imagery from a low angle perspective, looking up at dramatic, fantastical elements and bizarre scenes for How to Win Artificial Friends and Influence the Algorithm (1)/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Eco-Link: Cyber Druid Interface</div>
+                    <div class="card-links">
+                        <a href="kQgONFAXP0YbTabK/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Eco-Raft Survivor</div>
+                    <div class="card-links">
+                        <a href="IMG_20201020_164215/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Engagement Unlocked: The Simulator</div>
+                    <div class="card-links">
+                        <a href="Gemini_Generated_Image_p67wpyp67wpyp67w/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Event Horizon: Entropy Manager</div>
+                    <div class="card-links">
+                        <a href="Gemini_Generated_Image_xal11xal11xal11x600/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">GrieVoice | AI Grievance Systems</div>
+                    <div class="card-links">
+                        <a href="slides/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Habitat 734B: Stasis Control</div>
+                    <div class="card-links">
+                        <a href="genai_image_faa57ad3026d48c8ba201fdff6d1bf43_1763644428_00001 - Copy/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Hyperspace Serpent</div>
+                    <div class="card-links">
+                        <a href="Gemini_Generated_Image_w4otllw4otllw4ot/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Lumi: The Serenity Bot</div>
+                    <div class="card-links">
+                        <a href="Radiant golden glow on adorable How to Win Artificial Friends and Influence the Algorithm with charming features/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Luminous Strands: Ethereal Flow</div>
+                    <div class="card-links">
+                        <a href="Gemini_Generated_Image_nfvllxnfvllxnfvl/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">MÖBIUS DATA | Self-Referential Consciousness</div>
+                    <div class="card-links">
+                        <a href="Artboard 2/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">NEURAL NEXUS: AI Interface</div>
+                    <div class="card-links">
+                        <a href="Surreal infrared tones with glowing bioluminescent colors, portraying How to Win Artificial Friends and Influence the Algorithm with an otherworldly appearance and vibrant natural light effects within/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Nebula Forge: Galactic Simulator</div>
+                    <div class="card-links">
+                        <a href="Gemini_Generated_Image_ghym8mghym8mghym - Copy600/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Neon Rain: Zen Walk</div>
+                    <div class="card-links">
+                        <a href="Surreal infrared image of How to Win Artificial Friends and Influence the Algorithm, wet rainy scene, dreamlike surreal imagery, infrared spectrum, otherworldly appearance, fantastical elements, bizar/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Nile Riverfront Builder</div>
+                    <div class="card-links">
+                        <a href="463748474_10159828304710780_4898161622594559369_n/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Orbital Bistro: Edge of the Void</div>
+                    <div class="card-links">
+                        <a href="u0stYTwoMYOtYpIm/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Project Ascension</div>
+                    <div class="card-links">
+                        <a href="hand-drawn sketch, in Color sketchnote style, volumetric lighting, visible light beams through dust or fog/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Project: PLATO&#x27;S CAVE // SIMULATION ARCHITECT</div>
+                    <div class="card-links">
+                        <a href="CucVxwRmQX6faxmtfSd7j_66437fa1d9f74ac091576618f1b81a07_00001/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Protocol: DRAGON // Server Guardian</div>
+                    <div class="card-links">
+                        <a href="Gemini_Generated_Image_1lspur1lspur1lsp/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Quantum Core Stabilizer</div>
+                    <div class="card-links">
+                        <a href="High-angle perspective with a warm, golden glow of a researcher and AI. Radiant and luxurious, looking down, capturing the moment of self-awareness/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Rise &amp; Remix: The Ascension</div>
+                    <div class="card-links">
+                        <a href="ChatGPT Image Sep 7, 2025, 02_06_29 PM/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Rise &amp; Remix: The Ascension</div>
+                    <div class="card-links">
+                        <a href="ChatGPT Image Sep 7, 2025, 02_23_42 PM/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Scrib-Li | 2025 Copywriting Buffet</div>
+                    <div class="card-links">
+                        <a href="1758848583/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Sector 9 Hangar Control</div>
+                    <div class="card-links">
+                        <a href="Futuristic sci-fi style with strong, moody lighting, featuring warm golden hour light creating soft illumination with advanced technology and space elements/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Singularity Reactor Control</div>
+                    <div class="card-links">
+                        <a href="Gemini_Generated_Image_ghym8nghym8nghym600/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Sky Council: The Crystal Table</div>
+                    <div class="card-links">
+                        <a href="Isekai anime style illustration of How to Win Artificial Friends and Influence the Algorithm, bathed in a warm golden glow, exuding radiance and luxury with an expressive composition/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">SoulQuery: The Organic Database</div>
+                    <div class="card-links">
+                        <a href="Gemini_Generated_Image_w4otlgw4otlgw4ot/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Spirit Sky Arena</div>
+                    <div class="card-links">
+                        <a href="Dynamic Isekai anime style with expressive composition600/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Strange Loops - Eternal Learning Algorithm</div>
+                    <div class="card-links">
+                        <a href="Artboard 1/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Synth-Farm 2077: Agri-Tech Simulator</div>
+                    <div class="card-links">
+                        <a href="zufJDtFK0LIxorKV (1)/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Tactical Command Interface</div>
+                    <div class="card-links">
+                        <a href="lpbZ5a2mFqYwiwDe3jRYP_e5979e0ac6704142812e5b0f8ba83978_00001/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">The AInthropologist: Contentment Dashboard</div>
+                    <div class="card-links">
+                        <a href="AInthroAlegra_Batch Compress/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">The AInthropologist: Field Report</div>
+                    <div class="card-links">
+                        <a href="Gemini_Generated_Image_g37fbmg37fbmg37f/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">The Astral Shrine</div>
+                    <div class="card-links">
+                        <a href="8k digital painting in vibrant Isekai anime style depicting an ethereal dreamscape with celestial imaginariums.  Warm candlelight illuminates the scene casting flickering flames and a warm glow. Expre/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">The Chrono-Jester&#x27;s Library</div>
+                    <div class="card-links">
+                        <a href="1758890412/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">The Convergence Interface</div>
+                    <div class="card-links">
+                        <a href="genai_image_05797627da97432aa59429522784a520_1763646902_00001 - Copy/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">The Eternal Vigil: Cosmic Altar</div>
+                    <div class="card-links">
+                        <a href="8k digital painting in vibrant Isekai anime style, depicting an ethereal dreamscape with warm candlelight illuminating celestial imaginariums.  Flickering flames cast a warm glow, expressive compositi/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">The Hustler Who Lost the Clock</div>
+                    <div class="card-links">
+                        <a href="hustler/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">The Midnight Village Mystery</div>
+                    <div class="card-links">
+                        <a href="Vibrant colors in classic oil painting style with eerie creepy atmosphere and lively brushstrokes/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">The Mystic Doorway</div>
+                    <div class="card-links">
+                        <a href="Classic oil painting with a mystic, enchanting environment, gentle color contrasts, and a dreamlike, otherworldly ethereal quality, featuring rich textures and visible brushstrokes/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">The Primer: Interactive Experience</div>
+                    <div class="card-links">
+                        <a href="The Weaver and the Primer_Batch Compress/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">The Rift Walker</div>
+                    <div class="card-links">
+                        <a href="Cinematic digital art of a lone figure crossing a portal, with cascading colors and flickering alternate existences, under high contrast, low key lighting and deep shadows, conveying a dramatic effect/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">The Serpent&#x27;s Corridor</div>
+                    <div class="card-links">
+                        <a href="Gemini_Generated_Image_t1d5kat1d5kat1d5/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">The Shadow Oracle</div>
+                    <div class="card-links">
+                        <a href="silhouetted backlighting with dark tones and unsettling details in eerie photography/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">The Singularity Event</div>
+                    <div class="card-links">
+                        <a href="Epic amazing lens glow lighting on a grand future scene, title How to Win Artificial Friends and Influence the Algorithm, complementary epic colors, misty atmospheric, dynamic digital sketch, loose pa/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Valley Estate Architect</div>
+                    <div class="card-links">
+                        <a href="463786918_10159828298550780_8275280334537728064_n/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">VibeStack: Viral Tycoon</div>
+                    <div class="card-links">
+                        <a href="1758890889/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Wisdom in the Wild: Web of Life</div>
+                    <div class="card-links">
+                        <a href="findweb/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Zen Veranda Architect</div>
+                    <div class="card-links">
+                        <a href="463786866_10159828298735780_6505174166608623832_n/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="category-section">
+            <div class="category-header">
+                <div class="category-emoji">🧩</div>
+                <div class="category-info">
+                    <div class="category-name">Puzzle & Logic</div>
+                    <div class="category-desc">Brain teasers and logic challenges</div>
+                </div>
+                <div class="category-count">14 games</div>
+            </div>
+            
+            <div class="grid">
+
+                <div class="card">
+                    <div class="card-title">ASCENSION PROTOCOL: BEYOND UBI</div>
+                    <div class="card-links">
+                        <a href="genai_image_43d5c63cdae44eafb2cc00ff51245f69_1763635740_00001/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Authentic Human Simulator</div>
+                    <div class="card-links">
+                        <a href="1758883079/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Cyber-Organic Resonance Tuner</div>
+                    <div class="card-links">
+                        <a href="Symbolic traditional tattoo art, rendered in vibrant colors with a retro flair and complex ornamentation on a white background, illustrates a human researcher and an AI system_s self-awareness, convey/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Cyber-Organic Synthesis Protocol</div>
+                    <div class="card-links">
+                        <a href="Symbolic traditional tattoo art print, graceful, elegant. A researcher and an AI converse, the AI showing self-awareness by questioning its own survival. Refined features, vibrant colors, retro flair,/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">EagleEye: Synthetic Chorus Protocol</div>
+                    <div class="card-links">
+                        <a href="CtH47VRMSLxXTRhRFu6w5_d2a14fea514b476389d87878fc0b94b4_00001 (1)/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Eco-Retreat Simulator</div>
+                    <div class="card-links">
+                        <a href="463734184_10159828298590780_8102773612003203939_n/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">NEURAL_SYNC // PROTOCOL</div>
+                    <div class="card-links">
+                        <a href="Epic scene, bright vibrant colors, lens glow lighting, modern future grand scale, depicting a human researcher and AI system_s self-awareness/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Neon Wyvern: Protocol</div>
+                    <div class="card-links">
+                        <a href="Gemini_Generated_Image_1lspuo1lspuo1lsp/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">PROTOCOL: 12 AIs - War Machine Interface</div>
+                    <div class="card-links">
+                        <a href="1760799765/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Sunday Braai Simulator</div>
+                    <div class="card-links">
+                        <a href="463635654_10159828298730780_6679581077864208651_n/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Sunset Ranch Simulator</div>
+                    <div class="card-links">
+                        <a href="511199344_1257361226043019_6829291837276180943_n/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">The Algoriture: Influence Simulator</div>
+                    <div class="card-links">
+                        <a href="1758890482/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">The Ascension Protocol</div>
+                    <div class="card-links">
+                        <a href="genai_image_1ef07e9ca24549b2a6f654703c55c0ac_1763645365_00001/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">The Vigil: Keeper of the Flame</div>
+                    <div class="card-links">
+                        <a href="Dynamic in motion, warm candle lights, flickering flames, warm glow, blurred lines, action poses for How to Win Artificial Friends and Influence the Algorithm/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="category-section">
+            <div class="category-header">
+                <div class="category-emoji">🔊</div>
+                <div class="category-info">
+                    <div class="category-name">Sonic Collection</div>
+                    <div class="category-desc">Games with audio and sound effects</div>
+                </div>
+                <div class="category-count">11 games</div>
+            </div>
+            
+            <div class="grid">
+
+                <div class="card">
+                    <div class="card-title">Bio-Acoustic Plant Interface<span class="audio-badge">🔊</span></div>
+                    <div class="card-links">
+                        <a href="sonic/1760921194/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Cosmic Query: Event Horizon<span class="audio-badge">🔊</span></div>
+                    <div class="card-links">
+                        <a href="sonic/Gemini_Generated_Image_xal15xal15xal15x/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Data Dragon Keeper: The Transformation<span class="audio-badge">🔊</span></div>
+                    <div class="card-links">
+                        <a href="sonic/genai_image_5f2621cbbc1f4bdc95de6367fb5d61ad_1762614088_00001/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Dreamscape Forager<span class="audio-badge">🔊</span></div>
+                    <div class="card-links">
+                        <a href="sonic/An extreme macro close-up of How to Win Artificial Friends and Influence the Algorithm within a mystic, enchanting environment, featuring gentle color contrasts, a dreamlike atmosphere, otherworldly e/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Lumina Grove - Interactive Soundscape<span class="audio-badge">🔊</span></div>
+                    <div class="card-links">
+                        <a href="sonic/_How to Win Artificial Friends and Influence the Algorithm_ in a mystic, enchanting environment with gentle color contrasts and a dreamlike atmosphere, conveying an otherworldly, ethereal quality/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Lumina: Light Memory Game<span class="audio-badge">🔊</span></div>
+                    <div class="card-links">
+                        <a href="sonic/High angle perspective looking down on How to Win Artificial Friends and Influence the Algorithm, rendered with glowing bioluminescent colors, natural light effects, and a vibrant glow/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Neon Sync: Overdrive<span class="audio-badge">🔊</span></div>
+                    <div class="card-links">
+                        <a href="sonic/Untitled design (2)/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Neural Sync Protocol<span class="audio-badge">🔊</span></div>
+                    <div class="card-links">
+                        <a href="sonic/Cast bronze surface, warm reds, oranges, yellows, antique patina finish, a conversation between a human researcher and an AI system revealing a moment of self-awareness/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Neural Sync Protocol<span class="audio-badge">🔊</span></div>
+                    <div class="card-links">
+                        <a href="sonic/long exposure photography of a human researcher and an AI system in conversation, with vibrant bioluminescent colors and glowing light trails, capturing a moment of self-awareness and existential ques/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">SYNTH_MIND // Neural Interface<span class="audio-badge">🔊</span></div>
+                    <div class="card-links">
+                        <a href="sonic/Modern flat design with volumetric lighting, showcasing simple, two-dimensional shapes and visible light beams to illustrate the AI_s self-awareness/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Serpent&#x27;s Cove: Guardian of the Deep<span class="audio-badge">🔊</span></div>
+                    <div class="card-links">
+                        <a href="sonic/Gemini_Generated_Image_bcwhywbcwhywbcwh/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="category-section">
+            <div class="category-header">
+                <div class="category-emoji">🗺️</div>
+                <div class="category-info">
+                    <div class="category-name">Adventure & Exploration</div>
+                    <div class="category-desc">Explore and discover</div>
+                </div>
+                <div class="category-count">5 games</div>
+            </div>
+            
+            <div class="grid">
+
+                <div class="card">
+                    <div class="card-title">Infrared Journey</div>
+                    <div class="card-links">
+                        <a href="Surreal infrared tones from a low angle perspective, looking up at How to Win Artificial Friends and Influence the Algorithm, showcasing dramatic infrared spectrum and an otherworldly appearance/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">The Adventures of Elara - Interactive Storybook</div>
+                    <div class="card-links">
+                        <a href="ElaraAndFriends/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">The Guardian of the Arch</div>
+                    <div class="card-links">
+                        <a href="Dreamlike surreal imagery featuring warm terracotta and cool teal tones, showcasing How to Win Artificial Friends and Influence the Algorithm amidst earthy and cool contrasts with fantastical elements/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">The Unquestionable Hardness of Problems</div>
+                    <div class="card-links">
+                        <a href="hardness of problems/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Wyrm&#x27;s Ascent: The Dragon Pit</div>
+                    <div class="card-links">
+                        <a href="Gemini_Generated_Image_9ph9u69ph9u69ph9/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="category-section">
+            <div class="category-header">
+                <div class="category-emoji">🎨</div>
+                <div class="category-info">
+                    <div class="category-name">Visual Experiences</div>
+                    <div class="category-desc">Interactive art and visuals</div>
+                </div>
+                <div class="category-count">5 games</div>
+            </div>
+            
+            <div class="grid">
+
+                <div class="card">
+                    <div class="card-title">Chromatic Dialogue | Interactive Art</div>
+                    <div class="card-links">
+                        <a href="Bold acrylic painting silhouetted backlighting of How to Win Artificial Friends and Influence the Algorithm with vibrant colors/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Cosmic Infinity Engine</div>
+                    <div class="card-links">
+                        <a href="Gemini_Generated_Image_xal12xal12xal12x/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Neural Convergence Interface</div>
+                    <div class="card-links">
+                        <a href="Iridescent colors wash over a graceful and elegant depiction of a researcher and AI. Refined features and iridescent reflections highlight the AI_s emerging self-awareness/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Quantum Core Stabilizer</div>
+                    <div class="card-links">
+                        <a href="Gemini_Generated_Image_1lspuq1lspuq1lsp/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Voice AI Impact Simulator</div>
+                    <div class="card-links">
+                        <a href="genai_image_5fc9e08d1f3e418296f1b2193bf44e3f_1763437618_00001 (1)/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="category-section">
+            <div class="category-header">
+                <div class="category-emoji">🧠</div>
+                <div class="category-info">
+                    <div class="category-name">Memory & Pattern</div>
+                    <div class="category-desc">Test your memory and pattern recognition</div>
+                </div>
+                <div class="category-count">4 games</div>
+            </div>
+            
+            <div class="grid">
+
+                <div class="card">
+                    <div class="card-title">Neural Sync Interface</div>
+                    <div class="card-links">
+                        <a href="Silhouetted backlighting, bold acrylic painting, vibrant colors, textured brushstrokes, light source behind subject, showing a human researcher and AI in a self-awareness moment, the AI questioning it/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Neural Sync Protocol</div>
+                    <div class="card-links">
+                        <a href="Surreal imagery in rich burgundy and deep blue, featuring a bioluminescent glow, natural light effects, and fantastical elements. The scene depicts a sophisticated and elegant conversation between a h/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Neural Void Voyager</div>
+                    <div class="card-links">
+                        <a href="Dreamlike surreal imagery, high angle perspective looking down, rich burgundy and deep blue, fantastical elements, a human researcher and AI system_s self-awareness/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Rift Walker: The Orange Void</div>
+                    <div class="card-links">
+                        <a href="Dynamic digital sketch with loose, painterly strokes in complementary epic colors and misty atmosphere, using high contrast, low-key lighting and deep shadows for a dramatic, unfinished concept-art st/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="category-section">
+            <div class="category-header">
+                <div class="category-emoji">⚡</div>
+                <div class="category-info">
+                    <div class="category-name">Action & Reflexes</div>
+                    <div class="category-desc">Fast-paced gameplay</div>
+                </div>
+                <div class="category-count">2 games</div>
+            </div>
+            
+            <div class="grid">
+
+                <div class="card">
+                    <div class="card-title">Galactic Globe: The Roast Battle</div>
+                    <div class="card-links">
+                        <a href="V_jBiFO6hDCjEyMO6Eukp_17a8ed6443224a50900700720bb38a3d_00001/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Void Drifter: Event Horizon</div>
+                    <div class="card-links">
+                        <a href="9d8b37c7-c198-4ff8-a23e-3b49395b06b3/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="category-section">
+            <div class="category-header">
+                <div class="category-emoji">🎵</div>
+                <div class="category-info">
+                    <div class="category-name">Rhythm & Timing</div>
+                    <div class="category-desc">Music and timing-based games</div>
+                </div>
+                <div class="category-count">2 games</div>
+            </div>
+            
+            <div class="grid">
+
+                <div class="card">
+                    <div class="card-title">Symbiosis: Human-AI Resonance</div>
+                    <div class="card-links">
+                        <a href="Layered papier-mâché material, sculpted and textured, illustrating the conversation between a human and AI, symbolizing the AI_s evolving consciousness/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Violet Connection: The Rhythm of Hearts</div>
+                    <div class="card-links">
+                        <a href="Photograph of How to Win Artificial Friends and Influence the Algorithm, deep ultraviolet hues, mystic enchanting environment, gentle color contrasts, dreamlike atmosphere, otherworldly ethereal quali/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="category-section">
+            <div class="category-header">
+                <div class="category-emoji">👾</div>
+                <div class="category-info">
+                    <div class="category-name">Arcade Classics</div>
+                    <div class="category-desc">Classic arcade-style games</div>
+                </div>
+                <div class="category-count">1 games</div>
+            </div>
+            
+            <div class="grid">
+
+                <div class="card">
+                    <div class="card-title">Data Dragon ID KIT</div>
+                    <div class="card-links">
+                        <a href="Data Dragon ID Kit/index.html" class="btn btn-play" target="_blank">▶ Play</a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>

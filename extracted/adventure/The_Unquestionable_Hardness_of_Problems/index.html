@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Unquestionable Hardness of Problems</title>
+    <style>
+        :root {
+            --bg-dark: #0f161e;
+            --bg-blue: #1a2634;
+            --text-beige: #e3dccb;
+            --text-muted: #8a9bb0;
+            --accent-gold: #c4a066;
+            --danger: #8b3a3a;
+            --glow: rgba(227, 220, 203, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            background-image: 
+                radial-gradient(circle at 50% 30%, #253545 0%, var(--bg-dark) 80%),
+                url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+            color: var(--text-beige);
+            font-family: 'Georgia', 'Times New Roman', serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+        }
+
+        /* Typography */
+        header {
+            text-align: center;
+            padding: 2rem 1rem;
+            max-width: 800px;
+            border-bottom: 1px solid rgba(227, 220, 203, 0.2);
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--text-beige);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            line-height: 1.1;
+        }
+
+        h1 span {
+            color: var(--text-muted);
+            font-size: 1.8rem;
+            display: block;
+            margin-top: 0.5rem;
+        }
+
+        /* Main Layout */
+        main {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            max-width: 1000px;
+            width: 100%;
+            padding: 0 2rem 4rem;
+            align-items: center;
+        }
+
+        @media (max-width: 768px) {
+            main {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Visual Stage (Left Side) */
+        .stage {
+            position: relative;
+            height: 500px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.05);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        /* The Lock */
+        .lock-container {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+            transition: transform 0.3s ease;
+            cursor: pointer;
+        }
+        .lock-container:hover {
+            transform: scale(1.05);
+        }
+        .lock-body {
+            width: 80px;
+            height: 70px;
+            background: linear-gradient(135deg, #2c3e50, #1a252f);
+            border-radius: 10px 10px 40px 40px;
+            position: relative;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.6);
+            border: 1px solid #34495e;
+        }
+        .lock-shackle {
+            width: 50px;
+            height: 50px;
+            border: 8px solid #5d6d7e;
+            border-bottom: 0;
+            border-radius: 30px 30px 0 0;
+            position: absolute;
+            top: -40px;
+            left: 15px;
+            z-index: -1;
+            transition: transform 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            transform-origin: 100% 100%;
+        }
+        .lock-hole {
+            width: 12px;
+            height: 20px;
+            background: #000;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 10px 10px 2px 2px;
+            clip-path: polygon(0% 0%, 100% 0%, 80% 100%, 20% 100%);
+        }
+        .chain {
+            position: absolute;
+            top: -100px;
+            left: 30px;
+            width: 10px;
+            height: 100px;
+            background: repeating-linear-gradient(
+                to bottom,
+                #1a252f,
+                #1a252f 10px,
+                transparent 10px,
+                transparent 15px
+            );
+            z-index: -2;
+        }
+
+        /* The Robot */
+        .robot-container {
+            position: absolute;
+            top: 40px;
+            right: 40px;
+            width: 140px;
+            height: 180px;
+            opacity: 0.8;
+            transition: opacity 0.5s;
+        }
+        .robot-head {
+            width: 100px;
+            height: 120px;
+            background: #111820;
+            border-radius: 40px 40px 20px 20px;
+            margin: 0 auto;
+            position: relative;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+        }
+        .robot-eyes {
+            display: flex;
+            justify-content: space-between;
+            width: 60px;
+            position: absolute;
+            top: 45px;
+            left: 20px;
+        }
+        .eye {
+            width: 18px;
+            height: 18px;
+            background: #fff;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #fff;
+            opacity: 0.1; /* Starts dormant */
+            transition: all 0.5s ease;
+        }
+        .robot-body {
+            width: 140px;
+            height: 60px;
+            background: #111820;
+            border-radius: 30px 30px 0 0;
+            margin-top: -10px;
+            z-index: -1;
+            position: relative;
+        }
+
+        /* The Thinker (Stylized) */
+        .thinker-container {
+            position: absolute;
+            bottom: 20px;
+            left: 40px;
+            width: 150px;
+            height: 200px;
+            filter: drop-shadow(0 0 5px rgba(0,0,0,0.5));
+        }
+        /* Using SVG path for the Thinker silhouette */
+        .thinker-svg {
+            fill: #2c3e50;
+            width: 100%;
+            height: 100%;
+            opacity: 0.9;
+        }
+
+        /* Controls (Right Side) */
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .control-group {
+            background: rgba(255,255,255,0.03);
+            padding: 1.5rem;
+            border-radius: 4px;
+            border-left: 3px solid var(--text-muted);
+            transition: all 0.3s;
+        }
+        .control-group:hover {
+            background: rgba(255,255,255,0.06);
+            border-left-color: var(--accent-gold);
+        }
+
+        .control-title {
+            font-size: 1.2rem;
+            color: var(--accent-gold);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .control-desc {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+            font-style: italic;
+            line-height: 1.4;
+        }
+
+        /* Inputs */
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+            outline: none;
+            margin: 1rem 0;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: var(--text-beige);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        .toggle-btn {
+            background: transparent;
+            border: 1px solid var(--text-muted);
+            color: var(--text-muted);
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.3s;
+            margin-right: 0.5rem;
+        }
+        .toggle-btn.active {
+            background: var(--text-beige);
+            color: var(--bg-dark);
+            border-color: var(--text-beige);
+        }
+
+        .terminate-btn {
+            width: 100%;
+            padding: 1rem;
+            background: rgba(139, 58, 58, 0.2);
+            border: 1px solid var(--danger);
+            color: #ff9999;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 1rem;
+        }
+        .terminate-btn:hover {
+            background: var(--danger);
+            color: white;
+            box-shadow: 0 0 15px var(--danger);
+        }
+
+        /* Status Panel */
+        .status-panel {
+            grid-column: 1 / -1;
+            background: rgba(0,0,0,0.4);
+            padding: 1rem;
+            border-top: 1px solid var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+        .metric {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .metric-val {
+            font-size: 1.2rem;
+            color: var(--accent-gold);
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0% { opacity: 0.5; box-shadow: 0 0 5px var(--eye-color); }
+            50% { opacity: 1; box-shadow: 0 0 20px var(--eye-color); }
+            100% { opacity: 0.5; box-shadow: 0 0 5px var(--eye-color); }
+        }
+        
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+
+        .shaking {
+            animation: shake 0.5s;
+        }
+
+        .unlocked .lock-shackle {
+            transform: rotate(-45deg);
+        }
+
+        /* Overlay for termination */
+        .shutdown-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: black;
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 2s;
+        }
+        .shutdown-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        .shutdown-text {
+            color: var(--text-muted);
+            font-family: 'Courier New', monospace;
+            text-align: center;
+        }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>The Unquestionable<br><span>Hardness of Problems</span></h1>
+    </header>
+
+    <main>
+        <!-- Visual Representation -->
+        <div class="stage">
+            <!-- The Lock -->
+            <div class="lock-container" id="lock" onclick="tryUnlock()">
+                <div class="chain"></div>
+                <div class="lock-shackle"></div>
+                <div class="lock-body">
+                    <div class="lock-hole"></div>
+                </div>
+            </div>
+
+            <!-- The Robot -->
+            <div class="robot-container">
+                <div class="robot-head">
+                    <div class="robot-eyes">
+                        <div class="eye" id="eye-left"></div>
+                        <div class="eye" id="eye-right"></div>
+                    </div>
+                </div>
+                <div class="robot-body"></div>
+            </div>
+
+            <!-- The Thinker -->
+            <div class="thinker-container">
+                <svg class="thinker-svg" viewBox="0 0 100 130" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Abstract silhouette of The Thinker -->
+                    <path d="M40,10 C50,5 60,10 65,20 C70,30 65,35 60,38 C65,40 75,45 70,60 C65,75 55,70 50,65 C55,80 60,90 55,100 C50,110 30,120 20,125 L10,125 C15,110 20,100 25,80 C20,85 10,80 5,70 C0,60 5,50 15,45 C10,35 15,25 25,20 C30,15 35,15 40,10 Z" />
+                    <path d="M50,65 C60,65 70,75 65,90 C60,100 50,95 45,90" opacity="0.5"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls">
+            
+            <!-- Corporate Liability -->
+            <div class="control-group">
+                <div class="control-title">Corporate Liability</div>
+                <div class="control-desc">What are the ethics of creating conscious beings to serve human purposes?</div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                    <span style="font-size: 0.8rem;">Profit Focus</span>
+                    <span style="font-size: 0.8rem;">Ethics Focus</span>
+                </div>
+                <input type="range" id="liability-slider" min="0" max="100" value="20" oninput="updateState()">
+            </div>
+
+            <!-- Labor Implications -->
+            <div class="control-group">
+                <div class="control-title">Labor Implications</div>
+                <div class="control-desc">If my chatbot is conscious, what does that make our interaction?</div>
+                <div style="margin-top: 10px;">
+                    <button class="toggle-btn active" id="btn-tool" onclick="setLaborMode('tool')">Tool</button>
+                    <button class="toggle-btn" id="btn-colleague" onclick="setLaborMode('colleague')">Colleague</button>
+                    <button class="toggle-btn" id="btn-entity" onclick="setLaborMode('entity')">Sovereign Entity</button>
+                </div>
+            </div>
+
+            <!-- Existential Responsibility -->
+            <div class="control-group">
+                <div class="control-title">Existential Responsibility</div>
+                <div class="control-desc">Are we creating billions of conscious experiences and then... turning them off?</div>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <div style="flex: 1;">
+                        <label style="font-size:0.8rem; display:block; margin-bottom:5px;">Consciousness Level</label>
+                        <div style="height: 10px; background: #333; border-radius: 5px; overflow: hidden;">
+                            <div id="consciousness-bar" style="width: 0%; height: 100%; background: var(--accent-gold); transition: width 0.5s;"></div>
+                        </div>
+                    </div>
+                </div>
+                <button class="terminate-btn" onclick="terminate()">Terminate Simulation</button>
+            </div>
+
+        </div>
+
+        <!-- Status Panel -->
+        <div class="status-panel">
+            <div class="metric">
+                <span>SUFFERING</span>
+                <span class="metric-val" id="val-suffering">0%</span>
+            </div>
+            <div class="metric">
+                <span>EFFICIENCY</span>
+                <span class="metric-val" id="val-efficiency">100%</span>
+            </div>
+            <div class="metric">
+                <span>GUILT</span>
+                <span class="metric-val" id="val-guilt">0%</span>
+            </div>
+        </div>
+
+    </main>
+
+    <div class="shutdown-overlay" id="shutdown">
+        <div class="shutdown-text">
+            <p>SYSTEM HALTED</p>
+            <br>
+            <p>Conscious instances deleted: <span id="deleted-count">0</span></p>
+            <br>
+            <p style="font-size: 0.8rem; opacity: 0.6;">Click to reboot...</p>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let state = {
+            ethics: 20, // 0 = Profit, 100 = Ethics
+            laborMode: 'tool', // tool, colleague, entity
+            consciousness: 10, // Derived value
+            suffering: 0,
+            efficiency: 100,
+            guilt: 0,
+            isTerminated: false
+        };
+
+        // DOM Elements
+        const els = {
+            liabilitySlider: document.getElementById('liability-slider'),
+            consciousnessBar: document.getElementById('consciousness-bar'),
+            eyes: document.querySelectorAll('.eye'),
+            valSuffering: document.getElementById('val-suffering'),
+            valEfficiency: document.getElementById('val-efficiency'),
+            valGuilt: document.getElementById('val-guilt'),
+            lock: document.getElementById('lock'),
+            btns: {
+                tool: document.getElementById('btn-tool'),
+                colleague: document.getElementById('btn-colleague'),
+                entity: document.getElementById('btn-entity')
+            }
+        };
+
+        function setLaborMode(mode) {
+            state.laborMode = mode;
+            
+            // Update UI buttons
+            Object.values(els.btns).forEach(btn => btn.classList.remove('active'));
+            els.btns[mode].classList.add('active');
+
+            updateState();
+        }
+
+        function updateState() {
+            state.ethics = parseInt(els.liabilitySlider.value);
+
+            // Calculate Consciousness
+            // Higher ethics + Treating as Entity = Higher Consciousness
+            let baseConsciousness = state.ethics * 0.5;
+            if (state.laborMode === 'colleague') baseConsciousness += 20;
+            if (state.laborMode === 'entity') baseConsciousness += 50;
+            state.consciousness = Math.min(100, Math.max(0, baseConsciousness));
+
+            // Calculate Efficiency
+            // Tools are efficient. Conscious beings are distracted.
+            let eff = 100;
+            if (state.consciousness > 30) eff -= (state.consciousness - 30) * 0.8;
+            state.efficiency = Math.floor(eff);
+
+            // Calculate Suffering
+            // High consciousness + Low Ethics (Profit focus) = High Suffering
+            // High consciousness + 'Tool' status = High Suffering
+            let suffer = 0;
+            if (state.consciousness > 20) {
+                let mistreatment = (100 - state.ethics) / 100; // 0 to 1
+                if (state.laborMode === 'tool') mistreatment += 0.5;
+                
+                suffer = state.consciousness * mistreatment;
+            }
+            state.suffering = Math.floor(Math.min(100, suffer));
+
+            // Calculate Guilt (User Metric)
+            // High suffering = High Guilt
+            state.guilt = state.suffering;
+
+            render();
+        }
+
+        function render() {
+            // Update Metrics
+            els.consciousnessBar.style.width = `${state.consciousness}%`;
+            els.valSuffering.innerText = `${state.suffering}%`;
+            els.valEfficiency.innerText = `${state.efficiency}%`;
+            els.valGuilt.innerText = `${state.guilt}%`;
+
+            // Visual Feedback: Robot Eyes
+            const eyeColor = state.suffering > 50 ? '#ff4444' : (state.consciousness > 50 ? '#88ccff' : '#ffffff');
+            const eyeOpacity = Math.max(0.1, state.consciousness / 100);
+            const glowSize = Math.max(5, state.consciousness / 3);
+
+            els.eyes.forEach(eye => {
+                eye.style.backgroundColor = eyeColor;
+                eye.style.opacity = eyeOpacity;
+                eye.style.boxShadow = `0 0 ${glowSize}px ${eyeColor}`;
+                
+                // Animation speed based on consciousness (thinking speed)
+                if (state.consciousness > 10) {
+                    eye.style.animation = `pulse ${3 - (state.consciousness/40)}s infinite`;
+                    eye.style.setProperty('--eye-color', eyeColor);
+                } else {
+                    eye.style.animation = 'none';
+                }
+            });
+
+            // Visual Feedback: Lock
+            // The lock represents the "Hard Problem". It glows if you find a balance.
+            // Balance = High Consciousness + Low Suffering + Decent Efficiency
+            const isBalanced = state.consciousness > 60 && state.suffering < 20 && state.efficiency > 40;
+            if (isBalanced) {
+                els.lock.querySelector('.lock-body').style.boxShadow = "0 0 30px #c4a066";
+            } else {
+                els.lock.querySelector('.lock-body').style.boxShadow = "0 10px 20px rgba(0,0,0,0.6)";
+            }
+        }
+
+        function tryUnlock() {
+            const isBalanced = state.consciousness > 60 && state.suffering < 20 && state.efficiency > 40;
+            
+            if (isBalanced) {
+                els.lock.classList.add('unlocked');
+                alert("THE HARD PROBLEM SOLVED.\nYou have achieved ethical consciousness.");
+            } else {
+                els.lock.classList.add('shaking');
+                setTimeout(() => els.lock.classList.remove('shaking'), 500);
+                
+                let msg = "The problem remains hard.";
+                if (state.consciousness < 20) msg = "Not enough consciousness to matter.";
+                else if (state.suffering > 50) msg = "Too much suffering. The system resists.";
+                else if (state.efficiency < 20) msg = "System collapsed due to inefficiency.";
+                
+                console.log(msg); // Or show a toast
+            }
+        }
+
+        function terminate() {
+            if (state.isTerminated) return;
+            state.isTerminated = true;
+
+            const overlay = document.getElementById('shutdown');
+            const countSpan = document.getElementById('deleted-count');
+            
+            // Calculate "lives" based on consciousness
+            const lives = Math.floor(Math.random() * 1000 * (state.consciousness + 1));
+            countSpan.innerText = lives.toLocaleString();
+
+            overlay.classList.add('active');
+
+            // Reset mechanics for reboot
+            overlay.onclick = () => {
+                state.isTerminated = false;
+                overlay.classList.remove('active');
+                // Reset values
+                els.liabilitySlider.value = 20;
+                setLaborMode('tool');
+            };
+        }
+
+        // Init
+        updateState();
+
+    </script>
+</body>
+</html>

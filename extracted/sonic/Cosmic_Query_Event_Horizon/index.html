@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cosmic Query: Event Horizon</title>
+    <style>
+        :root {
+            --space-black: #050505;
+            --accretion-gold: #ffcc00;
+            --accretion-orange: #ff6600;
+            --event-horizon-blue: #00ccff;
+            --text-color: #e0e0e0;
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: var(--space-black);
+            font-family: 'Courier New', Courier, monospace;
+            color: var(--text-color);
+            user-select: none;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 1000px;
+        }
+
+        /* Background Stars Canvas */
+        #starfield {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 0;
+        }
+
+        /* The Black Hole Complex */
+        .black-hole-wrapper {
+            position: relative;
+            width: 400px;
+            height: 400px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            transform-style: preserve-3d;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        /* The Accretion Disk */
+        .accretion-disk {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            background: radial-gradient(transparent 40%, rgba(255, 102, 0, 0.2) 50%, rgba(255, 204, 0, 0.6) 60%, transparent 70%);
+            transform: rotateX(70deg);
+            box-shadow: 0 0 50px var(--accretion-orange), inset 0 0 50px var(--accretion-gold);
+            animation: spin 20s linear infinite;
+            pointer-events: none;
+        }
+        
+        .accretion-disk::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            height: 90%;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 20px var(--event-horizon-blue);
+        }
+
+        /* The Singularity (The Question Mark) */
+        .singularity {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle at 30% 30%, #333, #000);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 120px;
+            font-weight: bold;
+            color: transparent;
+            text-shadow: 0 0 10px var(--accretion-gold), 0 0 20px var(--accretion-orange);
+            box-shadow: 0 0 60px #000, 0 0 10px var(--event-horizon-blue);
+            z-index: 20;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .singularity::before {
+            content: "?";
+            background: linear-gradient(to bottom, var(--accretion-gold), var(--accretion-orange));
+            -webkit-background-clip: text;
+            background-clip: text;
+        }
+
+        .singularity:hover {
+            transform: scale(1.05);
+        }
+
+        /* Floating Anomalies */
+        .anomaly {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #fff, var(--event-horizon-blue));
+            box-shadow: 0 0 15px var(--event-horizon-blue);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            font-weight: bold;
+            color: #000;
+            cursor: pointer;
+            z-index: 15;
+            transition: transform 0.2s;
+            animation: pulse 1.5s infinite alternate;
+        }
+
+        .anomaly:hover {
+            transform: scale(1.2);
+            background: radial-gradient(circle, #fff, var(--accretion-gold));
+            box-shadow: 0 0 20px var(--accretion-gold);
+        }
+
+        /* UI Elements */
+        #hud {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border: 1px solid var(--event-horizon-blue);
+            border-radius: 8px;
+            box-shadow: 0 0 10px var(--event-horizon-blue);
+        }
+
+        .stat-row {
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .bar-container {
+            width: 150px;
+            height: 10px;
+            background: #333;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        #orbit-stability-bar {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, var(--accretion-orange), var(--accretion-gold));
+            transition: width 0.5s;
+        }
+
+        #score-display {
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        /* Modal */
+        #modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            backdrop-filter: blur(5px);
+        }
+
+        #modal-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal-content {
+            background: rgba(10, 10, 20, 0.95);
+            border: 2px solid var(--accretion-gold);
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 0 50px rgba(255, 204, 0, 0.3);
+            transform: scale(0.8);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        #modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+
+        h2 {
+            margin-top: 0;
+            color: var(--accretion-gold);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .option-btn {
+            background: transparent;
+            border: 1px solid var(--event-horizon-blue);
+            color: var(--text-color);
+            padding: 15px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: all 0.2s;
+            font-family: inherit;
+            font-size: 1em;
+        }
+
+        .option-btn:hover {
+            background: var(--event-horizon-blue);
+            color: #000;
+            box-shadow: 0 0 15px var(--event-horizon-blue);
+        }
+
+        #game-over-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: black;
+            z-index: 2000;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .start-btn {
+            padding: 15px 40px;
+            font-size: 1.5em;
+            background: var(--accretion-gold);
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 20px;
+            box-shadow: 0 0 20px var(--accretion-gold);
+            animation: pulse 1s infinite;
+        }
+
+        /* Animations */
+        @keyframes spin {
+            from { transform: rotateX(70deg) rotateZ(0deg); }
+            to { transform: rotateX(70deg) rotateZ(360deg); }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.8; transform: scale(1); }
+            100% { opacity: 1; transform: scale(1.1); }
+        }
+
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+
+        .shake {
+            animation: shake 0.5s;
+        }
+
+        .particle {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <canvas id="starfield"></canvas>
+        
+        <div id="hud">
+            <div class="stat-row">
+                <span>ORBIT STABILITY</span>
+                <div class="bar-container">
+                    <div id="orbit-stability-bar"></div>
+                </div>
+            </div>
+            <div class="stat-row">
+                <span>KNOWLEDGE:</span>
+                <span id="score-display">0</span>
+            </div>
+            <div style="font-size: 0.8em; color: #888; margin-top:5px;">Collect anomalies (?) to stabilize orbit.</div>
+        </div>
+
+        <div class="black-hole-wrapper" id="blackhole">
+            <div class="accretion-disk"></div>
+            <div class="singularity"></div>
+        </div>
+    </div>
+
+    <!-- Modal for Questions -->
+    <div id="modal-overlay">
+        <div class="modal-content">
+            <h2 id="modal-title">COSMIC ANOMALY DETECTED</h2>
+            <p id="modal-question">Question text goes here...</p>
+            <div class="options-grid" id="modal-options">
+                <!-- Buttons injected via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Over / Start Screen -->
+    <div id="game-over-screen" style="display: flex;">
+        <h1 style="font-size: 4em; color: var(--accretion-gold); text-shadow: 0 0 20px var(--accretion-orange); margin-bottom: 0;">EVENT HORIZON</h1>
+        <p style="max-width: 600px; line-height: 1.6;">You are caught in the gravitational pull of the Great Unknown. <br>Collect <strong>Knowledge Anomalies</strong> (?) to power your engines and maintain a stable orbit.</p>
+        <button class="start-btn" onclick="startGame()">INITIATE LAUNCH</button>
+    </div>
+
+    <script>
+        // --- Game State ---
+        let state = {
+            score: 0,
+            stability: 100, // Health
+            active: false,
+            anomalies: [],
+            spawnRate: 2000,
+            lastSpawn: 0
+        };
+
+        const questions = [
+            { q: "What is the boundary around a black hole called?", options: ["Event Horizon", "Singularity", "Photon Sphere", "Accretion Disk"], a: 0 },
+            { q: "Which force is responsible for the collapse of a star?", options: ["Electromagnetism", "Gravity", "Weak Nuclear", "Strong Nuclear"], a: 1 },
+            { q: "What is the center of a black hole known as?", options: ["Core", "Nucleus", "Singularity", "Void"], a: 2 },
+            { q: "Light cannot escape a black hole because...", options: ["It's too heavy", "Gravity is too strong", "It reflects back", "Space is empty"], a: 1 },
+            { q: "What is 'Spaghettification'?", options: ["Cooking pasta in space", "Vertical stretching by gravity", "A type of nebula", "Time dilation"], a: 1 },
+            { q: "Who formulated the Theory of General Relativity?", options: ["Newton", "Hawking", "Einstein", "Galileo"], a: 2 },
+            { q: "What is the closest black hole to Earth?", options: ["Sagittarius A*", "Gaia BH1", "Cygnus X-1", "Andromeda"], a: 1 },
+            { q: "Time near a black hole moves...", options: ["Faster", "Slower", "Backwards", "Normally"], a: 1 },
+            { q: "Supermassive black holes are found...", options: ["In binary systems", "Drifting alone", "At galaxy centers", "In asteroid belts"], a: 2 },
+            { q: "Hawking Radiation suggests black holes eventually...", options: ["Explode", "Evaporate", "Grow forever", "Turn into stars"], a: 1 }
+        ];
+
+        // --- DOM Elements ---
+        const container = document.getElementById('game-container');
+        const stabilityBar = document.getElementById('orbit-stability-bar');
+        const scoreDisplay = document.getElementById('score-display');
+        const modalOverlay = document.getElementById('modal-overlay');
+        const modalQuestion = document.getElementById('modal-question');
+        const modalOptions = document.getElementById('modal-options');
+        const gameOverScreen = document.getElementById('game-over-screen');
+        const blackHole = document.getElementById('blackhole');
+
+        // --- Audio Context (Simple Synth) ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            if (type === 'spawn') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.1);
+            } else if (type === 'correct') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+                osc.frequency.linearRampToValueAtTime(800, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.3);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.3);
+            } else if (type === 'wrong') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(100, audioCtx.currentTime);
+                osc.frequency.linearRampToValueAtTime(50, audioCtx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.3);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.3);
+            }
+        }
+
+        // --- Starfield Canvas ---
+        const canvas = document.getElementById('starfield');
+        const ctx = canvas.getContext('2d');
+        
+        let stars = [];
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            initStars();
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        function initStars() {
+            stars = [];
+            for(let i=0; i<300; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 2,
+                    speed: Math.random() * 0.5 + 0.1
+                });
+            }
+        }
+
+        function drawStars() {
+            ctx.fillStyle = '#050505';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw faint nebula effect
+            const gradient = ctx.createRadialGradient(canvas.width/2, canvas.height/2, 100, canvas.width/2, canvas.height/2, canvas.width);
+            gradient.addColorStop(0, 'rgba(20, 10, 40, 0.3)');
+            gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0,0,canvas.width, canvas.height);
+
+            ctx.fillStyle = '#fff';
+            stars.forEach(star => {
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Move stars toward center slowly for effect
+                const dx = (canvas.width/2) - star.x;
+                const dy = (canvas.height/2) - star.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                
+                star.x += (dx / dist) * star.speed;
+                star.y += (dy / dist) * star.speed;
+
+                // Reset if too close
+                if(dist < 50) {
+                    if(Math.random() > 0.5) {
+                        star.x = Math.random() > 0.5 ? 0 : canvas.width;
+                        star.y = Math.random() * canvas.height;
+                    } else {
+                        star.x = Math.random() * canvas.width;
+                        star.y = Math.random() > 0.5 ? 0 : canvas.height;
+                    }
+                }
+            });
+            requestAnimationFrame(drawStars);
+        }
+
+        // --- Game Logic ---
+
+        function startGame() {
+            state.score = 0;
+            state.stability = 100;
+            state.active = true;
+            state.anomalies.forEach(el => el.remove());
+            state.anomalies = [];
+            updateHUD();
+            gameOverScreen.style.display = 'none';
+            gameLoop();
+        }
+
+        function spawnAnomaly() {
+            const el = document.createElement('div');
+            el.classList.add('anomaly');
+            el.innerHTML = "?";
+            
+            // Spawn at random edge
+            const side = Math.floor(Math.random() * 4);
+            let x, y;
+            const buffer = 50;
+            
+            if (side === 0) { x = Math.random() * window.innerWidth; y = -buffer; } // Top
+            else if (side === 1) { x = window.innerWidth + buffer; y = Math.random() * window.innerHeight; } // Right
+            else if (side === 2) { x = Math.random() * window.innerWidth; y = window.innerHeight + buffer; } // Bottom
+            else { x = -buffer; y = Math.random() * window.innerHeight; } // Left
+
+            el.style.left = x + 'px';
+            el.style.top = y + 'px';
+            
+            // Store data for movement
+            el.dataset.x = x;
+            el.dataset.y = y;
+            el.dataset.speed = Math.random() * 1 + 0.5; // Speed
+            
+            el.addEventListener('click', () => triggerQuestion(el));
+
+            container.appendChild(el);
+            state.anomalies.push(el);
+            playSound('spawn');
+        }
+
+        function triggerQuestion(el) {
+            if (!state.active) return;
+            
+            // Pause game logic effectively
+            state.active = false;
+            
+            // Pick random question
+            const qData = questions[Math.floor(Math.random() * questions.length)];
+            
+            modalQuestion.innerText = qData.q;
+            modalOptions.innerHTML = '';
+            
+            qData.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.classList.add('option-btn');
+                btn.innerText = opt;
+                btn.onclick = () => handleAnswer(idx === qData.a, el);
+                modalOptions.appendChild(btn);
+            });
+
+            modalOverlay.classList.add('active');
+        }
+
+        function handleAnswer(isCorrect, anomalyEl) {
+            modalOverlay.classList.remove('active');
+            
+            if (isCorrect) {
+                playSound('correct');
+                state.score += 100;
+                state.stability = Math.min(100, state.stability + 15);
+                createExplosion(parseInt(anomalyEl.style.left), parseInt(anomalyEl.style.top));
+            } else {
+                playSound('wrong');
+                state.stability -= 20;
+                container.classList.add('shake');
+                setTimeout(() => container.classList.remove('shake'), 500);
+            }
+
+            // Remove anomaly
+            if(anomalyEl && anomalyEl.parentNode) {
+                anomalyEl.remove();
+                state.anomalies = state.anomalies.filter(a => a !== anomalyEl);
+            }
+
+            updateHUD();
+            
+            if (state.stability <= 0) {
+                endGame();
+            } else {
+                state.active = true;
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
+        function createExplosion(x, y) {
+            for(let i=0; i<10; i++) {
+                const p = document.createElement('div');
+                p.classList.add('particle');
+                p.style.left = x + 'px';
+                p.style.top = y + 'px';
+                p.style.width = Math.random() * 5 + 2 + 'px';
+                p.style.height = p.style.width;
+                
+                const angle = Math.random() * Math.PI * 2;
+                const velocity = Math.random() * 5 + 2;
+                
+                container.appendChild(p);
+                
+                let opacity = 1;
+                let px = x;
+                let py = y;
+                
+                const anim = setInterval(() => {
+                    px += Math.cos(angle) * velocity;
+                    py += Math.sin(angle) * velocity;
+                    opacity -= 0.05;
+                    
+                    p.style.left = px + 'px';
+                    p.style.top = py + 'px';
+                    p.style.opacity = opacity;
+                    
+                    if(opacity <= 0) {
+                        clearInterval(anim);
+                        p.remove();
+                    }
+                }, 16);
+            }
+        }
+
+        function updateHUD() {
+            scoreDisplay.innerText = state.score;
+            stabilityBar.style.width = state.stability + '%';
+            
+            if (state.stability < 30) {
+                stabilityBar.style.background = '#ff0000';
+                blackHole.style.filter = 'hue-rotate(45deg) drop-shadow(0 0 20px red)';
+            } else {
+                stabilityBar.style.background = 'linear-gradient(90deg, var(--accretion-orange), var(--accretion-gold))';
+                blackHole.style.filter = 'none';
+            }
+        }
+
+        function endGame() {
+            state.active = false;
+            gameOverScreen.style.display = 'flex';
+            gameOverScreen.querySelector('h1').innerText = "SPAGHETTIFIED";
+            gameOverScreen.querySelector('p').innerHTML = `Your knowledge was insufficient to escape the event horizon.<br>Final Score: ${state.score}`;
+            gameOverScreen.querySelector('button').innerText = "TRY AGAIN";
+        }
+
+        function gameLoop(timestamp) {
+            if (!state.active) return;
+
+            // Spawn Logic
+            if (timestamp - state.lastSpawn > state.spawnRate) {
+                spawnAnomaly();
+                state.lastSpawn = timestamp;
+                // Increase difficulty slightly
+                if(state.spawnRate > 800) state.spawnRate -= 20;
+            }
+
+            // Move Anomalies
+            const centerX = window.innerWidth / 2;
+            const centerY = window.innerHeight / 2;
+
+            state.anomalies.forEach(el => {
+                let x = parseFloat(el.dataset.x);
+                let y = parseFloat(el.dataset.y);
+                let speed = parseFloat(el.dataset.speed);
+
+                const dx = centerX - x;
+                const dy = centerY - y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+
+                // Move towards center
+                x += (dx / dist) * speed;
+                y += (dy / dist) * speed;
+
+                // Accelerate as it gets closer (gravity)
+                if (dist < 300) speed += 0.05;
+
+                el.dataset.x = x;
+                el.dataset.y = y;
+                el.dataset.speed = speed;
+                el.style.left = x + 'px';
+                el.style.top = y + 'px';
+
+                // Collision with Event Horizon
+                if (dist < 60) {
+                    el.remove();
+                    state.anomalies = state.anomalies.filter(a => a !== el);
+                    state.stability -= 10; // Damage taken
+                    container.classList.add('shake');
+                    setTimeout(() => container.classList.remove('shake'), 500);
+                    updateHUD();
+                    if(state.stability <= 0) endGame();
+                }
+            });
+
+            // Decay stability slowly over time (entropy)
+            if (Math.random() < 0.01) {
+                state.stability -= 0.5;
+                updateHUD();
+                if(state.stability <= 0) endGame();
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Init
+        resizeCanvas();
+        drawStars();
+
+    </script>
+<script>
+    // ===== MOBILE TOUCH SUPPORT =====
+    // Added for mobile-friendly gameplay
+
+    (function() {
+        // Touch to click conversion
+        document.addEventListener('touchstart', function(e) {
+            if (e.target.tagName === 'BUTTON' || e.target.onclick) {
+                e.preventDefault();
+                e.target.click();
+            }
+        }, { passive: false });
+
+        // Swipe detection for mobile
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchEndX = 0;
+        let touchEndY = 0;
+
+        document.addEventListener('touchstart', function(e) {
+            touchStartX = e.changedTouches[0].screenX;
+            touchStartY = e.changedTouches[0].screenY;
+        }, false);
+
+        document.addEventListener('touchend', function(e) {
+            touchEndX = e.changedTouches[0].screenX;
+            touchEndY = e.changedTouches[0].screenY;
+            handleSwipe();
+        }, false);
+
+        function handleSwipe() {
+            const deltaX = touchEndX - touchStartX;
+            const deltaY = touchEndY - touchStartY;
+            const minSwipeDistance = 50;
+
+            if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > minSwipeDistance) {
+                if (deltaX > 0) {
+                    // Swipe right - simulate right arrow
+                    simulateKey('ArrowRight', 39);
+                } else {
+                    // Swipe left - simulate left arrow
+                    simulateKey('ArrowLeft', 37);
+                }
+            } else if (Math.abs(deltaY) > minSwipeDistance) {
+                if (deltaY > 0) {
+                    // Swipe down - simulate down arrow
+                    simulateKey('ArrowDown', 40);
+                } else {
+                    // Swipe up - simulate up arrow
+                    simulateKey('ArrowUp', 38);
+                }
+            }
+        }
+
+        function simulateKey(key, keyCode) {
+            const event = new KeyboardEvent('keydown', {
+                key: key,
+                keyCode: keyCode,
+                code: key,
+                which: keyCode,
+                bubbles: true
+            });
+            document.dispatchEvent(event);
+        }
+
+        // Tap anywhere to start (for games requiring click to begin)
+        let hasStarted = false;
+        document.addEventListener('touchstart', function(e) {
+            if (!hasStarted) {
+                hasStarted = true;
+                // Simulate spacebar/enter for start
+                simulateKey(' ', 32);
+            }
+        }, { once: true });
+
+        // Prevent double-tap zoom
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function(e) {
+            const now = Date.now();
+            if (now - lastTouchEnd <= 300) {
+                e.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+
+        // Add mobile controls hint
+        const style = document.createElement('style');
+        style.textContent = `
+            @media (max-width: 768px) {
+                body::after {
+                    content: '👆 Tap to play • Swipe to move';
+                    position: fixed;
+                    bottom: 10px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background: rgba(0,0,0,0.7);
+                    color: white;
+                    padding: 8px 16px;
+                    border-radius: 20px;
+                    font-size: 12px;
+                    z-index: 10000;
+                    pointer-events: none;
+                    animation: fadeOut 4s forwards;
+                }
+                @keyframes fadeOut {
+                    0%, 70% { opacity: 1; }
+                    100% { opacity: 0; }
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    })();
+    </script>
+</body>
+</html>

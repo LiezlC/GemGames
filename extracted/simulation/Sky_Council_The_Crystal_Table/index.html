@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sky Council: The Crystal Table</title>
+    <style>
+        :root {
+            --primary-gold: #FFD700;
+            --sky-blue: #87CEEB;
+            --deep-blue: #4682B4;
+            --cloud-white: rgba(255, 255, 255, 0.8);
+            --wood: #8B4513;
+            --table-gold: #F4C430;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            background: linear-gradient(180deg, #FFD54F 0%, #4FC3F7 100%);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            user-select: none;
+        }
+
+        /* --- Background Elements --- */
+        .sky-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .cloud {
+            position: absolute;
+            background: var(--cloud-white);
+            border-radius: 50px;
+            filter: blur(10px);
+            animation: floatCloud 20s linear infinite;
+            opacity: 0.6;
+        }
+
+        .cloud:nth-child(1) { width: 200px; height: 60px; top: 10%; left: -200px; animation-duration: 25s; }
+        .cloud:nth-child(2) { width: 300px; height: 80px; top: 20%; left: -300px; animation-delay: 5s; animation-duration: 35s; }
+        .cloud:nth-child(3) { width: 150px; height: 40px; top: 5%; left: -150px; animation-delay: 10s; animation-duration: 40s; }
+
+        @keyframes floatCloud {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(120vw); }
+        }
+
+        .sun-rays {
+            position: absolute;
+            top: -10%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            height: 50%;
+            background: radial-gradient(circle, rgba(255,255,200,0.6) 0%, rgba(255,255,255,0) 70%);
+            z-index: 0;
+        }
+
+        /* --- Lanterns --- */
+        .lantern-container {
+            position: absolute;
+            top: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            z-index: 1;
+        }
+
+        .lantern {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            animation: sway 4s ease-in-out infinite alternate;
+            transform-origin: top center;
+        }
+
+        .string {
+            width: 2px;
+            height: 100px;
+            background: rgba(139, 69, 19, 0.5);
+        }
+
+        .lamp {
+            width: 40px;
+            height: 60px;
+            background: radial-gradient(circle, #FFFACD 20%, #FFD700 100%);
+            border-radius: 10px;
+            box-shadow: 0 0 20px #FFD700;
+            position: relative;
+            border: 2px solid #DAA520;
+        }
+        
+        .lamp::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 15px;
+            width: 10px;
+            height: 15px;
+            background: #DAA520;
+        }
+
+        @keyframes sway {
+            from { transform: rotate(-2deg); }
+            to { transform: rotate(2deg); }
+        }
+
+        /* --- The Room / Table Scene --- */
+        .scene {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            z-index: 2;
+        }
+
+        .characters-layer {
+            position: absolute;
+            bottom: 150px; /* Just behind the table */
+            width: 90%;
+            max-width: 800px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            pointer-events: none; /* Click through to background if needed */
+        }
+
+        .character {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: transform 0.2s;
+            cursor: pointer;
+            pointer-events: auto;
+            position: relative;
+        }
+
+        .character:hover {
+            transform: translateY(-10px);
+        }
+
+        .char-avatar {
+            font-size: 80px;
+            filter: drop-shadow(0 10px 10px rgba(0,0,0,0.2));
+            z-index: 2;
+        }
+
+        .char-body {
+            width: 100px;
+            height: 120px;
+            background: linear-gradient(to bottom, #FFF 0%, #EEE 100%);
+            border-radius: 40px 40px 0 0;
+            margin-top: -20px;
+            box-shadow: inset 0 -10px 20px rgba(0,0,0,0.1);
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* Specific Character Styling */
+        .char-1 .char-body { background: linear-gradient(to bottom, #E0F7FA, #B2EBF2); } /* Left Boy */
+        .char-2 .char-body { background: linear-gradient(to bottom, #FFF3E0, #FFE0B2); } /* Girl */
+        .char-3 .char-body { background: linear-gradient(to bottom, #F3E5F5, #E1BEE7); } /* Right Boy */
+        .char-4 .char-body { background: linear-gradient(to bottom, #E8F5E9, #C8E6C9); height: 80px; } /* Small Girl */
+
+        .table {
+            position: absolute;
+            bottom: -100px;
+            width: 120%;
+            height: 300px;
+            background: radial-gradient(ellipse at center, #FFEB3B 0%, #FBC02D 100%);
+            border-radius: 50%;
+            box-shadow: 0 -10px 30px rgba(0,0,0,0.2), inset 0 10px 20px rgba(255,255,255,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            z-index: 10;
+            border-top: 5px solid #FFF59D;
+        }
+
+        /* --- The Magical Artifact --- */
+        .artifact-container {
+            position: absolute;
+            bottom: 120px;
+            z-index: 20;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .artifact-container:active {
+            transform: scale(0.95);
+        }
+
+        .artifact {
+            font-size: 80px;
+            filter: drop-shadow(0 0 20px #FFD700);
+            animation: pulseArtifact 2s infinite;
+        }
+
+        .artifact-glow {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle, rgba(255, 215, 0, 0.6) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: glowSpin 5s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes pulseArtifact {
+            0% { transform: scale(1); filter: drop-shadow(0 0 20px #FFD700); }
+            50% { transform: scale(1.05); filter: drop-shadow(0 0 40px #FFD700); }
+            100% { transform: scale(1); filter: drop-shadow(0 0 20px #FFD700); }
+        }
+
+        @keyframes glowSpin {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        /* --- UI Overlay --- */
+        .ui-layer {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            justify-content: space-between;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        .stat-box {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(5px);
+            padding: 15px 25px;
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            font-weight: bold;
+            color: #555;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            pointer-events: auto;
+        }
+
+        .mana-count {
+            font-size: 1.5em;
+            color: #FBC02D;
+        }
+
+        .dialogue-box {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            max-width: 600px;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            border: 2px solid #FFD700;
+            transition: opacity 0.3s;
+        }
+
+        .dialogue-header {
+            font-weight: bold;
+            color: #d35400;
+            text-transform: uppercase;
+            font-size: 0.8em;
+        }
+
+        .dialogue-text {
+            font-size: 1.1em;
+            color: #333;
+            line-height: 1.4;
+        }
+
+        .upgrade-menu {
+            position: absolute;
+            right: 20px;
+            top: 100px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        .upgrade-btn {
+            background: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            color: #555;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: all 0.2s;
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .upgrade-btn:hover {
+            transform: translateX(-5px);
+            background: #FFFDE7;
+        }
+
+        .upgrade-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .upgrade-cost {
+            font-size: 0.8em;
+            color: #FBC02D;
+        }
+
+        /* Floating Text Animation */
+        .floater {
+            position: absolute;
+            color: #FFF;
+            font-weight: bold;
+            font-size: 24px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            pointer-events: none;
+            animation: floatUp 1s ease-out forwards;
+            z-index: 50;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-100px) scale(1.2); opacity: 0; }
+        }
+
+        /* Responsive tweaks */
+        @media (max-width: 600px) {
+            .characters-layer {
+                bottom: 120px;
+                width: 100%;
+            }
+            .char-avatar { font-size: 60px; }
+            .char-body { width: 70px; height: 90px; }
+            .dialogue-box { width: 90%; bottom: 10px; }
+            .upgrade-menu { top: 80px; right: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sky Background -->
+    <div class="sky-container">
+        <div class="sun-rays"></div>
+        <div class="cloud"></div>
+        <div class="cloud"></div>
+        <div class="cloud"></div>
+    </div>
+
+    <!-- Lanterns -->
+    <div class="lantern-container">
+        <div class="lantern" style="animation-delay: 0s;">
+            <div class="string" style="height: 80px;"></div>
+            <div class="lamp"></div>
+        </div>
+        <div class="lantern" style="animation-delay: 1s;">
+            <div class="string" style="height: 120px;"></div>
+            <div class="lamp"></div>
+        </div>
+        <div class="lantern" style="animation-delay: 2s;">
+            <div class="string" style="height: 60px;"></div>
+            <div class="lamp"></div>
+        </div>
+        <div class="lantern" style="animation-delay: 0.5s;">
+            <div class="string" style="height: 100px;"></div>
+            <div class="lamp"></div>
+        </div>
+    </div>
+
+    <!-- UI Layer -->
+    <div class="ui-layer">
+        <div class="stat-box">
+            <span>✨ Light:</span>
+            <span class="mana-count" id="manaDisplay">0</span>
+        </div>
+    </div>
+
+    <div class="upgrade-menu">
+        <button class="upgrade-btn" id="btnUpgradeClick" onclick="upgradeClick()">
+            <span>Improve Focus</span>
+            <span class="upgrade-cost">Cost: 50 Light</span>
+        </button>
+        <button class="upgrade-btn" id="btnAutoClick" onclick="upgradeAuto()">
+            <span>Recruit Acolyte</span>
+            <span class="upgrade-cost">Cost: 100 Light</span>
+        </button>
+        <button class="upgrade-btn" id="btnParty" onclick="upgradeParty()">
+            <span>Host Banquet</span>
+            <span class="upgrade-cost">Cost: 500 Light</span>
+        </button>
+    </div>
+
+    <!-- Main Scene -->
+    <div class="scene">
+        
+        <!-- Characters -->
+        <div class="characters-layer">
+            <!-- Left Girl (Small) -->
+            <div class="character char-4" onclick="characterSpeak('Mina', 'Is it snack time yet?')">
+                <div class="char-avatar">👧</div>
+                <div class="char-body"></div>
+            </div>
+            
+            <!-- Left Boy -->
+            <div class="character char-1" onclick="characterSpeak('Ren', 'We must focus our energy on the crystal.')">
+                <div class="char-avatar">🧑</div>
+                <div class="char-body"></div>
+            </div>
+
+            <!-- Center Gap for Artifact -->
+            <div style="width: 100px;"></div>
+
+            <!-- Right Girl -->
+            <div class="character char-2" onclick="characterSpeak('Elara', 'The sky looks beautiful today, doesn\'t it?')">
+                <div class="char-avatar">👩‍🦰</div>
+                <div class="char-body"></div>
+            </div>
+
+            <!-- Right Boy -->
+            <div class="character char-3" onclick="characterSpeak('Kaito', 'According to my calculations, we need more Light.')">
+                <div class="char-avatar">👨</div>
+                <div class="char-body"></div>
+            </div>
+        </div>
+
+        <!-- Artifact -->
+        <div class="artifact-container" id="artifact" onclick="clickArtifact(event)">
+            <div class="artifact-glow"></div>
+            <div class="artifact">🏆</div>
+        </div>
+
+        <!-- Table -->
+        <div class="table"></div>
+    </div>
+
+    <!-- Dialogue Box -->
+    <div class="dialogue-box" id="dialogueBox">
+        <div class="dialogue-header" id="dialogueSpeaker">System</div>
+        <div class="dialogue-text" id="dialogueText">Welcome to the Sky Council. Click the Golden Chalice to gather Light.</div>
+    </div>
+
+    <script>
+        // Game State
+        let mana = 0;
+        let clickPower = 1;
+        let autoPower = 0;
+        
+        // Costs
+        let clickCost = 50;
+        let autoCost = 100;
+        let partyCost = 500;
+
+        // DOM Elements
+        const manaDisplay = document.getElementById('manaDisplay');
+        const dialogueBox = document.getElementById('dialogueBox');
+        const dialogueSpeaker = document.getElementById('dialogueSpeaker');
+        const dialogueText = document.getElementById('dialogueText');
+        const btnUpgradeClick = document.getElementById('btnUpgradeClick');
+        const btnAutoClick = document.getElementById('btnAutoClick');
+        const btnParty = document.getElementById('btnParty');
+
+        // Random ambient dialogue
+        const ambientDialogues = [
+            { speaker: "Ren", text: "Keep clicking! The energy is rising." },
+            { speaker: "Elara", text: "I can feel the warmth of the light." },
+            { speaker: "Mina", text: "Look at it glow!" },
+            { speaker: "Kaito", text: "Efficiency is up by 12%." },
+            { speaker: "Ren", text: "Together, we can unlock the sky's secrets." }
+        ];
+
+        function updateDisplay() {
+            manaDisplay.innerText = Math.floor(mana);
+            
+            // Update Buttons
+            updateButton(btnUpgradeClick, clickCost, `Improve Focus (+1/click)`);
+            updateButton(btnAutoClick, autoCost, `Recruit Acolyte (+1/sec)`);
+            updateButton(btnParty, partyCost, `Host Banquet (Boost Morale)`);
+        }
+
+        function updateButton(btn, cost, text) {
+            const spans = btn.getElementsByTagName('span');
+            spans[0].innerText = text.split('(')[0];
+            spans[1].innerText = `Cost: ${cost} Light`;
+            
+            if (mana >= cost) {
+                btn.disabled = false;
+            } else {
+                btn.disabled = true;
+            }
+        }
+
+        function clickArtifact(e) {
+            mana += clickPower;
+            createFloatingText(e.clientX, e.clientY, `+${clickPower}`);
+            updateDisplay();
+            
+            // Random chance for ambient dialogue
+            if (Math.random() < 0.1) {
+                const randomLine = ambientDialogues[Math.floor(Math.random() * ambientDialogues.length)];
+                characterSpeak(randomLine.speaker, randomLine.text);
+            }
+        }
+
+        function createFloatingText(x, y, text) {
+            const el = document.createElement('div');
+            el.className = 'floater';
+            el.innerText = text;
+            el.style.left = `${x}px`;
+            el.style.top = `${y - 50}px`;
+            document.body.appendChild(el);
+            
+            setTimeout(() => {
+                el.remove();
+            }, 1000);
+        }
+
+        function characterSpeak(speaker, text) {
+            dialogueSpeaker.innerText = speaker;
+            dialogueText.innerText = text;
+            dialogueBox.style.opacity = 1;
+            
+            // Reset opacity animation
+            dialogueBox.classList.remove('fade');
+            void dialogueBox.offsetWidth; // trigger reflow
+            dialogueBox.classList.add('fade');
+        }
+
+        // Upgrades
+        function upgradeClick() {
+            if (mana >= clickCost) {
+                mana -= clickCost;
+                clickPower += 1;
+                clickCost = Math.floor(clickCost * 1.5);
+                characterSpeak("Ren", "My focus is sharpening!");
+                updateDisplay();
+            }
+        }
+
+        function upgradeAuto() {
+            if (mana >= autoCost) {
+                mana -= autoCost;
+                autoPower += 1;
+                autoCost = Math.floor(autoCost * 1.4);
+                characterSpeak("Mina", "I'll help gather light too!");
+                updateDisplay();
+            }
+        }
+
+        function upgradeParty() {
+            if (mana >= partyCost) {
+                mana -= partyCost;
+                clickPower *= 2; // Big boost
+                partyCost *= 3;
+                characterSpeak("Elara", "This banquet is delightful! We feel so energized!");
+                
+                // Visual effect for party
+                document.body.style.filter = "brightness(1.2)";
+                setTimeout(() => {
+                    document.body.style.filter = "brightness(1)";
+                }, 500);
+                
+                updateDisplay();
+            }
+        }
+
+        // Game Loop
+        setInterval(() => {
+            if (autoPower > 0) {
+                mana += autoPower;
+                updateDisplay();
+                
+                // Visual feedback for auto accumulation
+                const artifact = document.getElementById('artifact');
+                const rect = artifact.getBoundingClientRect();
+                // Occasionally show floating text for auto income
+                if (Math.random() < 0.3) {
+                    createFloatingText(rect.left + rect.width/2, rect.top, `+${autoPower}`);
+                }
+            }
+        }, 1000);
+
+        // Initialize
+        updateDisplay();
+
+    </script>
+</body>
+</html>

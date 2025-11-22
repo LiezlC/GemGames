@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASCENSION PROTOCOL: BEYOND UBI</title>
+    <style>
+        :root {
+            --neon-blue: #00f3ff;
+            --neon-pink: #bc13fe;
+            --neon-gold: #ffd700;
+            --void-bg: #050510;
+            --glass: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--void-bg);
+            color: white;
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Background Canvas */
+        #neural-net {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        /* The Cityscape */
+        .cityscape {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 30vh;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            z-index: 1;
+            pointer-events: none; /* Let clicks pass through to logic if needed, but we'll make buildings clickable */
+        }
+
+        .building {
+            background: linear-gradient(to top, #000, #1a1a2e);
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            border-bottom: none;
+            margin: 0 2px;
+            position: relative;
+            transition: height 0.5s, box-shadow 0.2s;
+            cursor: pointer;
+            pointer-events: auto;
+        }
+
+        .building:hover {
+            box-shadow: 0 0 15px var(--neon-blue);
+            background: linear-gradient(to top, #000, #2a2a4e);
+            z-index: 10;
+        }
+
+        .building::after {
+            content: '';
+            position: absolute;
+            top: 5px;
+            left: 2px;
+            right: 2px;
+            bottom: 0;
+            background-image: radial-gradient(rgba(0, 243, 255, 0.5) 1px, transparent 1px);
+            background-size: 4px 8px;
+            opacity: 0.3;
+        }
+
+        /* The Central Entity (The Ascended Beings) */
+        .entity-container {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            height: 300px;
+            z-index: 5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .core-glow {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #fff, var(--neon-gold), transparent);
+            filter: blur(20px);
+            animation: pulse 3s infinite ease-in-out;
+        }
+
+        .spirit-shape {
+            position: absolute;
+            width: 200px;
+            height: 300px;
+            border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+            background: linear-gradient(135deg, rgba(0, 243, 255, 0.2), rgba(188, 19, 254, 0.2));
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.3);
+            backdrop-filter: blur(4px);
+            animation: float 6s infinite ease-in-out;
+        }
+
+        .spirit-shape:nth-child(2) {
+            width: 180px;
+            height: 280px;
+            transform: rotate(-15deg) translateX(-40px);
+            animation-delay: 1s;
+            background: linear-gradient(135deg, rgba(188, 19, 254, 0.2), rgba(0, 243, 255, 0.1));
+        }
+
+        .spirit-shape:nth-child(3) {
+            width: 180px;
+            height: 280px;
+            transform: rotate(15deg) translateX(40px);
+            animation-delay: 2s;
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(188, 19, 254, 0.1));
+        }
+
+        /* UI Panels */
+        .ui-panel {
+            position: absolute;
+            padding: 15px;
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+            color: #eee;
+            font-size: 12px;
+            text-transform: uppercase;
+            z-index: 10;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+            max-width: 250px;
+            transition: all 0.3s ease;
+        }
+
+        .ui-panel h3 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            color: var(--neon-blue);
+            text-shadow: 0 0 5px var(--neon-blue);
+            letter-spacing: 1px;
+        }
+
+        .ui-panel button {
+            background: rgba(0, 243, 255, 0.1);
+            border: 1px solid var(--neon-blue);
+            color: var(--neon-blue);
+            padding: 5px 10px;
+            margin-top: 5px;
+            width: 100%;
+            cursor: pointer;
+            font-family: inherit;
+            transition: 0.2s;
+        }
+
+        .ui-panel button:hover {
+            background: var(--neon-blue);
+            color: #000;
+        }
+
+        .ui-panel button:disabled {
+            border-color: #555;
+            color: #555;
+            background: transparent;
+            cursor: not-allowed;
+        }
+
+        /* Positioning based on image text */
+        #panel-tl { top: 20px; left: 20px; } /* Consciousness Convergence */
+        #panel-tr { top: 20px; right: 20px; text-align: right; } /* Substrate Transcendence */
+        #panel-bl { bottom: 20px; left: 20px; } /* Economiall Tranpsceible */
+        #panel-br { bottom: 20px; right: 20px; text-align: right; } /* Beyond UBI */
+
+        /* Animations */
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(2deg); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.2); opacity: 1; }
+        }
+
+        @keyframes glitch {
+            0% { text-shadow: 2px 0 var(--neon-pink), -2px 0 var(--neon-blue); }
+            25% { text-shadow: -2px 0 var(--neon-pink), 2px 0 var(--neon-blue); }
+            50% { text-shadow: 2px 0 var(--neon-pink), -2px 0 var(--neon-blue); }
+            100% { text-shadow: 2px 0 var(--neon-pink), -2px 0 var(--neon-blue); }
+        }
+
+        .glitch-text {
+            animation: glitch 1s infinite alternate-reverse;
+        }
+
+        /* Progress Bar */
+        .singularity-bar-container {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40%;
+            height: 4px;
+            background: #333;
+            z-index: 20;
+        }
+        .singularity-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--neon-blue), var(--neon-pink), var(--neon-gold));
+            box-shadow: 0 0 10px var(--neon-pink);
+            transition: width 0.5s;
+        }
+        .singularity-label {
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 10px;
+            color: #aaa;
+            z-index: 20;
+        }
+
+        /* Particles */
+        .click-particle {
+            position: absolute;
+            pointer-events: none;
+            animation: fadeUp 1s forwards;
+            font-weight: bold;
+            z-index: 100;
+        }
+
+        @keyframes fadeUp {
+            0% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-50px); }
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Background Canvas for Neural Network Visuals -->
+    <canvas id="neural-net"></canvas>
+
+    <!-- Top Progress -->
+    <div class="singularity-bar-container">
+        <div class="singularity-bar" id="singularity-bar"></div>
+    </div>
+    <div class="singularity-label">SINGULARITY PROXIMITY: <span id="proximity-val">0.00</span>%</div>
+
+    <!-- Center Entity (Clickable) -->
+    <div class="entity-container" id="entity" onclick="clickEntity(event)">
+        <div class="spirit-shape"></div>
+        <div class="spirit-shape"></div>
+        <div class="spirit-shape"></div>
+        <div class="core-glow"></div>
+    </div>
+
+    <!-- Bottom Cityscape -->
+    <div class="cityscape" id="cityscape">
+        <!-- Buildings generated by JS -->
+    </div>
+
+    <!-- UI Panels -->
+
+    <!-- Top Left: Consciousness Convergence -->
+    <div class="ui-panel" id="panel-tl">
+        <h3>CONSCIOUSNESS<br>CONVERGENCE</h3>
+        <div style="margin-bottom: 5px; color: #aaa;">UPLOADED MINDS:</div>
+        <div id="minds-count" style="font-size: 18px; color: var(--neon-pink);">0</div>
+        <div style="margin-top: 10px; font-size: 10px; color: #888;">
+            NETWORK LOAD: <span id="net-load">12</span>%
+        </div>
+    </div>
+
+    <!-- Top Right: Substrate Transcendence -->
+    <div class="ui-panel" id="panel-tr">
+        <h3>SUBSTRATE<br>TRANSCENDENCE</h3>
+        <div id="upgrade-list">
+            <button id="btn-silicon" onclick="buyUpgrade('silicon')">Silicon Bodies (100 E)</button>
+            <button id="btn-cloud" onclick="buyUpgrade('cloud')">Cloud Integration (500 E)</button>
+            <button id="btn-dyson" onclick="buyUpgrade('dyson')">Dyson Swarm (2000 E)</button>
+        </div>
+    </div>
+
+    <!-- Bottom Left: Economic Transpicuity -->
+    <div class="ui-panel" id="panel-bl">
+        <h3>ECONOMIC<br>TRANSPICUITY</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span>ENERGY:</span>
+            <span id="energy-val" style="color: var(--neon-gold);">0</span>
+        </div>
+        <div style="font-size: 10px; color: #888; margin-top: 5px;">
+            +<span id="energy-rate">0</span> / sec
+        </div>
+        <button onclick="harvestCity()" style="margin-top: 10px; border-color: var(--neon-gold); color: var(--neon-gold);">HARVEST CITY GRID</button>
+    </div>
+
+    <!-- Bottom Right: Beyond UBI -->
+    <div class="ui-panel" id="panel-br">
+        <h3>BEYOND<br>UBI</h3>
+        <p style="font-size: 10px; color: #ccc; line-height: 1.4;">
+            Post-scarcity protocols active. Universal Basic Intelligence required for next stage.
+        </p>
+        <div style="margin-top: 10px; border-top: 1px solid #333; padding-top: 5px;">
+            STATUS: <span class="glitch-text" style="color: var(--neon-blue);">EVOLVING</span>
+        </div>
+    </div>
+
+    <script>
+        // --- GAME STATE ---
+        const state = {
+            energy: 0,
+            minds: 0,
+            singularity: 0,
+            energyRate: 0,
+            mindsRate: 0,
+            clickPower: 1,
+            upgrades: {
+                silicon: { cost: 100, owned: false, rate: 5 },
+                cloud: { cost: 500, owned: false, rate: 25 },
+                dyson: { cost: 2000, owned: false, rate: 100 }
+            }
+        };
+
+        // --- VISUALS: CITY GENERATION ---
+        const cityContainer = document.getElementById('cityscape');
+        const buildingCount = Math.floor(window.innerWidth / 20);
+        
+        for (let i = 0; i < buildingCount; i++) {
+            const div = document.createElement('div');
+            div.classList.add('building');
+            // Random height between 10% and 80% of container
+            const h = Math.random() * 80 + 10;
+            div.style.height = `${h}%`;
+            div.style.width = `${Math.random() * 30 + 10}px`;
+            // Random animation delay for subtle movement
+            div.style.transitionDelay = `${Math.random() * 0.5}s`;
+            
+            // Make buildings clickable
+            div.onclick = (e) => {
+                e.stopPropagation();
+                createParticle(e.clientX, e.clientY, "+1 Energy", "#ffd700");
+                state.energy += 1;
+                updateUI();
+                // Visual feedback
+                div.style.height = `${Math.min(100, h + 5)}%`;
+                setTimeout(() => div.style.height = `${h}%`, 200);
+            };
+
+            cityContainer.appendChild(div);
+        }
+
+        // --- VISUALS: CANVAS BACKGROUND ---
+        const canvas = document.getElementById('neural-net');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        let particles = [];
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        class Particle {
+            constructor() {
+                this.reset();
+            }
+            reset() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.vx = (Math.random() - 0.5) * 0.5;
+                this.vy = (Math.random() - 0.5) * 0.5;
+                this.size = Math.random() * 2;
+                this.color = Math.random() > 0.5 ? '#00f3ff' : '#bc13fe';
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                
+                // Drift towards center slightly (Convergence)
+                const dx = (width/2) - this.x;
+                const dy = (height/2) - this.y;
+                this.x += dx * 0.0005;
+                this.y += dy * 0.0005;
+
+                if (this.x < 0 || this.x > width || this.y < 0 || this.y > height) this.reset();
+            }
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.globalAlpha = 0.5;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // Create particles
+        for(let i=0; i<100; i++) particles.push(new Particle());
+
+        function animateCanvas() {
+            ctx.clearRect(0, 0, width, height);
+            
+            // Draw connections
+            ctx.strokeStyle = 'rgba(0, 243, 255, 0.05)';
+            ctx.lineWidth = 1;
+            
+            particles.forEach((p, index) => {
+                p.update();
+                p.draw();
+                
+                // Connect nearby particles
+                for(let j=index+1; j<particles.length; j++) {
+                    const p2 = particles[j];
+                    const dist = Math.hypot(p.x - p2.x, p.y - p2.y);
+                    if (dist < 100) {
+                        ctx.beginPath();
+                        ctx.moveTo(p.x, p.y);
+                        ctx.lineTo(p2.x, p2.y);
+                        ctx.stroke();
+                    }
+                }
+            });
+
+            // Draw lines from city to center (Data upload visualization)
+            if (Math.random() > 0.9) {
+                ctx.strokeStyle = 'rgba(188, 19, 254, 0.2)';
+                ctx.beginPath();
+                ctx.moveTo(Math.random() * width, height);
+                ctx.lineTo(width/2, height/2);
+                ctx.stroke();
+            }
+
+            requestAnimationFrame(animateCanvas);
+        }
+        animateCanvas();
+
+        // --- GAME LOGIC ---
+
+        function clickEntity(e) {
+            const gain = state.clickPower * 10;
+            state.minds += gain;
+            state.singularity += 0.01;
+            
+            createParticle(e.clientX, e.clientY, `+${gain} Minds`, "#bc13fe");
+            
+            // Pulse effect
+            const entity = document.getElementById('entity');
+            entity.style.transform = "translate(-50%, -50%) scale(1.1)";
+            setTimeout(() => entity.style.transform = "translate(-50%, -50%) scale(1)", 100);
+            
+            updateUI();
+        }
+
+        function harvestCity() {
+            const gain = 50 + (state.energyRate * 2);
+            state.energy += gain;
+            createParticle(window.innerWidth/4, window.innerHeight - 50, `+${gain} ENERGY`, "#ffd700");
+            updateUI();
+        }
+
+        function buyUpgrade(type) {
+            const upg = state.upgrades[type];
+            if (state.energy >= upg.cost) {
+                state.energy -= upg.cost;
+                upg.owned = true; // Simple one-time purchase for this demo, could be incremental
+                state.energyRate += upg.rate;
+                state.mindsRate += upg.rate / 2;
+                
+                // Visual feedback
+                document.getElementById(`btn-${type}`).innerText = "INSTALLED";
+                document.getElementById(`btn-${type}`).disabled = true;
+                
+                updateUI();
+            }
+        }
+
+        function createParticle(x, y, text, color) {
+            const el = document.createElement('div');
+            el.innerText = text;
+            el.className = 'click-particle';
+            el.style.left = x + 'px';
+            el.style.top = y + 'px';
+            el.style.color = color;
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 1000);
+        }
+
+        function updateUI() {
+            document.getElementById('energy-val').innerText = Math.floor(state.energy);
+            document.getElementById('minds-count').innerText = Math.floor(state.minds).toLocaleString();
+            document.getElementById('energy-rate').innerText = state.energyRate;
+            document.getElementById('singularity-bar').style.width = Math.min(100, state.singularity) + "%";
+            document.getElementById('proximity-val').innerText = state.singularity.toFixed(2);
+            
+            // Button states
+            for (const [key, upg] of Object.entries(state.upgrades)) {
+                const btn = document.getElementById(`btn-${key}`);
+                if (!upg.owned) {
+                    if (state.energy >= upg.cost) {
+                        btn.style.opacity = 1;
+                        btn.style.borderColor = "var(--neon-blue)";
+                    } else {
+                        btn.style.opacity = 0.5;
+                        btn.style.borderColor = "#555";
+                    }
+                }
+            }
+
+            // Win condition visual
+            if (state.singularity >= 100) {
+                document.body.style.background = "white";
+                document.body.innerHTML = "<h1 style='color:black; font-size: 50px;'>TRANSCENDENCE ACHIEVED</h1>";
+            }
+        }
+
+        // Game Loop
+        setInterval(() => {
+            state.energy += state.energyRate;
+            state.minds += state.mindsRate;
+            if (state.mindsRate > 0) state.singularity += 0.005;
+            updateUI();
+        }, 1000);
+
+    </script>
+</body>
+</html>

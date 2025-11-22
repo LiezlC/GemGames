@@ -1,0 +1,1991 @@
+[
+  {
+    "code_sophistication": 23,
+    "gameplay_depth": 21,
+    "visual_polish": 20,
+    "interactivity": 6,
+    "audio": 10,
+    "completeness": 2,
+    "total_score": 87,
+    "title": "Cosmic Query: Event Horizon",
+    "lines_of_code": 717,
+    "tier": "Excellent",
+    "standout_features": [
+      "\ud83d\udd0a Audio",
+      "\ud83c\udfae Deep Gameplay",
+      "\u2728 Polished Visuals",
+      "\ud83e\udde0 Sophisticated Code"
+    ],
+    "category": "sonic",
+    "folder": "Cosmic_Query_Event_Horizon",
+    "path": "sonic/Cosmic_Query_Event_Horizon"
+  },
+  {
+    "code_sophistication": 17,
+    "gameplay_depth": 23,
+    "visual_polish": 20,
+    "interactivity": 4,
+    "audio": 10,
+    "completeness": 2,
+    "total_score": 81,
+    "title": "Neon Sync: Overdrive",
+    "lines_of_code": 541,
+    "tier": "Excellent",
+    "standout_features": [
+      "\ud83d\udd0a Audio",
+      "\ud83c\udfae Deep Gameplay",
+      "\u2728 Polished Visuals"
+    ],
+    "category": "sonic",
+    "folder": "Neon_Sync_Overdrive",
+    "path": "sonic/Neon_Sync_Overdrive"
+  },
+  {
+    "code_sophistication": 24,
+    "gameplay_depth": 16,
+    "visual_polish": 20,
+    "interactivity": 4,
+    "audio": 10,
+    "completeness": 2,
+    "total_score": 81,
+    "title": "SYNTH_MIND // Neural Interface",
+    "lines_of_code": 543,
+    "tier": "Excellent",
+    "standout_features": [
+      "\ud83d\udd0a Audio",
+      "\ud83c\udfae Deep Gameplay",
+      "\u2728 Polished Visuals",
+      "\ud83e\udde0 Sophisticated Code"
+    ],
+    "category": "sonic",
+    "folder": "SYNTH_MIND_Neural_Interface",
+    "path": "sonic/SYNTH_MIND_Neural_Interface"
+  },
+  {
+    "code_sophistication": 25,
+    "gameplay_depth": 15,
+    "visual_polish": 20,
+    "interactivity": 9,
+    "audio": 0,
+    "completeness": 2,
+    "total_score": 76,
+    "title": "Protocol: DRAGON // Server Guardian",
+    "lines_of_code": 691,
+    "tier": "Excellent",
+    "standout_features": [
+      "\ud83c\udfae Deep Gameplay",
+      "\u2728 Polished Visuals",
+      "\ud83e\udde0 Sophisticated Code"
+    ],
+    "category": "simulation",
+    "folder": "Protocol_DRAGON_Server_Guardian",
+    "path": "simulation/Protocol_DRAGON_Server_Guardian"
+  },
+  {
+    "code_sophistication": 11,
+    "gameplay_depth": 19,
+    "visual_polish": 20,
+    "interactivity": 7,
+    "audio": 10,
+    "completeness": 2,
+    "total_score": 74,
+    "title": "Serpent's Cove: Guardian of the Deep",
+    "lines_of_code": 540,
+    "tier": "Excellent",
+    "standout_features": [
+      "\ud83d\udd0a Audio",
+      "\ud83c\udfae Deep Gameplay",
+      "\u2728 Polished Visuals"
+    ],
+    "category": "sonic",
+    "folder": "Serpent_s_Cove_Guardian_of_the_Deep",
+    "path": "sonic/Serpent_s_Cove_Guardian_of_the_Deep"
+  },
+  {
+    "code_sophistication": 25,
+    "gameplay_depth": 12,
+    "visual_polish": 20,
+    "interactivity": 9,
+    "audio": 0,
+    "completeness": 3,
+    "total_score": 74,
+    "title": "Cyber-Shepherd OS",
+    "lines_of_code": 536,
+    "tier": "Excellent",
+    "standout_features": [
+      "\u2728 Polished Visuals",
+      "\ud83e\udde0 Sophisticated Code"
+    ],
+    "category": "simulation",
+    "folder": "Cyber-Shepherd_OS",
+    "path": "simulation/Cyber-Shepherd_OS"
+  },
+  {
+    "code_sophistication": 21,
+    "gameplay_depth": 21,
+    "visual_polish": 20,
+    "interactivity": 4,
+    "audio": 0,
+    "completeness": 3,
+    "total_score": 74,
+    "title": "Void Drifter: Event Horizon",
+    "lines_of_code": 626,
+    "tier": "Excellent",
+    "standout_features": [
+      "\ud83c\udfae Deep Gameplay",
+      "\u2728 Polished Visuals",
+      "\ud83e\udde0 Sophisticated Code"
+    ],
+    "category": "action",
+    "folder": "Void_Drifter_Event_Horizon",
+    "path": "action/Void_Drifter_Event_Horizon"
+  },
+  {
+    "code_sophistication": 19,
+    "gameplay_depth": 22,
+    "visual_polish": 20,
+    "interactivity": 4,
+    "audio": 0,
+    "completeness": 3,
+    "total_score": 73,
+    "title": "The Vigil: Keeper of the Flame",
+    "lines_of_code": 554,
+    "tier": "Excellent",
+    "standout_features": [
+      "\ud83c\udfae Deep Gameplay",
+      "\u2728 Polished Visuals",
+      "\ud83e\udde0 Sophisticated Code"
+    ],
+    "category": "puzzle",
+    "folder": "The_Vigil_Keeper_of_the_Flame",
+    "path": "puzzle/The_Vigil_Keeper_of_the_Flame"
+  },
+  {
+    "code_sophistication": 17,
+    "gameplay_depth": 12,
+    "visual_polish": 20,
+    "interactivity": 4,
+    "audio": 10,
+    "completeness": 4,
+    "total_score": 72,
+    "title": "Dreamscape Forager",
+    "lines_of_code": 541,
+    "tier": "Excellent",
+    "standout_features": [
+      "\ud83d\udd0a Audio",
+      "\u2728 Polished Visuals"
+    ],
+    "category": "sonic",
+    "folder": "Dreamscape_Forager",
+    "path": "sonic/Dreamscape_Forager"
+  },
+  {
+    "code_sophistication": 13,
+    "gameplay_depth": 20,
+    "visual_polish": 20,
+    "interactivity": 9,
+    "audio": 0,
+    "completeness": 5,
+    "total_score": 72,
+    "title": "Neon Wyvern: Protocol",
+    "lines_of_code": 517,
+    "tier": "Excellent",
+    "standout_features": [
+      "\ud83c\udfae Deep Gameplay",
+      "\u2728 Polished Visuals"
+    ],
+    "category": "puzzle",
+    "folder": "Neon_Wyvern_Protocol",
+    "path": "puzzle/Neon_Wyvern_Protocol"
+  },
+  {
+    "code_sophistication": 22,
+    "gameplay_depth": 15,
+    "visual_polish": 20,
+    "interactivity": 6,
+    "audio": 0,
+    "completeness": 2,
+    "total_score": 70,
+    "title": "Neural Void Voyager",
+    "lines_of_code": 629,
+    "tier": "Excellent",
+    "standout_features": [
+      "\ud83c\udfae Deep Gameplay",
+      "\u2728 Polished Visuals",
+      "\ud83e\udde0 Sophisticated Code"
+    ],
+    "category": "memory",
+    "folder": "Neural_Void_Voyager",
+    "path": "memory/Neural_Void_Voyager"
+  },
+  {
+    "code_sophistication": 19,
+    "gameplay_depth": 8,
+    "visual_polish": 20,
+    "interactivity": 4,
+    "audio": 10,
+    "completeness": 3,
+    "total_score": 69,
+    "title": "Bio-Acoustic Plant Interface",
+    "lines_of_code": 538,
+    "tier": "Good",
+    "standout_features": [
+      "\ud83d\udd0a Audio",
+      "\u2728 Polished Visuals",
+      "\ud83e\udde0 Sophisticated Code"
+    ],
+    "category": "sonic",
+    "folder": "Bio-Acoustic_Plant_Interface",
+    "path": "sonic/Bio-Acoustic_Plant_Interface"
+  },
+  {
+    "code_sophistication": 14,
+    "gameplay_depth": 12,
+    "visual_polish": 20,
+    "interactivity": 15,
+    "audio": 0,
+    "completeness": 3,
+    "total_score": 69,
+    "title": "Sunday Braai Simulator",
+    "lines_of_code": 818,
+    "tier": "Good",
+    "standout_features": [
+      "\u2728 Polished Visuals",
+      "\ud83c\udfaf Highly Interactive"
+    ],
+    "category": "puzzle",
+    "folder": "Sunday_Braai_Simulator",
+    "path": "puzzle/Sunday_Braai_Simulator"
+  },
+  {
+    "code_sophistication": 17,
+    "gameplay_depth": 16,
+    "visual_polish": 20,
+    "interactivity": 6,
+    "audio": 0,
+    "completeness": 4,
+    "total_score": 68,
+    "title": "Hyperspace Serpent",
+    "lines_of_code": 550,
+    "tier": "Good",
+    "standout_features": [
+      "\ud83c\udfae Deep Gameplay",
+      "\u2728 Polished Visuals"
+    ],
+    "category": "simulation",
+    "folder": "Hyperspace_Serpent",
+    "path": "simulation/Hyperspace_Serpent"
+  },
+  {
+    "code_sophistication": 22,
+    "gameplay_depth": 12,
+    "visual_polish": 20,
+    "interactivity": 4,
+    "audio": 0,
+    "completeness": 4,
+    "total_score": 67,
+    "title": "Event Horizon: Entropy Manager",
+    "lines_of_code": 673,
+    "tier": "Good",
+    "standout_features": [
+      "\u2728 Polished Visuals",
+      "\ud83e\udde0 Sophisticated Code"
+    ],
+    "category": "simulation",
+    "folder": "Event_Horizon_Entropy_Manager",
+    "path": "simulation/Event_Horizon_Entropy_Manager"
+  },
+  {
+    "code_sophistication": 6,
+    "gameplay_depth": 19,
+    "visual_polish": 20,
+    "interactivity": 5,
+    "audio": 10,
+    "completeness": 1,
+    "total_score": 66,
+    "title": "Data Dragon Keeper: The Transformation",
+    "lines_of_code": 562,
+    "tier": "Good",
+    "standout_features": [
+      "\ud83d\udd0a Audio",
+      "\ud83c\udfae Deep Gameplay",
+      "\u2728 Polished Visuals"
+    ],
+    "category": "sonic",
+    "folder": "Data_Dragon_Keeper_The_Transformation",
+    "path": "sonic/Data_Dragon_Keeper_The_Transformation"
+  },
+  {
+    "code_sophistication": 17,
+    "gameplay_depth": 16,
+    "visual_polish": 20,
+    "interactivity": 6,
+    "audio": 0,
+    "completeness": 2,
+    "total_score": 66,
+    "title": "Cosmic Infinity Engine",
+    "lines_of_code": 506,
+    "tier": "Good",
+    "standout_features": [
+      "\ud83c\udfae Deep Gameplay",
+      "\u2728 Polished Visuals"
+    ],
+    "category": "visual",
+    "folder": "Cosmic_Infinity_Engine",
+    "path": "visual/Cosmic_Infinity_Engine"
+  },
+  {
+    "code_sophistication": 18,
+    "gameplay_depth": 19,
+    "visual_polish": 20,
+    "interactivity": 2,
+    "audio": 0,
+    "completeness": 2,
+    "total_score": 66,
+    "title": "Dream Spire: Pearl Protector",
+    "lines_of_code": 564,
+    "tier": "Good",
+    "standout_features": [
+      "\ud83c\udfae Deep Gameplay",
+      "\u2728 Polished Visuals",
+      "\ud83e\udde0 Sophisticated Code"
+    ],
+    "category": "simulation",
+    "folder": "Dream_Spire_Pearl_Protector",
+    "path": "simulation/Dream_Spire_Pearl_Protector"
+  },
+  {
+    "code_sophistication": 12,
+    "gameplay_depth": 11,
+    "visual_polish": 20,
+    "interactivity": 15,
+    "audio": 0,
+    "completeness": 2,
+    "total_score": 65,
+    "title": "Celestial Altar: The Ritual",
+    "lines_of_code": 605,
+    "tier": "Good",
+    "standout_features": [
+      "\u2728 Polished Visuals",
+      "\ud83c\udfaf Highly Interactive"
+    ],
+    "category": "simulation",
+    "folder": "Celestial_Altar_The_Ritual",
+    "path": "simulation/Celestial_Altar_The_Ritual"
+  },
+  {
+    "code_sophistication": 12,
+    "gameplay_depth": 14,
+    "visual_polish": 20,
+    "interactivity": 6,
+    "audio": 10,
+    "completeness": 2,
+    "total_score": 64,
+    "title": "Neural Sync Protocol",
+    "lines_of_code": 477,
+    "tier": "Good",
+    "standout_features": [
+      "\ud83d\udd0a Audio",
+      "\u2728 Polished Visuals"
+    ],
+    "category": "sonic",
+    "folder": "Neural_Sync_Protocol_2",
+    "path": "sonic/Neural_Sync_Protocol_2"
+  },
+  {
+    "code_sophistication": 22,
+    "gameplay_depth": 8,
+    "visual_polish": 20,
+    "interactivity": 6,
+    "audio": 0,
+    "completeness": 3,
+    "total_score": 64,
+    "title": "Strange Loops - Eternal Learning Algorithm",
+    "lines_of_code": 620,
+    "tier": "Good",
+    "standout_features": [
+      "\u2728 Polished Visuals",
+      "\ud83e\udde0 Sophisticated Code"
+    ],
+    "category": "simulation",
+    "folder": "Strange_Loops_-_Eternal_Learning_Algorithm",
+    "path": "simulation/Strange_Loops_-_Eternal_Learning_Algorithm"
+  },
+  {
+    "code_sophistication": 23,
+    "gameplay_depth": 8,
+    "visual_polish": 20,
+    "interactivity": 7,
+    "audio": 0,
+    "completeness": 4,
+    "total_score": 62,
+    "title": "Nebula Forge: Galactic Simulator",
+    "lines_of_code": 478,
+    "tier": "Good",
+    "standout_features": [
+      "\u2728 Polished Visuals",
+      "\ud83e\udde0 Sophisticated Code"
+    ],
+    "category": "simulation",
+    "folder": "Nebula_Forge_Galactic_Simulator",
+    "path": "simulation/Nebula_Forge_Galactic_Simulator"
+  },
+  {
+    "code_sophistication": 17,
+    "gameplay_depth": 15,
+    "visual_polish": 20,
+    "interactivity": 6,
+    "audio": 0,
+    "completeness": 4,
+    "total_score": 62,
+    "title": "Cyber Serpent: Data Eater",
+    "lines_of_code": 500,
+    "tier": "Good",
+    "standout_features": [
+      "\ud83c\udfae Deep Gameplay",
+      "\u2728 Polished Visuals"
+    ],
+    "category": "simulation",
+    "folder": "Cyber_Serpent_Data_Eater",
+    "path": "simulation/Cyber_Serpent_Data_Eater"
+  },
+  {
+    "code_sophistication": 18,
+    "gameplay_depth": 10,
+    "visual_polish": 20,
+    "interactivity": 6,
+    "audio": 0,
+    "completeness": 3,
+    "total_score": 62,
+    "title": "Habitat 734B: Stasis Control",
+    "lines_of_code": 680,
+    "tier": "Good",
+    "standout_features": [
+      "\u2728 Polished Visuals",
+      "\ud83e\udde0 Sophisticated Code"
+    ],
+    "category": "simulation",
+    "folder": "Habitat_734B_Stasis_Control",
+    "path": "simulation/Habitat_734B_Stasis_Control"
+  },
+  {
+    "code_sophistication": 20,
+    "gameplay_depth": 8,
+    "visual_polish": 20,
+    "interactivity": 4,
+    "audio": 0,
+    "completeness": 4,
+    "total_score": 61,
+    "title": "Neural Sync Protocol",
+    "lines_of_code": 539,
+    "tier": "Good",
+    "standout_features": [
+      "\u2728 Polished Visuals",
+      "\ud83e\udde0 Sophisticated Code"
+    ],
+    "category": "memory",
+    "folder": "Neural_Sync_Protocol",
+    "path": "memory/Neural_Sync_Protocol"
+  },
+  {
+    "code_sophistication": 9,
+    "gameplay_depth": 19,
+    "visual_polish": 20,
+    "interactivity": 6,
+    "audio": 0,
+    "completeness": 2,
+    "total_score": 61,
+    "title": "Rift Walker: The Orange Void",
+    "lines_of_code": 543,
+    "tier": "Good",
+    "standout_features": [
+      "\ud83c\udfae Deep Gameplay",
+      "\u2728 Polished Visuals"
+    ],
+    "category": "memory",
+    "folder": "Rift_Walker_The_Orange_Void",
+    "path": "memory/Rift_Walker_The_Orange_Void"
+  },
+  {
+    "code_sophistication": 16,
+    "gameplay_depth": 12,
+    "visual_polish": 20,
+    "interactivity": 4,
+    "audio": 0,
+    "completeness": 3,
+    "total_score": 60,
+    "title": "Infrared Journey",
+    "lines_of_code": 625,
+    "tier": "Good",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "adventure",
+    "folder": "Infrared_Journey",
+    "path": "adventure/Infrared_Journey"
+  },
+  {
+    "code_sophistication": 25,
+    "gameplay_depth": 3,
+    "visual_polish": 20,
+    "interactivity": 4,
+    "audio": 0,
+    "completeness": 3,
+    "total_score": 60,
+    "title": "Chrono-Vortex Decrypter",
+    "lines_of_code": 546,
+    "tier": "Good",
+    "standout_features": [
+      "\u2728 Polished Visuals",
+      "\ud83e\udde0 Sophisticated Code"
+    ],
+    "category": "simulation",
+    "folder": "Chrono-Vortex_Decrypter",
+    "path": "simulation/Chrono-Vortex_Decrypter"
+  },
+  {
+    "code_sophistication": 21,
+    "gameplay_depth": 3,
+    "visual_polish": 20,
+    "interactivity": 7,
+    "audio": 0,
+    "completeness": 4,
+    "total_score": 60,
+    "title": "Neon Rain: Zen Walk",
+    "lines_of_code": 622,
+    "tier": "Good",
+    "standout_features": [
+      "\u2728 Polished Visuals",
+      "\ud83e\udde0 Sophisticated Code"
+    ],
+    "category": "simulation",
+    "folder": "Neon_Rain_Zen_Walk",
+    "path": "simulation/Neon_Rain_Zen_Walk"
+  },
+  {
+    "code_sophistication": 14,
+    "gameplay_depth": 12,
+    "visual_polish": 20,
+    "interactivity": 6,
+    "audio": 0,
+    "completeness": 3,
+    "total_score": 60,
+    "title": "The Singularity Event",
+    "lines_of_code": 574,
+    "tier": "Good",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "simulation",
+    "folder": "The_Singularity_Event",
+    "path": "simulation/The_Singularity_Event"
+  },
+  {
+    "code_sophistication": 21,
+    "gameplay_depth": 6,
+    "visual_polish": 20,
+    "interactivity": 7,
+    "audio": 0,
+    "completeness": 1,
+    "total_score": 60,
+    "title": "The Ascension Protocol",
+    "lines_of_code": 673,
+    "tier": "Good",
+    "standout_features": [
+      "\u2728 Polished Visuals",
+      "\ud83e\udde0 Sophisticated Code"
+    ],
+    "category": "puzzle",
+    "folder": "The_Ascension_Protocol",
+    "path": "puzzle/The_Ascension_Protocol"
+  },
+  {
+    "code_sophistication": 23,
+    "gameplay_depth": 3,
+    "visual_polish": 20,
+    "interactivity": 9,
+    "audio": 0,
+    "completeness": 4,
+    "total_score": 59,
+    "title": "Abstractify: Kinetic Canvas",
+    "lines_of_code": 499,
+    "tier": "Good",
+    "standout_features": [
+      "\u2728 Polished Visuals",
+      "\ud83e\udde0 Sophisticated Code"
+    ],
+    "category": "simulation",
+    "folder": "Abstractify_Kinetic_Canvas",
+    "path": "simulation/Abstractify_Kinetic_Canvas"
+  },
+  {
+    "code_sophistication": 19,
+    "gameplay_depth": 8,
+    "visual_polish": 20,
+    "interactivity": 4,
+    "audio": 0,
+    "completeness": 3,
+    "total_score": 59,
+    "title": "NEURAL_SYNC // PROTOCOL",
+    "lines_of_code": 606,
+    "tier": "Good",
+    "standout_features": [
+      "\u2728 Polished Visuals",
+      "\ud83e\udde0 Sophisticated Code"
+    ],
+    "category": "puzzle",
+    "folder": "NEURAL_SYNC_PROTOCOL",
+    "path": "puzzle/NEURAL_SYNC_PROTOCOL"
+  },
+  {
+    "code_sophistication": 9,
+    "gameplay_depth": 16,
+    "visual_polish": 20,
+    "interactivity": 2,
+    "audio": 10,
+    "completeness": 1,
+    "total_score": 58,
+    "title": "Neural Sync Protocol",
+    "lines_of_code": 416,
+    "tier": "Good",
+    "standout_features": [
+      "\ud83d\udd0a Audio",
+      "\ud83c\udfae Deep Gameplay",
+      "\u2728 Polished Visuals"
+    ],
+    "category": "sonic",
+    "folder": "Neural_Sync_Protocol",
+    "path": "sonic/Neural_Sync_Protocol"
+  },
+  {
+    "code_sophistication": 7,
+    "gameplay_depth": 16,
+    "visual_polish": 20,
+    "interactivity": 4,
+    "audio": 10,
+    "completeness": 1,
+    "total_score": 58,
+    "title": "Lumina: Light Memory Game",
+    "lines_of_code": 492,
+    "tier": "Good",
+    "standout_features": [
+      "\ud83d\udd0a Audio",
+      "\ud83c\udfae Deep Gameplay",
+      "\u2728 Polished Visuals"
+    ],
+    "category": "sonic",
+    "folder": "Lumina_Light_Memory_Game",
+    "path": "sonic/Lumina_Light_Memory_Game"
+  },
+  {
+    "code_sophistication": 22,
+    "gameplay_depth": 3,
+    "visual_polish": 20,
+    "interactivity": 4,
+    "audio": 0,
+    "completeness": 4,
+    "total_score": 58,
+    "title": "M\u00d6BIUS DATA | Self-Referential Consciousness",
+    "lines_of_code": 547,
+    "tier": "Good",
+    "standout_features": [
+      "\u2728 Polished Visuals",
+      "\ud83e\udde0 Sophisticated Code"
+    ],
+    "category": "simulation",
+    "folder": "M\u00d6BIUS_DATA_Self-Referential_Consciousness",
+    "path": "simulation/M\u00d6BIUS_DATA_Self-Referential_Consciousness"
+  },
+  {
+    "code_sophistication": 18,
+    "gameplay_depth": 8,
+    "visual_polish": 20,
+    "interactivity": 6,
+    "audio": 0,
+    "completeness": 1,
+    "total_score": 58,
+    "title": "ASCENSION PROTOCOL: BEYOND UBI",
+    "lines_of_code": 552,
+    "tier": "Good",
+    "standout_features": [
+      "\u2728 Polished Visuals",
+      "\ud83e\udde0 Sophisticated Code"
+    ],
+    "category": "puzzle",
+    "folder": "ASCENSION_PROTOCOL_BEYOND_UBI",
+    "path": "puzzle/ASCENSION_PROTOCOL_BEYOND_UBI"
+  },
+  {
+    "code_sophistication": 6,
+    "gameplay_depth": 21,
+    "visual_polish": 20,
+    "interactivity": 4,
+    "audio": 0,
+    "completeness": 1,
+    "total_score": 57,
+    "title": "AI Office Chronicles: The Game",
+    "lines_of_code": 593,
+    "tier": "Good",
+    "standout_features": [
+      "\ud83c\udfae Deep Gameplay",
+      "\u2728 Polished Visuals"
+    ],
+    "category": "simulation",
+    "folder": "AI_Office_Chronicles_The_Game",
+    "path": "simulation/AI_Office_Chronicles_The_Game"
+  },
+  {
+    "code_sophistication": 16,
+    "gameplay_depth": 6,
+    "visual_polish": 20,
+    "interactivity": 6,
+    "audio": 0,
+    "completeness": 4,
+    "total_score": 57,
+    "title": "The Rift Walker",
+    "lines_of_code": 506,
+    "tier": "Good",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "simulation",
+    "folder": "The_Rift_Walker",
+    "path": "simulation/The_Rift_Walker"
+  },
+  {
+    "code_sophistication": 17,
+    "gameplay_depth": 8,
+    "visual_polish": 20,
+    "interactivity": 6,
+    "audio": 0,
+    "completeness": 1,
+    "total_score": 57,
+    "title": "The Chrono-Jester's Library",
+    "lines_of_code": 665,
+    "tier": "Good",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "simulation",
+    "folder": "The_Chrono-Jester_s_Library",
+    "path": "simulation/The_Chrono-Jester_s_Library"
+  },
+  {
+    "code_sophistication": 17,
+    "gameplay_depth": 6,
+    "visual_polish": 20,
+    "interactivity": 6,
+    "audio": 0,
+    "completeness": 3,
+    "total_score": 57,
+    "title": "Sunset Ranch Simulator",
+    "lines_of_code": 556,
+    "tier": "Good",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "puzzle",
+    "folder": "Sunset_Ranch_Simulator",
+    "path": "puzzle/Sunset_Ranch_Simulator"
+  },
+  {
+    "code_sophistication": 12,
+    "gameplay_depth": 14,
+    "visual_polish": 20,
+    "interactivity": 2,
+    "audio": 0,
+    "completeness": 4,
+    "total_score": 57,
+    "title": "EagleEye: Synthetic Chorus Protocol",
+    "lines_of_code": 590,
+    "tier": "Good",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "puzzle",
+    "folder": "EagleEye_Synthetic_Chorus_Protocol",
+    "path": "puzzle/EagleEye_Synthetic_Chorus_Protocol"
+  },
+  {
+    "code_sophistication": 18,
+    "gameplay_depth": 9,
+    "visual_polish": 20,
+    "interactivity": 2,
+    "audio": 0,
+    "completeness": 2,
+    "total_score": 56,
+    "title": "Cyber-Homestead OS",
+    "lines_of_code": 644,
+    "tier": "Good",
+    "standout_features": [
+      "\u2728 Polished Visuals",
+      "\ud83e\udde0 Sophisticated Code"
+    ],
+    "category": "simulation",
+    "folder": "Cyber-Homestead_OS",
+    "path": "simulation/Cyber-Homestead_OS"
+  },
+  {
+    "code_sophistication": 21,
+    "gameplay_depth": 3,
+    "visual_polish": 20,
+    "interactivity": 6,
+    "audio": 0,
+    "completeness": 1,
+    "total_score": 56,
+    "title": "SoulQuery: The Organic Database",
+    "lines_of_code": 611,
+    "tier": "Good",
+    "standout_features": [
+      "\u2728 Polished Visuals",
+      "\ud83e\udde0 Sophisticated Code"
+    ],
+    "category": "simulation",
+    "folder": "SoulQuery_The_Organic_Database",
+    "path": "simulation/SoulQuery_The_Organic_Database"
+  },
+  {
+    "code_sophistication": 21,
+    "gameplay_depth": 3,
+    "visual_polish": 20,
+    "interactivity": 6,
+    "audio": 0,
+    "completeness": 1,
+    "total_score": 56,
+    "title": "Tactical Command Interface",
+    "lines_of_code": 614,
+    "tier": "Good",
+    "standout_features": [
+      "\u2728 Polished Visuals",
+      "\ud83e\udde0 Sophisticated Code"
+    ],
+    "category": "simulation",
+    "folder": "Tactical_Command_Interface",
+    "path": "simulation/Tactical_Command_Interface"
+  },
+  {
+    "code_sophistication": 10,
+    "gameplay_depth": 15,
+    "visual_polish": 20,
+    "interactivity": 6,
+    "audio": 0,
+    "completeness": 0,
+    "total_score": 56,
+    "title": "Eco-Retreat Simulator",
+    "lines_of_code": 661,
+    "tier": "Good",
+    "standout_features": [
+      "\ud83c\udfae Deep Gameplay",
+      "\u2728 Polished Visuals"
+    ],
+    "category": "puzzle",
+    "folder": "Eco-Retreat_Simulator",
+    "path": "puzzle/Eco-Retreat_Simulator"
+  },
+  {
+    "code_sophistication": 24,
+    "gameplay_depth": 3,
+    "visual_polish": 20,
+    "interactivity": 6,
+    "audio": 0,
+    "completeness": 2,
+    "total_score": 55,
+    "title": "Chromatic Dialogue | Interactive Art",
+    "lines_of_code": 374,
+    "tier": "Good",
+    "standout_features": [
+      "\u2728 Polished Visuals",
+      "\ud83e\udde0 Sophisticated Code"
+    ],
+    "category": "visual",
+    "folder": "Chromatic_Dialogue_Interactive_Art",
+    "path": "visual/Chromatic_Dialogue_Interactive_Art"
+  },
+  {
+    "code_sophistication": 8,
+    "gameplay_depth": 20,
+    "visual_polish": 20,
+    "interactivity": 6,
+    "audio": 0,
+    "completeness": 1,
+    "total_score": 55,
+    "title": "Engagement Unlocked: The Simulator",
+    "lines_of_code": 446,
+    "tier": "Good",
+    "standout_features": [
+      "\ud83c\udfae Deep Gameplay",
+      "\u2728 Polished Visuals"
+    ],
+    "category": "simulation",
+    "folder": "Engagement_Unlocked_The_Simulator",
+    "path": "simulation/Engagement_Unlocked_The_Simulator"
+  },
+  {
+    "code_sophistication": 6,
+    "gameplay_depth": 20,
+    "visual_polish": 20,
+    "interactivity": 2,
+    "audio": 0,
+    "completeness": 2,
+    "total_score": 55,
+    "title": "Synth-Farm 2077: Agri-Tech Simulator",
+    "lines_of_code": 528,
+    "tier": "Good",
+    "standout_features": [
+      "\ud83c\udfae Deep Gameplay",
+      "\u2728 Polished Visuals"
+    ],
+    "category": "simulation",
+    "folder": "Synth-Farm_2077_Agri-Tech_Simulator",
+    "path": "simulation/Synth-Farm_2077_Agri-Tech_Simulator"
+  },
+  {
+    "code_sophistication": 11,
+    "gameplay_depth": 15,
+    "visual_polish": 20,
+    "interactivity": 6,
+    "audio": 0,
+    "completeness": 3,
+    "total_score": 55,
+    "title": "Eco-Raft Survivor",
+    "lines_of_code": 489,
+    "tier": "Good",
+    "standout_features": [
+      "\ud83c\udfae Deep Gameplay",
+      "\u2728 Polished Visuals"
+    ],
+    "category": "simulation",
+    "folder": "Eco-Raft_Survivor",
+    "path": "simulation/Eco-Raft_Survivor"
+  },
+  {
+    "code_sophistication": 23,
+    "gameplay_depth": 3,
+    "visual_polish": 20,
+    "interactivity": 4,
+    "audio": 0,
+    "completeness": 5,
+    "total_score": 55,
+    "title": "Luminous Strands: Ethereal Flow",
+    "lines_of_code": 453,
+    "tier": "Good",
+    "standout_features": [
+      "\u2728 Polished Visuals",
+      "\ud83e\udde0 Sophisticated Code"
+    ],
+    "category": "simulation",
+    "folder": "Luminous_Strands_Ethereal_Flow",
+    "path": "simulation/Luminous_Strands_Ethereal_Flow"
+  },
+  {
+    "code_sophistication": 16,
+    "gameplay_depth": 8,
+    "visual_polish": 20,
+    "interactivity": 4,
+    "audio": 0,
+    "completeness": 2,
+    "total_score": 55,
+    "title": "AI Futures: Alignment vs Convergence",
+    "lines_of_code": 567,
+    "tier": "Good",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "simulation",
+    "folder": "AI_Futures_Alignment_vs_Convergence",
+    "path": "simulation/AI_Futures_Alignment_vs_Convergence"
+  },
+  {
+    "code_sophistication": 7,
+    "gameplay_depth": 13,
+    "visual_polish": 20,
+    "interactivity": 5,
+    "audio": 0,
+    "completeness": 4,
+    "total_score": 54,
+    "title": "Wyrm's Ascent: The Dragon Pit",
+    "lines_of_code": 597,
+    "tier": "Good",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "adventure",
+    "folder": "Wyrm_s_Ascent_The_Dragon_Pit",
+    "path": "adventure/Wyrm_s_Ascent_The_Dragon_Pit"
+  },
+  {
+    "code_sophistication": 14,
+    "gameplay_depth": 8,
+    "visual_polish": 20,
+    "interactivity": 4,
+    "audio": 0,
+    "completeness": 3,
+    "total_score": 54,
+    "title": "Cyber-Pastoral Farm Interface",
+    "lines_of_code": 664,
+    "tier": "Good",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "simulation",
+    "folder": "Cyber-Pastoral_Farm_Interface",
+    "path": "simulation/Cyber-Pastoral_Farm_Interface"
+  },
+  {
+    "code_sophistication": 9,
+    "gameplay_depth": 12,
+    "visual_polish": 20,
+    "interactivity": 6,
+    "audio": 0,
+    "completeness": 2,
+    "total_score": 54,
+    "title": "The Eternal Vigil: Cosmic Altar",
+    "lines_of_code": 646,
+    "tier": "Good",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "simulation",
+    "folder": "The_Eternal_Vigil_Cosmic_Altar",
+    "path": "simulation/The_Eternal_Vigil_Cosmic_Altar"
+  },
+  {
+    "code_sophistication": 9,
+    "gameplay_depth": 13,
+    "visual_polish": 20,
+    "interactivity": 6,
+    "audio": 0,
+    "completeness": 5,
+    "total_score": 53,
+    "title": "Quantum Core Stabilizer",
+    "lines_of_code": 490,
+    "tier": "Good",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "simulation",
+    "folder": "Quantum_Core_Stabilizer",
+    "path": "simulation/Quantum_Core_Stabilizer"
+  },
+  {
+    "code_sophistication": 18,
+    "gameplay_depth": 3,
+    "visual_polish": 20,
+    "interactivity": 4,
+    "audio": 0,
+    "completeness": 3,
+    "total_score": 53,
+    "title": "Eco-Link: Cyber Druid Interface",
+    "lines_of_code": 544,
+    "tier": "Good",
+    "standout_features": [
+      "\u2728 Polished Visuals",
+      "\ud83e\udde0 Sophisticated Code"
+    ],
+    "category": "simulation",
+    "folder": "Eco-Link_Cyber_Druid_Interface",
+    "path": "simulation/Eco-Link_Cyber_Druid_Interface"
+  },
+  {
+    "code_sophistication": 16,
+    "gameplay_depth": 3,
+    "visual_polish": 20,
+    "interactivity": 6,
+    "audio": 0,
+    "completeness": 1,
+    "total_score": 51,
+    "title": "The Convergence Interface",
+    "lines_of_code": 609,
+    "tier": "Good",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "simulation",
+    "folder": "The_Convergence_Interface",
+    "path": "simulation/The_Convergence_Interface"
+  },
+  {
+    "code_sophistication": 13,
+    "gameplay_depth": 3,
+    "visual_polish": 20,
+    "interactivity": 6,
+    "audio": 0,
+    "completeness": 4,
+    "total_score": 51,
+    "title": "Lumi: The Serenity Bot",
+    "lines_of_code": 601,
+    "tier": "Good",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "simulation",
+    "folder": "Lumi_The_Serenity_Bot",
+    "path": "simulation/Lumi_The_Serenity_Bot"
+  },
+  {
+    "code_sophistication": 12,
+    "gameplay_depth": 8,
+    "visual_polish": 20,
+    "interactivity": 4,
+    "audio": 0,
+    "completeness": 2,
+    "total_score": 51,
+    "title": "Violet Connection: The Rhythm of Hearts",
+    "lines_of_code": 510,
+    "tier": "Good",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "rhythm",
+    "folder": "Violet_Connection_The_Rhythm_of_Hearts",
+    "path": "rhythm/Violet_Connection_The_Rhythm_of_Hearts"
+  },
+  {
+    "code_sophistication": 16,
+    "gameplay_depth": 8,
+    "visual_polish": 20,
+    "interactivity": 4,
+    "audio": 0,
+    "completeness": 3,
+    "total_score": 51,
+    "title": "Cyber-Organic Synthesis Protocol",
+    "lines_of_code": 469,
+    "tier": "Good",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "puzzle",
+    "folder": "Cyber-Organic_Synthesis_Protocol",
+    "path": "puzzle/Cyber-Organic_Synthesis_Protocol"
+  },
+  {
+    "code_sophistication": 14,
+    "gameplay_depth": 8,
+    "visual_polish": 20,
+    "interactivity": 2,
+    "audio": 0,
+    "completeness": 1,
+    "total_score": 50,
+    "title": "The Guardian of the Arch",
+    "lines_of_code": 564,
+    "tier": "Good",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "adventure",
+    "folder": "The_Guardian_of_the_Arch",
+    "path": "adventure/The_Guardian_of_the_Arch"
+  },
+  {
+    "code_sophistication": 11,
+    "gameplay_depth": 11,
+    "visual_polish": 20,
+    "interactivity": 2,
+    "audio": 0,
+    "completeness": 1,
+    "total_score": 50,
+    "title": "Orbital Bistro: Edge of the Void",
+    "lines_of_code": 524,
+    "tier": "Good",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "simulation",
+    "folder": "Orbital_Bistro_Edge_of_the_Void",
+    "path": "simulation/Orbital_Bistro_Edge_of_the_Void"
+  },
+  {
+    "code_sophistication": 9,
+    "gameplay_depth": 3,
+    "visual_polish": 20,
+    "interactivity": 4,
+    "audio": 10,
+    "completeness": 3,
+    "total_score": 49,
+    "title": "Lumina Grove - Interactive Soundscape",
+    "lines_of_code": 476,
+    "tier": "Fair",
+    "standout_features": [
+      "\ud83d\udd0a Audio",
+      "\u2728 Polished Visuals"
+    ],
+    "category": "sonic",
+    "folder": "Lumina_Grove_-_Interactive_Soundscape",
+    "path": "sonic/Lumina_Grove_-_Interactive_Soundscape"
+  },
+  {
+    "code_sophistication": 15,
+    "gameplay_depth": 8,
+    "visual_polish": 20,
+    "interactivity": 4,
+    "audio": 0,
+    "completeness": 2,
+    "total_score": 49,
+    "title": "Voice AI Impact Simulator",
+    "lines_of_code": 443,
+    "tier": "Fair",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "visual",
+    "folder": "Voice_AI_Impact_Simulator",
+    "path": "visual/Voice_AI_Impact_Simulator"
+  },
+  {
+    "code_sophistication": 4,
+    "gameplay_depth": 15,
+    "visual_polish": 20,
+    "interactivity": 2,
+    "audio": 0,
+    "completeness": 3,
+    "total_score": 49,
+    "title": "Spirit Sky Arena",
+    "lines_of_code": 589,
+    "tier": "Fair",
+    "standout_features": [
+      "\ud83c\udfae Deep Gameplay",
+      "\u2728 Polished Visuals"
+    ],
+    "category": "simulation",
+    "folder": "Spirit_Sky_Arena",
+    "path": "simulation/Spirit_Sky_Arena"
+  },
+  {
+    "code_sophistication": 9,
+    "gameplay_depth": 13,
+    "visual_polish": 20,
+    "interactivity": 6,
+    "audio": 0,
+    "completeness": 1,
+    "total_score": 49,
+    "title": "The Algoriture: Influence Simulator",
+    "lines_of_code": 463,
+    "tier": "Fair",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "puzzle",
+    "folder": "The_Algoriture_Influence_Simulator",
+    "path": "puzzle/The_Algoriture_Influence_Simulator"
+  },
+  {
+    "code_sophistication": 12,
+    "gameplay_depth": 7,
+    "visual_polish": 20,
+    "interactivity": 6,
+    "audio": 0,
+    "completeness": 3,
+    "total_score": 48,
+    "title": "BitSoil Farm: The Digital Detox",
+    "lines_of_code": 493,
+    "tier": "Fair",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "simulation",
+    "folder": "BitSoil_Farm_The_Digital_Detox",
+    "path": "simulation/BitSoil_Farm_The_Digital_Detox"
+  },
+  {
+    "code_sophistication": 8,
+    "gameplay_depth": 3,
+    "visual_polish": 20,
+    "interactivity": 9,
+    "audio": 0,
+    "completeness": 3,
+    "total_score": 48,
+    "title": "Nile Riverfront Builder",
+    "lines_of_code": 528,
+    "tier": "Fair",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "simulation",
+    "folder": "Nile_Riverfront_Builder",
+    "path": "simulation/Nile_Riverfront_Builder"
+  },
+  {
+    "code_sophistication": 15,
+    "gameplay_depth": 5,
+    "visual_polish": 20,
+    "interactivity": 6,
+    "audio": 0,
+    "completeness": 1,
+    "total_score": 47,
+    "title": "Scrib-Li | 2025 Copywriting Buffet",
+    "lines_of_code": 445,
+    "tier": "Fair",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "simulation",
+    "folder": "Scrib-Li_2025_Copywriting_Buffet",
+    "path": "simulation/Scrib-Li_2025_Copywriting_Buffet"
+  },
+  {
+    "code_sophistication": 9,
+    "gameplay_depth": 4,
+    "visual_polish": 20,
+    "interactivity": 6,
+    "audio": 0,
+    "completeness": 3,
+    "total_score": 47,
+    "title": "Project Ascension",
+    "lines_of_code": 629,
+    "tier": "Fair",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "simulation",
+    "folder": "Project_Ascension",
+    "path": "simulation/Project_Ascension"
+  },
+  {
+    "code_sophistication": 7,
+    "gameplay_depth": 7,
+    "visual_polish": 20,
+    "interactivity": 6,
+    "audio": 0,
+    "completeness": 2,
+    "total_score": 47,
+    "title": "The Primer: Interactive Experience",
+    "lines_of_code": 698,
+    "tier": "Fair",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "simulation",
+    "folder": "The_Primer_Interactive_Experience",
+    "path": "simulation/The_Primer_Interactive_Experience"
+  },
+  {
+    "code_sophistication": 9,
+    "gameplay_depth": 7,
+    "visual_polish": 20,
+    "interactivity": 2,
+    "audio": 0,
+    "completeness": 4,
+    "total_score": 47,
+    "title": "Rise & Remix: The Ascension",
+    "lines_of_code": 627,
+    "tier": "Fair",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "simulation",
+    "folder": "Rise_Remix_The_Ascension",
+    "path": "simulation/Rise_Remix_The_Ascension"
+  },
+  {
+    "code_sophistication": 10,
+    "gameplay_depth": 3,
+    "visual_polish": 20,
+    "interactivity": 4,
+    "audio": 0,
+    "completeness": 4,
+    "total_score": 46,
+    "title": "Quantum Core Stabilizer",
+    "lines_of_code": 556,
+    "tier": "Fair",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "visual",
+    "folder": "Quantum_Core_Stabilizer",
+    "path": "visual/Quantum_Core_Stabilizer"
+  },
+  {
+    "code_sophistication": 9,
+    "gameplay_depth": 7,
+    "visual_polish": 20,
+    "interactivity": 2,
+    "audio": 0,
+    "completeness": 3,
+    "total_score": 46,
+    "title": "Rise & Remix: The Ascension",
+    "lines_of_code": 555,
+    "tier": "Fair",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "simulation",
+    "folder": "Rise_Remix_The_Ascension_2",
+    "path": "simulation/Rise_Remix_The_Ascension_2"
+  },
+  {
+    "code_sophistication": 9,
+    "gameplay_depth": 8,
+    "visual_polish": 20,
+    "interactivity": 2,
+    "audio": 0,
+    "completeness": 2,
+    "total_score": 46,
+    "title": "The AInthropologist: Contentment Dashboard",
+    "lines_of_code": 507,
+    "tier": "Fair",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "simulation",
+    "folder": "The_AInthropologist_Contentment_Dashboard",
+    "path": "simulation/The_AInthropologist_Contentment_Dashboard"
+  },
+  {
+    "code_sophistication": 7,
+    "gameplay_depth": 7,
+    "visual_polish": 20,
+    "interactivity": 2,
+    "audio": 0,
+    "completeness": 4,
+    "total_score": 45,
+    "title": "The Unquestionable Hardness of Problems",
+    "lines_of_code": 651,
+    "tier": "Fair",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "adventure",
+    "folder": "The_Unquestionable_Hardness_of_Problems",
+    "path": "adventure/The_Unquestionable_Hardness_of_Problems"
+  },
+  {
+    "code_sophistication": 12,
+    "gameplay_depth": 3,
+    "visual_polish": 20,
+    "interactivity": 2,
+    "audio": 0,
+    "completeness": 3,
+    "total_score": 45,
+    "title": "Sector 9 Hangar Control",
+    "lines_of_code": 607,
+    "tier": "Fair",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "simulation",
+    "folder": "Sector_9_Hangar_Control",
+    "path": "simulation/Sector_9_Hangar_Control"
+  },
+  {
+    "code_sophistication": 4,
+    "gameplay_depth": 9,
+    "visual_polish": 20,
+    "interactivity": 5,
+    "audio": 0,
+    "completeness": 2,
+    "total_score": 45,
+    "title": "Data Dragon ID KIT",
+    "lines_of_code": 550,
+    "tier": "Fair",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "arcade",
+    "folder": "Data_Dragon_ID_KIT",
+    "path": "arcade/Data_Dragon_ID_KIT"
+  },
+  {
+    "code_sophistication": 9,
+    "gameplay_depth": 3,
+    "visual_polish": 20,
+    "interactivity": 9,
+    "audio": 0,
+    "completeness": 3,
+    "total_score": 44,
+    "title": "Cyber-Organic Resonance Tuner",
+    "lines_of_code": 492,
+    "tier": "Fair",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "puzzle",
+    "folder": "Cyber-Organic_Resonance_Tuner",
+    "path": "puzzle/Cyber-Organic_Resonance_Tuner"
+  },
+  {
+    "code_sophistication": 4,
+    "gameplay_depth": 9,
+    "visual_polish": 20,
+    "interactivity": 2,
+    "audio": 0,
+    "completeness": 4,
+    "total_score": 44,
+    "title": "PROTOCOL: 12 AIs - War Machine Interface",
+    "lines_of_code": 731,
+    "tier": "Fair",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "puzzle",
+    "folder": "PROTOCOL_12_AIs_-_War_Machine_Interface",
+    "path": "puzzle/PROTOCOL_12_AIs_-_War_Machine_Interface"
+  },
+  {
+    "code_sophistication": 11,
+    "gameplay_depth": 3,
+    "visual_polish": 20,
+    "interactivity": 2,
+    "audio": 0,
+    "completeness": 1,
+    "total_score": 42,
+    "title": "Wisdom in the Wild: Web of Life",
+    "lines_of_code": 603,
+    "tier": "Fair",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "simulation",
+    "folder": "Wisdom_in_the_Wild_Web_of_Life",
+    "path": "simulation/Wisdom_in_the_Wild_Web_of_Life"
+  },
+  {
+    "code_sophistication": 11,
+    "gameplay_depth": 8,
+    "visual_polish": 20,
+    "interactivity": 2,
+    "audio": 0,
+    "completeness": 1,
+    "total_score": 42,
+    "title": "The AInthropologist: Field Report",
+    "lines_of_code": 488,
+    "tier": "Fair",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "simulation",
+    "folder": "The_AInthropologist_Field_Report",
+    "path": "simulation/The_AInthropologist_Field_Report"
+  },
+  {
+    "code_sophistication": 7,
+    "gameplay_depth": 3,
+    "visual_polish": 20,
+    "interactivity": 6,
+    "audio": 0,
+    "completeness": 1,
+    "total_score": 42,
+    "title": "Cosmic Sanctuary",
+    "lines_of_code": 533,
+    "tier": "Fair",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "simulation",
+    "folder": "Cosmic_Sanctuary",
+    "path": "simulation/Cosmic_Sanctuary"
+  },
+  {
+    "code_sophistication": 6,
+    "gameplay_depth": 6,
+    "visual_polish": 20,
+    "interactivity": 4,
+    "audio": 0,
+    "completeness": 1,
+    "total_score": 42,
+    "title": "VibeStack: Viral Tycoon",
+    "lines_of_code": 577,
+    "tier": "Fair",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "simulation",
+    "folder": "VibeStack_Viral_Tycoon",
+    "path": "simulation/VibeStack_Viral_Tycoon"
+  },
+  {
+    "code_sophistication": 5,
+    "gameplay_depth": 9,
+    "visual_polish": 20,
+    "interactivity": 2,
+    "audio": 0,
+    "completeness": 1,
+    "total_score": 42,
+    "title": "The Serpent's Corridor",
+    "lines_of_code": 591,
+    "tier": "Fair",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "simulation",
+    "folder": "The_Serpent_s_Corridor",
+    "path": "simulation/The_Serpent_s_Corridor"
+  },
+  {
+    "code_sophistication": 9,
+    "gameplay_depth": 3,
+    "visual_polish": 20,
+    "interactivity": 2,
+    "audio": 0,
+    "completeness": 2,
+    "total_score": 41,
+    "title": "The Adventures of Elara - Interactive Storybook",
+    "lines_of_code": 631,
+    "tier": "Fair",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "adventure",
+    "folder": "The_Adventures_of_Elara_-_Interactive_Storybook",
+    "path": "adventure/The_Adventures_of_Elara_-_Interactive_Storybook"
+  },
+  {
+    "code_sophistication": 6,
+    "gameplay_depth": 3,
+    "visual_polish": 20,
+    "interactivity": 6,
+    "audio": 0,
+    "completeness": 1,
+    "total_score": 41,
+    "title": "The Hustler Who Lost the Clock",
+    "lines_of_code": 515,
+    "tier": "Fair",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "simulation",
+    "folder": "The_Hustler_Who_Lost_the_Clock",
+    "path": "simulation/The_Hustler_Who_Lost_the_Clock"
+  },
+  {
+    "code_sophistication": 8,
+    "gameplay_depth": 3,
+    "visual_polish": 20,
+    "interactivity": 4,
+    "audio": 0,
+    "completeness": 1,
+    "total_score": 41,
+    "title": "NEURAL NEXUS: AI Interface",
+    "lines_of_code": 531,
+    "tier": "Fair",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "simulation",
+    "folder": "NEURAL_NEXUS_AI_Interface",
+    "path": "simulation/NEURAL_NEXUS_AI_Interface"
+  },
+  {
+    "code_sophistication": 7,
+    "gameplay_depth": 5,
+    "visual_polish": 20,
+    "interactivity": 6,
+    "audio": 0,
+    "completeness": 3,
+    "total_score": 41,
+    "title": "The Shadow Oracle",
+    "lines_of_code": 455,
+    "tier": "Fair",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "simulation",
+    "folder": "The_Shadow_Oracle",
+    "path": "simulation/The_Shadow_Oracle"
+  },
+  {
+    "code_sophistication": 6,
+    "gameplay_depth": 7,
+    "visual_polish": 20,
+    "interactivity": 2,
+    "audio": 0,
+    "completeness": 1,
+    "total_score": 41,
+    "title": "Authentic Human Simulator",
+    "lines_of_code": 591,
+    "tier": "Fair",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "puzzle",
+    "folder": "Authentic_Human_Simulator",
+    "path": "puzzle/Authentic_Human_Simulator"
+  },
+  {
+    "code_sophistication": 9,
+    "gameplay_depth": 3,
+    "visual_polish": 20,
+    "interactivity": 6,
+    "audio": 0,
+    "completeness": 2,
+    "total_score": 40,
+    "title": "Neural Convergence Interface",
+    "lines_of_code": 475,
+    "tier": "Fair",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "visual",
+    "folder": "Neural_Convergence_Interface",
+    "path": "visual/Neural_Convergence_Interface"
+  },
+  {
+    "code_sophistication": 7,
+    "gameplay_depth": 9,
+    "visual_polish": 20,
+    "interactivity": 2,
+    "audio": 0,
+    "completeness": 2,
+    "total_score": 40,
+    "title": "AGI Convergence Simulator",
+    "lines_of_code": 444,
+    "tier": "Fair",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "simulation",
+    "folder": "AGI_Convergence_Simulator",
+    "path": "simulation/AGI_Convergence_Simulator"
+  },
+  {
+    "code_sophistication": 6,
+    "gameplay_depth": 5,
+    "visual_polish": 20,
+    "interactivity": 2,
+    "audio": 0,
+    "completeness": 2,
+    "total_score": 40,
+    "title": "Sky Council: The Crystal Table",
+    "lines_of_code": 619,
+    "tier": "Fair",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "simulation",
+    "folder": "Sky_Council_The_Crystal_Table",
+    "path": "simulation/Sky_Council_The_Crystal_Table"
+  },
+  {
+    "code_sophistication": 2,
+    "gameplay_depth": 3,
+    "visual_polish": 20,
+    "interactivity": 6,
+    "audio": 0,
+    "completeness": 4,
+    "total_score": 40,
+    "title": "Zen Veranda Architect",
+    "lines_of_code": 518,
+    "tier": "Fair",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "simulation",
+    "folder": "Zen_Veranda_Architect",
+    "path": "simulation/Zen_Veranda_Architect"
+  },
+  {
+    "code_sophistication": 12,
+    "gameplay_depth": 3,
+    "visual_polish": 20,
+    "interactivity": 4,
+    "audio": 0,
+    "completeness": 1,
+    "total_score": 40,
+    "title": "Artifact 001: The Void Resonator",
+    "lines_of_code": 462,
+    "tier": "Fair",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "simulation",
+    "folder": "Artifact_001_The_Void_Resonator",
+    "path": "simulation/Artifact_001_The_Void_Resonator"
+  },
+  {
+    "code_sophistication": 4,
+    "gameplay_depth": 8,
+    "visual_polish": 20,
+    "interactivity": 4,
+    "audio": 0,
+    "completeness": 3,
+    "total_score": 39,
+    "title": "Singularity Reactor Control",
+    "lines_of_code": 467,
+    "tier": "Fair",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "simulation",
+    "folder": "Singularity_Reactor_Control",
+    "path": "simulation/Singularity_Reactor_Control"
+  },
+  {
+    "code_sophistication": 7,
+    "gameplay_depth": 9,
+    "visual_polish": 20,
+    "interactivity": 2,
+    "audio": 0,
+    "completeness": 1,
+    "total_score": 39,
+    "title": "Project: PLATO'S CAVE // SIMULATION ARCHITECT",
+    "lines_of_code": 493,
+    "tier": "Fair",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "simulation",
+    "folder": "Project_PLATO_S_CAVE_SIMULATION_ARCHITECT",
+    "path": "simulation/Project_PLATO_S_CAVE_SIMULATION_ARCHITECT"
+  },
+  {
+    "code_sophistication": 8,
+    "gameplay_depth": 8,
+    "visual_polish": 20,
+    "interactivity": 2,
+    "audio": 0,
+    "completeness": 1,
+    "total_score": 39,
+    "title": "Valley Estate Architect",
+    "lines_of_code": 488,
+    "tier": "Fair",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "simulation",
+    "folder": "Valley_Estate_Architect",
+    "path": "simulation/Valley_Estate_Architect"
+  },
+  {
+    "code_sophistication": 7,
+    "gameplay_depth": 3,
+    "visual_polish": 20,
+    "interactivity": 2,
+    "audio": 0,
+    "completeness": 2,
+    "total_score": 39,
+    "title": "BitSoil SageByte: The Architecture of Mending",
+    "lines_of_code": 529,
+    "tier": "Fair",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "simulation",
+    "folder": "BitSoil_SageByte_The_Architecture_of_Mending",
+    "path": "simulation/BitSoil_SageByte_The_Architecture_of_Mending"
+  },
+  {
+    "code_sophistication": 5,
+    "gameplay_depth": 3,
+    "visual_polish": 20,
+    "interactivity": 2,
+    "audio": 0,
+    "completeness": 4,
+    "total_score": 39,
+    "title": "GrieVoice | AI Grievance Systems",
+    "lines_of_code": 566,
+    "tier": "Fair",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "simulation",
+    "folder": "GrieVoice_AI_Grievance_Systems",
+    "path": "simulation/GrieVoice_AI_Grievance_Systems"
+  },
+  {
+    "code_sophistication": 7,
+    "gameplay_depth": 7,
+    "visual_polish": 20,
+    "interactivity": 4,
+    "audio": 0,
+    "completeness": 1,
+    "total_score": 39,
+    "title": "Symbiosis: Human-AI Resonance",
+    "lines_of_code": 474,
+    "tier": "Fair",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "rhythm",
+    "folder": "Symbiosis_Human-AI_Resonance",
+    "path": "rhythm/Symbiosis_Human-AI_Resonance"
+  },
+  {
+    "code_sophistication": 7,
+    "gameplay_depth": 3,
+    "visual_polish": 20,
+    "interactivity": 6,
+    "audio": 0,
+    "completeness": 3,
+    "total_score": 39,
+    "title": "Neural Sync Interface",
+    "lines_of_code": 446,
+    "tier": "Fair",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "memory",
+    "folder": "Neural_Sync_Interface",
+    "path": "memory/Neural_Sync_Interface"
+  },
+  {
+    "code_sophistication": 7,
+    "gameplay_depth": 6,
+    "visual_polish": 20,
+    "interactivity": 2,
+    "audio": 0,
+    "completeness": 4,
+    "total_score": 39,
+    "title": "Galactic Globe: The Roast Battle",
+    "lines_of_code": 416,
+    "tier": "Fair",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "action",
+    "folder": "Galactic_Globe_The_Roast_Battle",
+    "path": "action/Galactic_Globe_The_Roast_Battle"
+  },
+  {
+    "code_sophistication": 7,
+    "gameplay_depth": 3,
+    "visual_polish": 20,
+    "interactivity": 2,
+    "audio": 0,
+    "completeness": 0,
+    "total_score": 37,
+    "title": "The Midnight Village Mystery",
+    "lines_of_code": 611,
+    "tier": "Fair",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "simulation",
+    "folder": "The_Midnight_Village_Mystery",
+    "path": "simulation/The_Midnight_Village_Mystery"
+  },
+  {
+    "code_sophistication": 4,
+    "gameplay_depth": 3,
+    "visual_polish": 20,
+    "interactivity": 2,
+    "audio": 0,
+    "completeness": 1,
+    "total_score": 35,
+    "title": "The Astral Shrine",
+    "lines_of_code": 502,
+    "tier": "Fair",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "simulation",
+    "folder": "The_Astral_Shrine",
+    "path": "simulation/The_Astral_Shrine"
+  },
+  {
+    "code_sophistication": 7,
+    "gameplay_depth": 3,
+    "visual_polish": 20,
+    "interactivity": 2,
+    "audio": 0,
+    "completeness": 2,
+    "total_score": 34,
+    "title": "The Mystic Doorway",
+    "lines_of_code": 496,
+    "tier": "Fair",
+    "standout_features": [
+      "\u2728 Polished Visuals"
+    ],
+    "category": "simulation",
+    "folder": "The_Mystic_Doorway",
+    "path": "simulation/The_Mystic_Doorway"
+  }
+]

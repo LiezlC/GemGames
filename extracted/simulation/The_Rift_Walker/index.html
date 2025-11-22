@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Rift Walker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600&display=swap');
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #050505;
+            font-family: 'Inter', sans-serif;
+            color: white;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* The Cosmic Background (Canvas) */
+        #cosmos {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        /* The Cave Vignette - creating the rocky opening feel */
+        .cave-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            background: radial-gradient(circle at center, transparent 20%, #020202 65%);
+            pointer-events: none;
+        }
+        
+        /* Jagged edges for the cave look using clip-path */
+        .cave-rocks {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 11;
+            background: #080808;
+            clip-path: polygon(
+                0% 0%, 0% 100%, 100% 100%, 100% 0%, 
+                50% 0%, 50% 20%, 
+                60% 15%, 70% 25%, 80% 10%, 90% 30%, 95% 50%, 90% 80%, 
+                80% 90%, 60% 85%, 50% 95%, 40% 85%, 20% 90%, 10% 80%, 
+                5% 50%, 10% 20%, 20% 10%, 30% 25%, 40% 15%, 50% 20%, 50% 0%
+            );
+            pointer-events: none;
+            opacity: 0.9;
+        }
+
+        /* The Portal Frame */
+        .portal-container {
+            position: relative;
+            z-index: 20;
+            width: 280px;
+            height: 450px;
+            perspective: 1000px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+        }
+
+        .portal-frame {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 12px solid #1a1a1a;
+            border-bottom: none;
+            box-shadow: 
+                0 0 20px rgba(0, 255, 255, 0.2),
+                inset 0 0 30px rgba(0, 255, 255, 0.1);
+            background: rgba(0,0,0,0.1);
+            transition: all 0.5s ease;
+        }
+
+        /* The Floor leading to the portal */
+        .floor-grid {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%) perspective(500px) rotateX(60deg);
+            width: 200vw;
+            height: 60vh;
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: 5;
+            mask-image: linear-gradient(to top, black 20%, transparent 100%);
+            pointer-events: none;
+        }
+
+        /* The Silhouette */
+        .silhouette {
+            position: relative;
+            width: 60px;
+            height: 140px;
+            background: black;
+            z-index: 30;
+            margin-bottom: 0;
+            clip-path: path("M30,0 C40,0 45,10 45,20 C45,30 40,35 30,35 C20,35 15,30 15,20 C15,10 20,0 30,0 M10,40 L50,40 L55,80 L50,140 L32,140 L32,90 L28,90 L28,140 L10,140 L5,80 Z");
+            filter: drop-shadow(0 0 10px rgba(0,0,0,0.8));
+            transform-origin: bottom center;
+            animation: breathe 4s infinite ease-in-out;
+        }
+
+        @keyframes breathe {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
+        /* UI Overlay */
+        .ui-layer {
+            position: absolute;
+            z-index: 100;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            width: 90%;
+            max-width: 600px;
+        }
+
+        .glass-panel {
+            background: rgba(10, 10, 10, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 20px;
+            width: 100%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .hud-text {
+            font-family: 'Orbitron', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Orbitron', sans-serif;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #3b82f6, #8b5cf6);
+            border: none;
+            font-weight: bold;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(45deg, #2563eb, #7c3aed);
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
+        }
+
+        /* Side torches/embers */
+        .torch {
+            position: absolute;
+            bottom: 20%;
+            width: 4px;
+            height: 40px;
+            background: #444;
+            z-index: 15;
+        }
+        .torch::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            width: 24px;
+            height: 24px;
+            background: radial-gradient(circle, #ff5500, transparent);
+            filter: blur(5px);
+            animation: flicker 0.2s infinite alternate;
+        }
+        .torch-left { left: 15%; }
+        .torch-right { right: 15%; }
+
+        @keyframes flicker {
+            0% { opacity: 0.8; transform: scale(1); }
+            100% { opacity: 1; transform: scale(1.2); }
+        }
+
+        /* Warp Animation */
+        .warp-active .portal-frame {
+            box-shadow: 0 0 100px white, inset 0 0 50px white;
+            background: white;
+            border-color: white;
+        }
+        .warp-active .silhouette {
+            transform: scale(0);
+            transition: transform 0.5s ease-in;
+        }
+        .warp-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: white;
+            z-index: 999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 1s;
+        }
+        .warp-active .warp-overlay {
+            opacity: 1;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 4px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 2px;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: white;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(255,255,255,0.5);
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Background Canvas for Particles -->
+    <canvas id="cosmos"></canvas>
+
+    <!-- Floor Grid -->
+    <div class="floor-grid"></div>
+
+    <!-- Cave Masking -->
+    <div class="cave-overlay"></div>
+    <div class="cave-rocks"></div>
+
+    <!-- Torches -->
+    <div class="torch torch-left"></div>
+    <div class="torch torch-right"></div>
+
+    <!-- The Portal & Character -->
+    <div class="portal-container">
+        <div class="portal-frame" id="portalFrame"></div>
+        <div class="silhouette"></div>
+    </div>
+
+    <!-- White Flash Overlay -->
+    <div class="warp-overlay"></div>
+
+    <!-- UI Controls -->
+    <div class="ui-layer">
+        <div class="glass-panel flex justify-between items-center">
+            <div>
+                <h1 class="hud-text text-xl font-bold text-white mb-1">Rift Walker</h1>
+                <div class="text-xs text-gray-400 font-mono">STATUS: <span id="statusText" class="text-green-400">STABLE</span></div>
+            </div>
+            <div class="text-right">
+                <div class="text-xs text-gray-500 font-mono">DIMENSION ID</div>
+                <div class="font-mono text-blue-300" id="dimId">XJ-920</div>
+            </div>
+        </div>
+
+        <div class="glass-panel space-y-4">
+            <div class="flex items-center gap-4">
+                <span class="text-xs font-mono w-20">ENTROPY</span>
+                <input type="range" min="1" max="100" value="30" id="speedControl">
+            </div>
+            <div class="flex items-center gap-4">
+                <span class="text-xs font-mono w-20">POLARITY</span>
+                <input type="range" min="0" max="100" value="50" id="colorControl">
+            </div>
+            
+            <div class="flex gap-4 mt-4">
+                <button class="btn flex-1" onclick="randomizeDimension()">Scan Freq</button>
+                <button class="btn btn-primary flex-1" onclick="enterPortal()">Enter Rift</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Particle System Setup ---
+        const canvas = document.getElementById('cosmos');
+        const ctx = canvas.getContext('2d');
+        
+        let width, height;
+        let particles = [];
+        
+        // State
+        let speedMultiplier = 0.3;
+        let colorBalance = 0.5; // 0 = Red, 1 = Blue
+        let isWarping = false;
+
+        // Resize handling
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Particle Class
+        class Particle {
+            constructor() {
+                this.reset();
+                // Start at random positions initially so we don't have an empty screen
+                this.z = Math.random() * 2000; 
+            }
+
+            reset() {
+                this.x = (Math.random() - 0.5) * width * 2;
+                this.y = (Math.random() - 0.5) * height * 2;
+                this.z = 2000; // Start far away
+                this.size = Math.random() * 2;
+                
+                // Color logic based on polarity slider
+                const isBlue = Math.random() < colorBalance;
+                if (isBlue) {
+                    // Cyans and Blues
+                    this.color = `rgba(${50 + Math.random()*50}, ${200 + Math.random()*55}, 255, ${Math.random()})`;
+                } else {
+                    // Reds and Oranges
+                    this.color = `rgba(255, ${50 + Math.random()*100}, ${50}, ${Math.random()})`;
+                }
+            }
+
+            update() {
+                // Move towards viewer
+                this.z -= (10 + (speedMultiplier * 50));
+
+                if (this.z <= 1 || isWarping) {
+                    if(isWarping) {
+                        // During warp, particles streak
+                        this.z -= 100;
+                    }
+                    if(this.z <= 1) this.reset();
+                }
+            }
+
+            draw() {
+                // 3D Projection Math
+                const perspective = 300;
+                const scale = perspective / (this.z);
+                const sx = (width / 2) + (this.x * scale);
+                const sy = (height / 2) + (this.y * scale);
+                const r = this.size * scale;
+
+                if (sx < 0 || sx > width || sy < 0 || sy > height) return;
+
+                ctx.beginPath();
+                ctx.fillStyle = this.color;
+                ctx.arc(sx, sy, r, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Glow
+                if (r > 2) {
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = this.color;
+                } else {
+                    ctx.shadowBlur = 0;
+                }
+            }
+        }
+
+        // Initialize Particles
+        function initParticles() {
+            particles = [];
+            for (let i = 0; i < 400; i++) {
+                particles.push(new Particle());
+            }
+        }
+        initParticles();
+
+        // Animation Loop
+        function animate() {
+            // Clear with trail effect
+            ctx.fillStyle = 'rgba(5, 5, 5, 0.3)';
+            ctx.fillRect(0, 0, width, height);
+
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        // --- UI Logic ---
+
+        const speedInput = document.getElementById('speedControl');
+        const colorInput = document.getElementById('colorControl');
+        const portalFrame = document.getElementById('portalFrame');
+        const statusText = document.getElementById('statusText');
+        const dimId = document.getElementById('dimId');
+
+        speedInput.addEventListener('input', (e) => {
+            speedMultiplier = e.target.value / 100;
+            statusText.innerText = "TUNING...";
+            statusText.className = "text-yellow-400";
+            setTimeout(() => {
+                statusText.innerText = "STABLE";
+                statusText.className = "text-green-400";
+            }, 500);
+        });
+
+        colorInput.addEventListener('input', (e) => {
+            colorBalance = e.target.value / 100;
+            // Update portal glow color
+            const r = Math.floor(255 * (1 - colorBalance));
+            const b = Math.floor(255 * colorBalance);
+            portalFrame.style.boxShadow = `0 0 20px rgba(${r}, 50, ${b}, 0.4), inset 0 0 30px rgba(${r}, 50, ${b}, 0.2)`;
+            portalFrame.style.borderColor = `rgb(${r/5}, 20, ${b/5})`;
+            
+            // Re-init particles gradually to change color
+            // Actually, let's just let them cycle out naturally, 
+            // but new resets will pick up the new colorBalance
+        });
+
+        function randomizeDimension() {
+            // Randomize sliders
+            const newSpeed = Math.floor(Math.random() * 100);
+            const newColor = Math.floor(Math.random() * 100);
+            
+            speedInput.value = newSpeed;
+            colorInput.value = newColor;
+            
+            // Trigger events manually
+            speedInput.dispatchEvent(new Event('input'));
+            colorInput.dispatchEvent(new Event('input'));
+
+            // Generate ID
+            const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            let id = "";
+            for(let i=0; i<2; i++) id += chars.charAt(Math.floor(Math.random() * chars.length));
+            id += "-";
+            for(let i=0; i<3; i++) id += chars.charAt(Math.floor(Math.random() * chars.length));
+            dimId.innerText = id;
+        }
+
+        function enterPortal() {
+            if(isWarping) return;
+            isWarping = true;
+            document.body.classList.add('warp-active');
+            
+            // Sound effect simulation (visual shake)
+            document.body.style.transform = "scale(1.01)";
+            setTimeout(() => document.body.style.transform = "scale(1)", 100);
+
+            setTimeout(() => {
+                // Reset after "warp"
+                document.body.classList.remove('warp-active');
+                isWarping = false;
+                randomizeDimension();
+            }, 2000);
+        }
+
+        // Mouse Interaction for Parallax
+        document.addEventListener('mousemove', (e) => {
+            const x = (e.clientX / width) - 0.5;
+            const y = (e.clientY / height) - 0.5;
+            
+            // Move the portal frame slightly
+            portalFrame.style.transform = `translate(${x * -20}px, ${y * -20}px)`;
+            
+            // Move the cave rocks slightly less (depth)
+            document.querySelector('.cave-rocks').style.transform = `translate(${x * -10}px, ${y * -10}px) scale(1.05)`;
+        });
+
+    </script>
+</body>
+</html>

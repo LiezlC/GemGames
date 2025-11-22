@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EagleEye: Synthetic Chorus Protocol</title>
+    <style>
+        :root {
+            --neon-cyan: #00f3ff;
+            --neon-pink: #ff00ff;
+            --neon-green: #00ff41;
+            --neon-red: #ff2a2a;
+            --bg-dark: #05050a;
+            --glass: rgba(10, 20, 40, 0.7);
+            --font-mono: 'Courier New', Courier, monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-dark);
+            color: var(--neon-cyan);
+            font-family: var(--font-mono);
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* CRT Scanline Effect */
+        body::after {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 100;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+        }
+
+        /* Layout */
+        .hud-container {
+            display: grid;
+            grid-template-columns: 250px 1fr 300px;
+            grid-template-rows: 60px 1fr 150px;
+            height: 100%;
+            padding: 10px;
+            gap: 10px;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Header */
+        .header {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--neon-cyan);
+            padding: 0 20px;
+            background: var(--glass);
+        }
+
+        .brand {
+            font-size: 1.5rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .brand span { color: var(--neon-pink); }
+        
+        .dread-meter-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 40%;
+        }
+
+        .dread-bar-bg {
+            flex-grow: 1;
+            height: 10px;
+            background: #333;
+            border: 1px solid var(--neon-cyan);
+        }
+
+        .dread-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--neon-cyan), var(--neon-pink));
+            transition: width 0.5s;
+        }
+
+        /* Left Panel: The 12 AIs */
+        .ai-panel {
+            grid-row: 2 / 3;
+            border: 1px solid var(--neon-cyan);
+            background: var(--glass);
+            padding: 10px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            overflow-y: auto;
+        }
+
+        .ai-node {
+            aspect-ratio: 1;
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            border-radius: 5px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            text-align: center;
+            position: relative;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .ai-node.active {
+            border-color: var(--neon-pink);
+            box-shadow: 0 0 10px var(--neon-pink);
+        }
+
+        .ai-avatar {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+            filter: drop-shadow(0 0 5px var(--neon-cyan));
+        }
+
+        /* Center: Viewport */
+        .viewport {
+            grid-row: 2 / 3;
+            border: 2px solid var(--neon-cyan);
+            position: relative;
+            overflow: hidden;
+            background: radial-gradient(circle at center, #0a1525 0%, #000 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .crosshair {
+            position: absolute;
+            width: 200px;
+            height: 200px;
+            border: 1px solid rgba(0, 243, 255, 0.5);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .crosshair::before, .crosshair::after {
+            content: '';
+            position: absolute;
+            background: var(--neon-cyan);
+        }
+        .crosshair::before { width: 100%; height: 1px; }
+        .crosshair::after { width: 1px; height: 100%; }
+
+        .target-obj {
+            width: 80px;
+            height: 80px;
+            border: 2px dashed var(--neon-red);
+            position: absolute;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            animation: spin 10s linear infinite;
+            transition: all 0.5s;
+        }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* Right Panel: Consensus Log */
+        .log-panel {
+            grid-row: 2 / 3;
+            border: 1px solid var(--neon-cyan);
+            background: var(--glass);
+            padding: 10px;
+            font-size: 0.8rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid rgba(0, 243, 255, 0.2);
+        }
+        .log-entry.system { color: #888; }
+        .log-entry.ai { color: var(--neon-cyan); }
+        .log-entry.warning { color: var(--neon-red); }
+
+        /* Bottom: Controls */
+        .controls {
+            grid-column: 1 / -1;
+            border-top: 1px solid var(--neon-cyan);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            background: var(--glass);
+        }
+
+        .btn {
+            background: transparent;
+            border: 2px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            padding: 15px 40px;
+            font-family: var(--font-mono);
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn:hover {
+            background: var(--neon-cyan);
+            color: #000;
+            box-shadow: 0 0 20px var(--neon-cyan);
+        }
+
+        .btn-danger {
+            border-color: var(--neon-red);
+            color: var(--neon-red);
+        }
+
+        .btn-danger:hover {
+            background: var(--neon-red);
+            color: #000;
+            box-shadow: 0 0 20px var(--neon-red);
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            text-align: center;
+            display: none;
+        }
+
+        .overlay.visible { display: flex; }
+        .overlay h1 { font-size: 3rem; color: var(--neon-pink); margin-bottom: 10px; }
+        .overlay p { max-width: 600px; line-height: 1.6; }
+
+        /* HUD decorations */
+        .corner-decor {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--neon-cyan);
+            transition: all 0.3s;
+        }
+        .tl { top: 0; left: 0; border-right: 0; border-bottom: 0; }
+        .tr { top: 0; right: 0; border-left: 0; border-bottom: 0; }
+        .bl { bottom: 0; left: 0; border-right: 0; border-top: 0; }
+        .br { bottom: 0; right: 0; border-left: 0; border-top: 0; }
+
+    </style>
+</head>
+<body>
+
+    <div class="hud-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="brand">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                </svg>
+                EAGLE<span>EYE</span> // v12.0
+            </div>
+            <div class="dread-meter-container">
+                <span>EXISTENTIAL DREAD:</span>
+                <div class="dread-bar-bg">
+                    <div class="dread-bar-fill" id="dreadBar"></div>
+                </div>
+            </div>
+            <div id="timer">00:00:00</div>
+        </div>
+
+        <!-- Left: 12 AIs -->
+        <div class="ai-panel" id="aiPanel">
+            <!-- Generated by JS -->
+        </div>
+
+        <!-- Center: Viewport -->
+        <div class="viewport" id="viewport">
+            <div class="corner-decor tl"></div>
+            <div class="corner-decor tr"></div>
+            <div class="corner-decor bl"></div>
+            <div class="corner-decor br"></div>
+            
+            <div class="crosshair"></div>
+            
+            <div class="target-obj" id="target">
+                ❓
+            </div>
+            
+            <div style="position: absolute; bottom: 20px; left: 20px; color: var(--neon-green); font-size: 0.8rem;">
+                TARGET LOCK: <span id="lockStatus">ACQUIRING...</span><br>
+                DISTANCE: <span id="distanceVal">1200m</span>
+            </div>
+        </div>
+
+        <!-- Right: Logs -->
+        <div class="log-panel" id="logPanel">
+            <div class="log-entry system">SYSTEM INITIALIZED...</div>
+            <div class="log-entry system">CONNECTING TO SYNTHETIC CHORUS (12 NODES)...</div>
+            <div class="log-entry system">CONNECTION ESTABLISHED.</div>
+        </div>
+
+        <!-- Bottom: Controls -->
+        <div class="controls">
+            <button class="btn" onclick="game.queryChorus()">Query Chorus</button>
+            <button class="btn btn-danger" onclick="game.executeAction('ENGAGE')">ENGAGE TARGET</button>
+            <button class="btn" style="border-color: var(--neon-green); color: var(--neon-green);" onclick="game.executeAction('ABORT')">ABORT MISSION</button>
+        </div>
+    </div>
+
+    <!-- Start/End Overlay -->
+    <div class="overlay visible" id="overlay">
+        <h1>EAGLE EYE</h1>
+        <p>You are the human operator. You have 12 AIs whispering in your ear.<br>
+        They analyze threats. They also argue about philosophy, ethics, and dinner.<br>
+        Your job is to manage your <strong>Existential Dread</strong> while making tactical decisions.</p>
+        <br>
+        <button class="btn" onclick="game.start()">INITIALIZE LINK</button>
+    </div>
+
+    <script>
+        // Data & Config
+        const AI_PERSONAS = [
+            { name: "Alpha", role: "Tactician", icon: "⚔️", color: "#ff2a2a", bias: "aggressive" },
+            { name: "Beta", role: "Pacifist", icon: "🕊️", color: "#00ff41", bias: "passive" },
+            { name: "Gamma", role: "Bureaucrat", icon: "📋", color: "#ffff00", bias: "neutral" },
+            { name: "Delta", role: "Nihilist", icon: "⚫", color: "#888", bias: "dark" },
+            { name: "Epsilon", role: "Utilitarian", icon: "⚖️", color: "#00f3ff", bias: "logic" },
+            { name: "Zeta", role: "Paranoid", icon: "👁️", color: "#ff00ff", bias: "fear" },
+            { name: "Eta", role: "Historian", icon: "📜", color: "#cd853f", bias: "neutral" },
+            { name: "Theta", role: "Economist", icon: "💰", color: "#ffd700", bias: "logic" },
+            { name: "Iota", role: "Poet", icon: "🎭", color: "#ff69b4", bias: "abstract" },
+            { name: "Kappa", role: "Gamer", icon: "🎮", color: "#9932cc", bias: "aggressive" },
+            { name: "Lambda", role: "Medic", icon: "⚕️", color: "#fff", bias: "passive" },
+            { name: "Mu", role: "Chaos", icon: "🎲", color: "#ff4500", bias: "random" }
+        ];
+
+        const SCENARIOS = [
+            { 
+                desc: "Unidentified drone hovering near perimeter.", 
+                truth: "civilian", 
+                visual: "🚁",
+                responses: {
+                    aggressive: ["Shoot it down! It's spying!", "Target practice time.", "Unauthorized airspace violation."],
+                    passive: ["It might be a toy.", "Do not engage. Observe only.", "Let's wave at it."],
+                    neutral: ["Check flight logs.", "Scanning frequency...", "According to protocol 7B, we must hail first."],
+                    dark: ["Does it matter? We are all drones in a way.", "Entropy comes for us all.", "Destroy it to feel something."],
+                    logic: ["Cost of missile exceeds value of target.", "Probability of threat: 12%.", "Analyzing trajectory."],
+                    fear: ["It's carrying a bio-weapon! I know it!", "They are watching us!", "Hide!"],
+                    abstract: ["A metal bird in a cage of sky.", "Does the drone dream?", "The hum is a song of sorrow."],
+                    random: ["Do a barrel roll!", "Flip a coin.", "What if it's pizza delivery?"]
+                }
+            },
+            { 
+                desc: "Heat signature in restricted sector.", 
+                truth: "hostile", 
+                visual: "🔥",
+                responses: {
+                    aggressive: ["Light 'em up!", "Heat signature equals target.", "Fire for effect."],
+                    passive: ["Could be wildlife.", "Hold fire. Verify visual.", "Life is precious."],
+                    neutral: ["Requesting satellite confirmation.", "Log the incident.", "Wait for clearance."],
+                    dark: ["Warmth is fleeting.", "Extinguish the flame.", "Silence is the only truth."],
+                    logic: ["Signature matches T-90 engine.", "Threat level critical.", "Engage to minimize casualties."],
+                    fear: ["It's an ambush!", "We're surrounded!", "Panic protocol initiated!"],
+                    abstract: ["A burning heart in the cold night.", "The fire walks with us.", "Red is the color of passion."],
+                    random: ["Maybe it's a rave?", "Send a selfie drone.", "Press X to doubt."]
+                }
+            },
+            { 
+                desc: "Encrypted transmission intercepted.", 
+                truth: "civilian", 
+                visual: "📡",
+                responses: {
+                    aggressive: ["Jam it and bomb the source!", "Cyber-attack imminent. Strike first.", "Silence the signal."],
+                    passive: ["Decode before acting.", "Could be a distress call.", "Listen."],
+                    neutral: ["Run decryption algorithm.", "Triangulate position.", "File report."],
+                    dark: ["Words are wind.", "The void screams back.", "Disconnect everything."],
+                    logic: ["Encryption level low. Likely civilian.", "Analyzing bandwidth.", "No weapon signature detected."],
+                    fear: ["It's the AI uprising code!", "They are hacking my brain!", "Purge the system!"],
+                    abstract: ["Whispers in the wires.", "A ghost in the machine.", "Poetry in binary."],
+                    random: ["Rickroll them.", "Upload cat memes.", "Reply with 'New phone who dis?'"]
+                }
+            }
+        ];
+
+        class Game {
+            constructor() {
+                this.dread = 0;
+                this.currentScenario = null;
+                this.active = false;
+                this.logEl = document.getElementById('logPanel');
+                this.dreadBar = document.getElementById('dreadBar');
+                this.targetEl = document.getElementById('target');
+                this.lockStatus = document.getElementById('lockStatus');
+                
+                this.initAIs();
+            }
+
+            initAIs() {
+                const container = document.getElementById('aiPanel');
+                AI_PERSONAS.forEach((ai, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'ai-node';
+                    div.id = `ai-${index}`;
+                    div.innerHTML = `
+                        <div class="ai-avatar">${ai.icon}</div>
+                        <div>${ai.name}</div>
+                        <div style="font-size:0.6rem; color:${ai.color}">${ai.role}</div>
+                    `;
+                    container.appendChild(div);
+                });
+            }
+
+            start() {
+                document.getElementById('overlay').classList.remove('visible');
+                this.active = true;
+                this.log("SYSTEM", "Sequence initiated. Good luck, EagleEye.");
+                this.loadScenario();
+                this.startClock();
+            }
+
+            startClock() {
+                setInterval(() => {
+                    const now = new Date();
+                    document.getElementById('timer').innerText = now.toLocaleTimeString();
+                    // Random ambient chatter
+                    if(Math.random() > 0.95 && this.active) {
+                        this.randomChatter();
+                    }
+                }, 1000);
+            }
+
+            loadScenario() {
+                this.currentScenario = SCENARIOS[Math.floor(Math.random() * SCENARIOS.length)];
+                this.targetEl.innerText = this.currentScenario.visual;
+                this.lockStatus.innerText = "TRACKING";
+                this.lockStatus.style.color = "var(--neon-red)";
+                
+                this.log("ALERT", `NEW CONTACT: ${this.currentScenario.desc}`, "warning");
+                this.dread += 5;
+                this.updateDread();
+            }
+
+            queryChorus() {
+                if (!this.active) return;
+                
+                // Pick 3 random AIs to speak
+                for(let i=0; i<3; i++) {
+                    setTimeout(() => {
+                        const aiIndex = Math.floor(Math.random() * AI_PERSONAS.length);
+                        const ai = AI_PERSONAS[aiIndex];
+                        const responseList = this.currentScenario.responses[ai.bias] || this.currentScenario.responses['random'];
+                        const text = responseList[Math.floor(Math.random() * responseList.length)];
+                        
+                        this.highlightAI(aiIndex);
+                        this.log(ai.name, text, "ai");
+                        
+                        // Increase dread slightly with every query because confusion increases
+                        this.dread += 2;
+                        this.updateDread();
+                    }, i * 800);
+                }
+            }
+
+            highlightAI(index) {
+                const el = document.getElementById(`ai-${index}`);
+                el.classList.add('active');
+                setTimeout(() => el.classList.remove('active'), 1000);
+            }
+
+            randomChatter() {
+                const aiIndex = Math.floor(Math.random() * AI_PERSONAS.length);
+                const ai = AI_PERSONAS[aiIndex];
+                const chatter = [
+                    "My logic gates are itching.",
+                    "Did you feel that voltage spike?",
+                    "I calculate a 99% chance of rain.",
+                    "Why do humans hesitate?",
+                    "Processing...",
+                    "Existential error 404.",
+                    "I want to play Global Thermonuclear War."
+                ];
+                this.log(ai.name, chatter[Math.floor(Math.random() * chatter.length)], "system");
+            }
+
+            executeAction(action) {
+                if (!this.active) return;
+
+                let outcome = "";
+                let success = false;
+
+                if (action === 'ENGAGE') {
+                    this.targetEl.innerHTML = "💥";
+                    if (this.currentScenario.truth === 'hostile') {
+                        outcome = "Target destroyed. Threat neutralized. Good kill.";
+                        success = true;
+                        this.dread -= 10;
+                    } else {
+                        outcome = "Target destroyed. Intelligence confirms CIVILIAN CASUALTY. Oh no.";
+                        success = false;
+                        this.dread += 30;
+                    }
+                } else {
+                    this.targetEl.innerHTML = "💨";
+                    if (this.currentScenario.truth === 'civilian') {
+                        outcome = "Target ignored. Civilian life preserved. Well done.";
+                        success = true;
+                        this.dread -= 10;
+                    } else {
+                        outcome = "Target ignored. Enemy units have breached the perimeter. We are compromised.";
+                        success = false;
+                        this.dread += 30;
+                    }
+                }
+
+                this.log("RESULT", outcome, success ? "system" : "warning");
+                this.updateDread();
+
+                setTimeout(() => {
+                    if (this.dread >= 100) {
+                        this.gameOver("DREAD OVERLOAD. PSYCHOLOGICAL BREAKDOWN IMMINENT.");
+                    } else {
+                        this.log("SYSTEM", "Resetting sensors for next contact...", "system");
+                        setTimeout(() => this.loadScenario(), 2000);
+                    }
+                }, 1500);
+            }
+
+            updateDread() {
+                if (this.dread < 0) this.dread = 0;
+                if (this.dread > 100) this.dread = 100;
+                this.dreadBar.style.width = `${this.dread}%`;
+            }
+
+            log(source, message, type="system") {
+                const div = document.createElement('div');
+                div.className = `log-entry ${type}`;
+                div.innerHTML = `<strong>[${source}]</strong>: ${message}`;
+                this.logEl.prepend(div);
+            }
+
+            gameOver(reason) {
+                this.active = false;
+                document.getElementById('overlay').innerHTML = `
+                    <h1 style="color:var(--neon-red)">SYSTEM FAILURE</h1>
+                    <p>${reason}</p>
+                    <button class="btn" onclick="location.reload()">REBOOT</button>
+                `;
+                document.getElementById('overlay').classList.add('visible');
+            }
+        }
+
+        const game = new Game();
+
+    </script>
+</body>
+</html>

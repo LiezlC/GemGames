@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infrared Journey</title>
+    <style>
+        :root {
+            --sky-top: #02111b;
+            --sky-bottom: #1a5c7a;
+            --leaf-color: #ff69b4;
+            --leaf-shadow: #c71585;
+            --road-color: #2d2d2d;
+            --ground-color: #0f2c3e;
+            --ui-bg: rgba(0, 0, 0, 0.6);
+            --accent: #ff69b4;
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: white;
+            user-select: none;
+        }
+
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none; /* Let clicks pass through to canvas where needed */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .hud-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            pointer-events: auto;
+        }
+
+        .score-board {
+            background: var(--ui-bg);
+            padding: 15px 25px;
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
+            text-align: center;
+        }
+
+        .score-board h1 {
+            margin: 0;
+            font-size: 1.2rem;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .score-board span {
+            font-size: 2rem;
+            font-weight: bold;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .controls {
+            background: var(--ui-bg);
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 200px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        label {
+            font-size: 0.8rem;
+            color: #ccc;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            accent-color: var(--accent);
+        }
+
+        button {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            text-transform: uppercase;
+            transition: transform 0.1s, filter 0.2s;
+        }
+
+        button:hover {
+            filter: brightness(1.2);
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        .hud-bottom {
+            text-align: center;
+            pointer-events: auto;
+            opacity: 0.7;
+            font-size: 0.9rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+        }
+
+        /* Overlay for start/pause */
+        #overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            pointer-events: auto;
+            backdrop-filter: blur(8px);
+            transition: opacity 0.5s;
+        }
+
+        #overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .title {
+            font-size: 4rem;
+            font-weight: 900;
+            color: white;
+            text-transform: uppercase;
+            letter-spacing: 10px;
+            margin-bottom: 10px;
+            background: linear-gradient(to bottom, #fff, var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px var(--accent);
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: #ddd;
+            margin-bottom: 40px;
+            max-width: 600px;
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        .start-btn {
+            padding: 15px 40px;
+            font-size: 1.5rem;
+            background: transparent;
+            border: 2px solid var(--accent);
+            color: var(--accent);
+            border-radius: 50px;
+            cursor: pointer;
+            transition: 0.3s;
+            box-shadow: 0 0 15px var(--accent);
+        }
+
+        .start-btn:hover {
+            background: var(--accent);
+            color: white;
+            box-shadow: 0 0 30px var(--accent);
+        }
+
+        /* Floating message */
+        .toast {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2rem;
+            font-weight: bold;
+            color: white;
+            pointer-events: none;
+            animation: floatUp 1s forwards;
+            text-shadow: 0 0 10px var(--accent);
+            z-index: 15;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+            20% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+            100% { transform: translate(-50%, -150%) scale(1); opacity: 0; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="canvas-container">
+        <canvas id="world"></canvas>
+    </div>
+
+    <div id="ui-layer">
+        <div class="hud-top">
+            <div class="score-board">
+                <h1>Distance</h1>
+                <span id="score">0</span> m
+            </div>
+            <div class="controls">
+                <div class="control-group">
+                    <label>Speed</label>
+                    <input type="range" id="speed-slider" min="1" max="10" value="5">
+                </div>
+                <div class="control-group">
+                    <label>Theme</label>
+                    <button id="theme-btn">Toggle Spectrum</button>
+                </div>
+            </div>
+        </div>
+        <div class="hud-bottom">
+            <p>Move Mouse to Steer • Collect Orbs for Boost • Avoid Nothing (Just Chill)</p>
+        </div>
+    </div>
+
+    <div id="overlay">
+        <div class="title">Infrared</div>
+        <div class="subtitle">A generative journey inspired by the surreal pink foliage and deep teal skies. <br>Relax, drive, and collect the light.</div>
+        <button class="start-btn" id="start-btn">Start Engine</button>
+    </div>
+
+    <script>
+        /**
+         * ENGINE & LOGIC
+         * A pseudo-3D perspective engine using HTML5 Canvas.
+         */
+
+        const canvas = document.getElementById('world');
+        const ctx = canvas.getContext('2d');
+        
+        // State
+        let width, height;
+        let cx, cy;
+        let frameId;
+        let isRunning = false;
+        let score = 0;
+        let speed = 5;
+        let playerX = 0; // -1 to 1
+        
+        // Theme Config
+        const themes = [
+            { // Infrared (Default)
+                skyTop: '#02111b',
+                skyBottom: '#1a5c7a',
+                leaf: '#ff69b4',
+                leafShadow: '#c71585',
+                trunk: '#2d1a1a',
+                road: '#2d2d2d',
+                ground: '#0f2c3e',
+                orb: '#ffffff',
+                orbGlow: '#ff69b4'
+            },
+            { // Natural
+                skyTop: '#1e3c72',
+                skyBottom: '#2a5298',
+                leaf: '#228b22',
+                leafShadow: '#006400',
+                trunk: '#3e2723',
+                road: '#333',
+                ground: '#2e8b57',
+                orb: '#ffd700',
+                orbGlow: '#ffa500'
+            },
+            { // Midnight
+                skyTop: '#000000',
+                skyBottom: '#191970',
+                leaf: '#4b0082',
+                leafShadow: '#191970',
+                trunk: '#111',
+                road: '#111',
+                ground: '#000',
+                orb: '#00ffff',
+                orbGlow: '#00ffff'
+            }
+        ];
+        let currentThemeIndex = 0;
+        let theme = themes[0];
+
+        // Objects
+        const trees = [];
+        const orbs = [];
+        const particles = [];
+        const roadSegments = [];
+
+        // Setup
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+            cx = width / 2;
+            cy = height / 2;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Input
+        document.addEventListener('mousemove', (e) => {
+            if (!isRunning) return;
+            // Map mouse X to -1 to 1 range
+            const normX = (e.clientX / width) * 2 - 1;
+            // Smooth lerp
+            playerX += (normX - playerX) * 0.1;
+        });
+
+        document.getElementById('speed-slider').addEventListener('input', (e) => {
+            speed = parseInt(e.target.value);
+        });
+
+        document.getElementById('theme-btn').addEventListener('click', () => {
+            currentThemeIndex = (currentThemeIndex + 1) % themes.length;
+            theme = themes[currentThemeIndex];
+            document.documentElement.style.setProperty('--accent', theme.leaf);
+            document.querySelector('.title').style.textShadow = `0 0 30px ${theme.leaf}`;
+        });
+
+        document.getElementById('start-btn').addEventListener('click', () => {
+            document.getElementById('overlay').classList.add('hidden');
+            isRunning = true;
+            gameLoop();
+        });
+
+        // Classes
+        class Tree {
+            constructor(zOffset) {
+                this.x = (Math.random() - 0.5) * 4; // Spread wide
+                // Keep trees off the road (road is approx -0.3 to 0.3)
+                if (this.x > -0.4 && this.x < 0.4) {
+                    this.x = this.x > 0 ? 0.5 + Math.random() * 2 : -0.5 - Math.random() * 2;
+                }
+                this.y = 0; // Ground level
+                this.z = 2000 + zOffset; // Start far away
+                
+                // Procedural generation
+                this.height = 150 + Math.random() * 100;
+                this.width = 60 + Math.random() * 40;
+                this.foliage = [];
+                // Generate foliage blobs
+                const blobs = 5 + Math.floor(Math.random() * 5);
+                for(let i=0; i<blobs; i++) {
+                    this.foliage.push({
+                        bx: (Math.random() - 0.5) * this.width,
+                        by: -this.height + (Math.random() - 0.5) * (this.height/2),
+                        size: 30 + Math.random() * 30
+                    });
+                }
+            }
+
+            update(dt) {
+                this.z -= speed * dt * 20;
+                if (this.z < 10) {
+                    this.z = 2000;
+                    // Re-randomize x to spawn new tree
+                    this.x = (Math.random() - 0.5) * 6;
+                    if (this.x > -0.5 && this.x < 0.5) {
+                        this.x = this.x > 0 ? 0.6 + Math.random() * 3 : -0.6 - Math.random() * 3;
+                    }
+                }
+            }
+
+            draw(ctx) {
+                const perspective = 400;
+                const scale = perspective / (perspective + this.z);
+                
+                // Parallax shift based on player position
+                const screenX = cx + (this.x - playerX * 0.5) * width * scale;
+                const screenY = cy + 50 + (this.y + 200) * scale; // 50 is horizon offset
+
+                if (scale < 0) return;
+
+                const treeW = this.width * scale;
+                const treeH = this.height * scale;
+
+                // Trunk
+                ctx.fillStyle = theme.trunk;
+                ctx.beginPath();
+                ctx.moveTo(screenX - treeW * 0.1, screenY);
+                ctx.lineTo(screenX + treeW * 0.1, screenY);
+                ctx.lineTo(screenX, screenY - treeH);
+                ctx.fill();
+
+                // Foliage
+                this.foliage.forEach(blob => {
+                    const bx = screenX + blob.bx * scale;
+                    const by = screenY + blob.by * scale;
+                    const bSize = blob.size * scale;
+                    
+                    ctx.beginPath();
+                    ctx.arc(bx, by, bSize, 0, Math.PI * 2);
+                    // Gradient for 3D feel
+                    const grad = ctx.createRadialGradient(bx - bSize*0.3, by - bSize*0.3, bSize*0.1, bx, by, bSize);
+                    grad.addColorStop(0, theme.leaf);
+                    grad.addColorStop(1, theme.leafShadow);
+                    ctx.fillStyle = grad;
+                    ctx.fill();
+                });
+            }
+        }
+
+        class Orb {
+            constructor() {
+                this.active = false;
+                this.x = 0;
+                this.z = 2000;
+            }
+
+            spawn() {
+                this.active = true;
+                this.z = 2000;
+                this.x = (Math.random() - 0.5) * 0.5; // On the road
+            }
+
+            update(dt) {
+                if (!this.active) return;
+                this.z -= speed * dt * 20;
+                
+                // Collision detection
+                if (this.z < 100 && this.z > 10) {
+                    // Simple X check
+                    if (Math.abs(this.x - playerX * 0.5) < 0.15) {
+                        this.collect();
+                    }
+                }
+
+                if (this.z < 10) {
+                    this.active = false;
+                }
+            }
+
+            collect() {
+                this.active = false;
+                score += 100;
+                showToast("+100 ENERGY");
+                createParticles(cx, height - 100, theme.orb);
+            }
+
+            draw(ctx) {
+                if (!this.active) return;
+                const perspective = 400;
+                const scale = perspective / (perspective + this.z);
+                const screenX = cx + (this.x - playerX * 0.5) * width * scale;
+                const screenY = cy + 50 + (20) * scale; // Slightly above road
+
+                const size = 20 * scale;
+                
+                ctx.beginPath();
+                ctx.arc(screenX, screenY, size, 0, Math.PI * 2);
+                ctx.fillStyle = theme.orb;
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = theme.orbGlow;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 10;
+                this.vy = (Math.random() - 1) * 10;
+                this.life = 1.0;
+                this.color = color;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.life -= 0.02;
+            }
+            draw(ctx) {
+                ctx.globalAlpha = this.life;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 3, 0, Math.PI*2);
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        function createParticles(x, y, color) {
+            for(let i=0; i<10; i++) {
+                particles.push(new Particle(x, y, color));
+            }
+        }
+
+        function showToast(text) {
+            const el = document.createElement('div');
+            el.className = 'toast';
+            el.innerText = text;
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 1000);
+        }
+
+        // Initialize World
+        for(let i=0; i<50; i++) {
+            trees.push(new Tree(i * 40));
+        }
+        const orb = new Orb();
+
+        // Road markers
+        let roadOffset = 0;
+
+        function drawBackground() {
+            // Sky Gradient
+            const grad = ctx.createLinearGradient(0, 0, 0, height);
+            grad.addColorStop(0, theme.skyTop);
+            grad.addColorStop(0.5, theme.skyBottom); // Horizon
+            grad.addColorStop(0.5, theme.ground); // Ground
+            grad.addColorStop(1, theme.ground);
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, width, height);
+
+            // The Road (Trapezoid)
+            const horizonY = cy + 50;
+            const roadTopW = 10;
+            const roadBottomW = width * 1.5;
+            
+            // Dynamic road curve based on playerX
+            const curve = playerX * 200;
+
+            ctx.fillStyle = theme.road;
+            ctx.beginPath();
+            ctx.moveTo(cx - roadTopW + curve, horizonY); // Top Left
+            ctx.lineTo(cx + roadTopW + curve, horizonY); // Top Right
+            ctx.lineTo(cx + roadBottomW, height); // Bottom Right
+            ctx.lineTo(cx - roadBottomW, height); // Bottom Left
+            ctx.fill();
+
+            // Road Lines (Moving)
+            ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+            ctx.lineWidth = 2;
+            roadOffset = (roadOffset + speed) % 100;
+            
+            // Draw perspective lines
+            // Center line
+            ctx.beginPath();
+            ctx.setLineDash([20, 30]);
+            ctx.lineDashOffset = -roadOffset;
+            ctx.moveTo(cx + curve, horizonY);
+            ctx.lineTo(cx, height);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        function gameLoop() {
+            if (!isRunning) return;
+            
+            ctx.clearRect(0, 0, width, height);
+            
+            drawBackground();
+
+            // Sort trees by Z (Painters algorithm)
+            trees.sort((a, b) => b.z - a.z);
+
+            // Update and Draw Trees
+            trees.forEach(tree => {
+                tree.update(0.16);
+                tree.draw(ctx);
+            });
+
+            // Orb Logic
+            if (!orb.active && Math.random() < 0.01) {
+                orb.spawn();
+            }
+            orb.update(0.16);
+            orb.draw(ctx);
+
+            // Particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].update();
+                particles[i].draw(ctx);
+                if (particles[i].life <= 0) particles.splice(i, 1);
+            }
+
+            // Score update
+            score += Math.floor(speed / 2);
+            document.getElementById('score').innerText = Math.floor(score / 10);
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Initial render for background
+        drawBackground();
+
+    </script>
+</body>
+</html>

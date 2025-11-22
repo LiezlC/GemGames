@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chrono-Vortex Decrypter</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Pinyon+Script&family=Share+Tech+Mono&display=swap');
+
+        :root {
+            --bg-paper: #dcceb6;
+            --bg-vignette: #8b7355;
+            --digital-cyan: #00f0ff;
+            --digital-blue: #0077ff;
+            --core-gold: #ffdd00;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: radial-gradient(circle at center, var(--bg-paper), #a68a64, #463625);
+            font-family: 'Share Tech Mono', monospace;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Procedural Parchment Texture using CSS Noise */
+        .parchment-texture {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.4;
+            pointer-events: none;
+            z-index: 0;
+            filter: contrast(150%) sepia(50%);
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.5'/%3E%3C/svg%3E");
+        }
+
+        /* Background Script Layer */
+        .script-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            overflow: hidden;
+            pointer-events: none;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            opacity: 0.15;
+        }
+
+        .handwriting {
+            font-family: 'Pinyon Script', cursive;
+            font-size: 2rem;
+            color: #3e2b14;
+            padding: 20px;
+            transform: rotate(-15deg);
+            white-space: nowrap;
+            width: 120%;
+            text-align: center;
+        }
+
+        /* The Canvas */
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 2;
+        }
+
+        /* UI Overlay */
+        .ui-container {
+            position: absolute;
+            bottom: 40px;
+            z-index: 10;
+            width: 90%;
+            max-width: 600px;
+            background: rgba(20, 20, 30, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            transition: transform 0.3s ease;
+        }
+
+        .ui-container:hover {
+            transform: translateY(-5px);
+            border-color: var(--digital-cyan);
+        }
+
+        h1 {
+            color: var(--digital-cyan);
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px var(--digital-cyan);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            background: var(--digital-cyan);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--digital-cyan);
+            animation: pulse 2s infinite;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        input {
+            flex: 1;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid #444;
+            color: #fff;
+            padding: 12px;
+            border-radius: 8px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        input:focus {
+            border-color: var(--digital-cyan);
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.2);
+        }
+
+        button {
+            background: linear-gradient(45deg, var(--digital-blue), var(--digital-cyan));
+            border: none;
+            color: #000;
+            font-weight: bold;
+            padding: 0 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Share Tech Mono', monospace;
+            text-transform: uppercase;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            filter: brightness(1.2);
+            transform: scale(1.05);
+        }
+
+        .mode-toggle {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+
+        .mode-btn {
+            background: none;
+            border: 1px solid #444;
+            color: #888;
+            padding: 5px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+
+        .mode-btn.active {
+            border-color: var(--digital-cyan);
+            color: var(--digital-cyan);
+            background: rgba(0, 240, 255, 0.1);
+        }
+
+        /* Overlay for decoded text */
+        .decoded-message {
+            position: absolute;
+            top: 20%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Pinyon Script', cursive;
+            font-size: 3rem;
+            color: #3e2b14;
+            text-shadow: 0 0 20px rgba(255, 221, 0, 0.8);
+            opacity: 0;
+            pointer-events: none;
+            z-index: 20;
+            transition: opacity 0.5s;
+            text-align: center;
+            width: 80%;
+        }
+
+        .decoded-message.show {
+            opacity: 1;
+            animation: floatUp 3s forwards;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.5; }
+            50% { opacity: 1; }
+            100% { opacity: 0.5; }
+        }
+
+        @keyframes floatUp {
+            0% { transform: translate(-50%, 0) scale(0.9); opacity: 0; }
+            20% { opacity: 1; }
+            100% { transform: translate(-50%, -50px) scale(1.1); opacity: 0; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Visual Layers -->
+    <div class="parchment-texture"></div>
+    <div class="script-layer" id="scriptLayer">
+        <!-- JS will populate this with "old text" -->
+    </div>
+
+    <!-- The Interactive Vortex -->
+    <canvas id="vortexCanvas"></canvas>
+
+    <!-- Pop-up for decoded messages -->
+    <div id="decodedDisplay" class="decoded-message"></div>
+
+    <!-- Controls -->
+    <div class="ui-container">
+        <h1>
+            <span>System: Chrono-Link</span>
+            <div class="status-indicator"></div>
+        </h1>
+        <div class="input-group">
+            <input type="text" id="msgInput" placeholder="Enter message to encrypt into the timeline..." autocomplete="off">
+            <button id="sendBtn">Inject</button>
+        </div>
+        <div class="mode-toggle">
+            <button class="mode-btn active" id="modeEncrypt">Mode: Encrypt (In)</button>
+            <button class="mode-btn" id="modeDecrypt">Mode: Decrypt (Out)</button>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * CHRONO-VORTEX ENGINE
+         * Simulates a spiral of binary data merging with ancient history.
+         */
+
+        // --- Configuration ---
+        const canvas = document.getElementById('vortexCanvas');
+        const ctx = canvas.getContext('2d');
+        const scriptLayer = document.getElementById('scriptLayer');
+        const input = document.getElementById('msgInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const decodedDisplay = document.getElementById('decodedDisplay');
+        
+        let width, height, centerX, centerY;
+        let particles = [];
+        let mode = 'encrypt'; // 'encrypt' (spiral in) or 'decrypt' (spiral out)
+        let frame = 0;
+
+        // Ancient text fragments to populate background
+        const ancientTexts = [
+            "Tempus edax rerum", "Veritas vos liberabit", "Scientia potentia est",
+            "Ad astra per aspera", "Cogito, ergo sum", "Ars longa, vita brevis",
+            "Alea iacta est", "Carpe diem", "Memento mori", "Veni, vidi, vici"
+        ];
+
+        // --- Initialization ---
+
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+            centerX = width / 2;
+            centerY = height / 2;
+        }
+
+        function initBackground() {
+            // Create rows of faint cursive text
+            let html = '';
+            for(let i=0; i<20; i++) {
+                const text = ancientTexts[Math.floor(Math.random() * ancientTexts.length)] + " " + 
+                             ancientTexts[Math.floor(Math.random() * ancientTexts.length)] + " " +
+                             " ... " + Math.random().toString(36).substring(7);
+                html += `<div class="handwriting" style="margin-left: ${Math.random()*100}px">${text}</div>`;
+            }
+            scriptLayer.innerHTML = html;
+        }
+
+        window.addEventListener('resize', resize);
+        resize();
+        initBackground();
+
+        // --- Particle System ---
+
+        class Bit {
+            constructor(val, isUserGenerated = false) {
+                this.val = val; // "0" or "1"
+                this.angle = Math.random() * Math.PI * 2;
+                
+                // Determine start radius based on mode
+                if (mode === 'encrypt') {
+                    this.radius = Math.max(width, height) * 0.6; // Start outside
+                    this.targetRadius = 0;
+                } else {
+                    this.radius = 10; // Start center
+                    this.targetRadius = Math.max(width, height) * 0.8;
+                }
+
+                // Randomize spiral arm offset
+                this.armOffset = (Math.floor(Math.random() * 5) * (Math.PI * 2 / 5)); 
+                this.angle += this.armOffset;
+
+                this.speed = 2 + Math.random() * 3;
+                this.size = 10 + Math.random() * 10;
+                this.isUserGenerated = isUserGenerated;
+                
+                // Color logic
+                this.hue = isUserGenerated ? 180 : 210; // Cyan vs Blue
+                this.alpha = 0;
+                this.dead = false;
+            }
+
+            update() {
+                // Spiral Math
+                // x = r * cos(theta)
+                // y = r * sin(theta)
+                
+                if (mode === 'encrypt') {
+                    this.radius -= this.speed;
+                    this.angle += 0.02; // Spin speed
+                    this.alpha = Math.min(1, (Math.max(width, height)*0.6 - this.radius) / 200);
+                    
+                    if (this.radius < 10) {
+                        this.dead = true; // Sucked into singularity
+                    }
+                } else {
+                    this.radius += this.speed;
+                    this.angle -= 0.02;
+                    this.alpha = Math.min(1, this.radius / 100);
+                    
+                    if (this.radius > Math.max(width, height) * 0.7) {
+                        this.alpha -= 0.05;
+                        if (this.alpha <= 0) this.dead = true;
+                    }
+                }
+
+                // Calculate position
+                this.x = centerX + this.radius * Math.cos(this.angle);
+                this.y = centerY + this.radius * Math.sin(this.angle);
+
+                // Mouse Interaction (Disturbance)
+                const dx = this.x - mouse.x;
+                const dy = this.y - mouse.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                
+                if (dist < 100) {
+                    this.x += dx * 0.1;
+                    this.y += dy * 0.1;
+                    this.hue = 60; // Turn Gold on hover
+                } else if (!this.isUserGenerated) {
+                    this.hue = 210 - (this.radius / width) * 50; // Gradient Blue to Cyan
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle + Math.PI/2); // Rotate text to face center
+                
+                ctx.font = `${this.size}px 'Share Tech Mono'`;
+                
+                // Glow effect
+                if (this.radius < 100) {
+                    ctx.shadowBlur = 20;
+                    ctx.shadowColor = '#ffdd00'; // Gold center
+                    ctx.fillStyle = '#ffffff';
+                } else {
+                    ctx.shadowBlur = 5;
+                    ctx.shadowColor = `hsla(${this.hue}, 100%, 50%, 0.8)`;
+                    ctx.fillStyle = `hsla(${this.hue}, 100%, 70%, ${this.alpha})`;
+                }
+
+                ctx.fillText(this.val, 0, 0);
+                ctx.restore();
+            }
+        }
+
+        // --- Interaction Logic ---
+
+        const mouse = { x: -1000, y: -1000 };
+        window.addEventListener('mousemove', (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+        });
+
+        // Inject Text
+        function injectText(text) {
+            const binary = text.split('').map(char => {
+                return char.charCodeAt(0).toString(2);
+            }).join('');
+
+            let delay = 0;
+            for (let bit of binary) {
+                setTimeout(() => {
+                    particles.push(new Bit(bit, true));
+                }, delay);
+                delay += 10;
+            }
+        }
+
+        sendBtn.addEventListener('click', () => {
+            if (input.value.trim() !== "") {
+                injectText(input.value);
+                input.value = "";
+                // Visual feedback
+                mode = 'encrypt';
+                updateModeUI();
+            }
+        });
+
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendBtn.click();
+        });
+
+        // Mode Switching
+        const btnEncrypt = document.getElementById('modeEncrypt');
+        const btnDecrypt = document.getElementById('modeDecrypt');
+
+        function updateModeUI() {
+            if (mode === 'encrypt') {
+                btnEncrypt.classList.add('active');
+                btnDecrypt.classList.remove('active');
+            } else {
+                btnEncrypt.classList.remove('active');
+                btnDecrypt.classList.add('active');
+            }
+            // Clear particles for dramatic effect when switching
+            particles.forEach(p => p.dead = true);
+        }
+
+        btnEncrypt.addEventListener('click', () => { mode = 'encrypt'; updateModeUI(); });
+        btnDecrypt.addEventListener('click', () => { mode = 'decrypt'; updateModeUI(); });
+
+        // Show Decoded Message
+        function showDecoded(text) {
+            decodedDisplay.innerText = text;
+            decodedDisplay.classList.remove('show');
+            void decodedDisplay.offsetWidth; // trigger reflow
+            decodedDisplay.classList.add('show');
+        }
+
+        // Click to "Decode"
+        canvas.addEventListener('click', (e) => {
+            // Find if clicked near a particle
+            // Or just random "success" for gamification feel
+            const randomWord = ancientTexts[Math.floor(Math.random() * ancientTexts.length)];
+            
+            // Create a burst effect
+            for(let i=0; i<10; i++) {
+                const p = new Bit(Math.round(Math.random()), true);
+                p.x = e.clientX;
+                p.y = e.clientY;
+                p.radius = Math.sqrt(Math.pow(e.clientX-centerX, 2) + Math.pow(e.clientY-centerY, 2));
+                p.angle = Math.atan2(e.clientY-centerY, e.clientX-centerX);
+                p.speed = -5; // Explode outward
+                particles.push(p);
+            }
+
+            showDecoded(randomWord);
+        });
+
+        // --- Main Loop ---
+
+        function animate() {
+            // Clear with trail effect
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)'; // Darken slightly for trails
+            ctx.clearRect(0, 0, width, height);
+            
+            // Draw center glow (The Singularity)
+            const gradient = ctx.createRadialGradient(centerX, centerY, 5, centerX, centerY, 150);
+            gradient.addColorStop(0, 'rgba(255, 221, 0, 0.8)'); // Bright Gold
+            gradient.addColorStop(0.2, 'rgba(255, 100, 0, 0.3)'); // Orange
+            gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 150, 0, Math.PI*2);
+            ctx.fill();
+
+            // Spawn ambient particles
+            if (particles.length < 400) {
+                particles.push(new Bit(Math.round(Math.random()).toString()));
+            }
+
+            // Update and Draw Particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.update();
+                p.draw();
+                if (p.dead) {
+                    particles.splice(i, 1);
+                }
+            }
+
+            // Draw connection lines for "Data Streams"
+            ctx.strokeStyle = 'rgba(0, 240, 255, 0.05)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            for (let i = 0; i < particles.length; i+=10) {
+                const p = particles[i];
+                if (p.radius < 300 && p.radius > 50) {
+                    ctx.lineTo(p.x, p.y);
+                }
+            }
+            ctx.stroke();
+
+            frame++;
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+
+    </script>
+</body>
+</html>

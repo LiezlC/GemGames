@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Vigil: Keeper of the Flame</title>
+    <style>
+        :root {
+            --bg-color: #0f0502;
+            --flame-core: #fff;
+            --flame-inner: #ffeb3b;
+            --flame-outer: #ff9800;
+            --flame-glow: #ff5722;
+            --wax-color: #e0c097;
+            --wax-shadow: #8d6e63;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: none; /* Custom cursor logic */
+        }
+
+        /* The Zoom Blur Effect from the photo */
+        .zoom-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, transparent 20%, #000000 120%);
+            pointer-events: none;
+            z-index: 10;
+            box-shadow: inset 0 0 100px #000;
+        }
+
+        .speed-lines {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 200vmax;
+            height: 200vmax;
+            background: repeating-conic-gradient(
+                from 0deg,
+                transparent 0deg,
+                transparent 2deg,
+                rgba(255, 87, 34, 0.05) 2.5deg,
+                transparent 3deg
+            );
+            transform: translate(-50%, -50%);
+            z-index: 1;
+            animation: spin 20s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes spin {
+            from { transform: translate(-50%, -50%) rotate(0deg); }
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        /* Background Candles (The Crowd) */
+        .ambient-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+        }
+
+        .bg-candle {
+            position: absolute;
+            width: 20px;
+            height: 40px;
+            background: rgba(255, 152, 0, 0.2);
+            border-radius: 50%;
+            filter: blur(8px);
+            opacity: 0;
+            transition: opacity 2s ease;
+            box-shadow: 0 0 20px 10px rgba(255, 87, 34, 0.1);
+        }
+
+        .bg-candle.lit {
+            opacity: 0.8;
+            background: rgba(255, 200, 100, 0.6);
+            animation: bg-flicker 3s infinite alternate;
+        }
+
+        @keyframes bg-flicker {
+            0% { transform: scale(1); opacity: 0.6; }
+            100% { transform: scale(1.2); opacity: 0.9; }
+        }
+
+        /* Main Candle Setup */
+        .candle-container {
+            position: relative;
+            z-index: 5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transform-origin: bottom center;
+        }
+
+        .flame-wrapper {
+            position: relative;
+            width: 60px;
+            height: 100px;
+            display: flex;
+            justify-content: center;
+            transform-origin: bottom center;
+            transition: transform 0.1s ease-out;
+        }
+
+        .flame {
+            position: absolute;
+            bottom: 0;
+            width: 30px;
+            height: 80px;
+            border-radius: 50% 50% 20% 20%;
+            background: linear-gradient(to bottom, var(--flame-core), var(--flame-inner), var(--flame-outer), transparent);
+            box-shadow: 
+                0 0 20px 5px var(--flame-glow),
+                0 -10px 40px 10px var(--flame-outer),
+                0 -20px 80px 20px rgba(255, 87, 34, 0.5);
+            transform-origin: bottom center;
+            animation: flicker 0.1s infinite alternate;
+            filter: blur(1px);
+            opacity: 0; /* Starts unlit */
+            transition: height 0.2s, opacity 0.5s;
+        }
+
+        .wick {
+            width: 4px;
+            height: 15px;
+            background: #333;
+            margin-bottom: -5px;
+            z-index: 4;
+        }
+
+        .wax {
+            width: 80px;
+            height: 120px;
+            background: linear-gradient(to right, var(--wax-shadow), var(--wax-color) 30%, var(--wax-color) 70%, var(--wax-shadow));
+            border-radius: 5px;
+            box-shadow: inset 0 10px 20px -10px rgba(0,0,0,0.5);
+            position: relative;
+        }
+
+        .wax::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: 0;
+            width: 100%;
+            height: 20px;
+            background: radial-gradient(ellipse at center, #fff5e6, var(--wax-color));
+            border-radius: 50%;
+        }
+
+        /* Hand/Cursor Representation */
+        .hand-cursor {
+            position: fixed;
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255,200,150,0.1) 0%, transparent 70%);
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            z-index: 20;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: width 0.2s, height 0.2s;
+            mix-blend-mode: screen;
+        }
+
+        .hand-cursor::after {
+            content: '✋';
+            font-size: 40px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0.5;
+            filter: blur(1px);
+        }
+
+        /* UI Elements */
+        .ui-layer {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            text-align: center;
+            color: rgba(255,255,255,0.7);
+            z-index: 30;
+            pointer-events: none;
+        }
+
+        h1 {
+            font-weight: 300;
+            letter-spacing: 5px;
+            margin: 0;
+            text-shadow: 0 0 10px #ff5722;
+            font-size: 1.5rem;
+        }
+
+        p {
+            font-size: 0.9rem;
+            margin-top: 5px;
+            opacity: 0.8;
+        }
+
+        .progress-bar {
+            width: 300px;
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            margin: 20px auto;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: #ff9800;
+            box-shadow: 0 0 10px #ff9800;
+            transition: width 0.5s;
+        }
+
+        .wind-warning {
+            position: absolute;
+            color: #00bcd4;
+            font-size: 2rem;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 15;
+            font-weight: bold;
+        }
+
+        /* Animations */
+        @keyframes flicker {
+            0% { transform: scale(1) rotate(-2deg); opacity: 0.9; }
+            25% { transform: scale(1.05) rotate(2deg); opacity: 1; }
+            50% { transform: scale(0.95) rotate(-1deg); opacity: 0.8; }
+            75% { transform: scale(1.02) rotate(1deg); opacity: 0.95; }
+            100% { transform: scale(1) rotate(-2deg); opacity: 0.9; }
+        }
+
+        @keyframes dying {
+            0% { height: 80px; opacity: 0.8; }
+            100% { height: 10px; opacity: 0.2; }
+        }
+
+        .start-btn {
+            pointer-events: auto;
+            background: transparent;
+            border: 2px solid #ff9800;
+            color: #ff9800;
+            padding: 10px 30px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            border-radius: 30px;
+            margin-top: 20px;
+            transition: all 0.3s;
+            box-shadow: 0 0 10px rgba(255,152,0,0.2);
+        }
+
+        .start-btn:hover {
+            background: #ff9800;
+            color: #000;
+            box-shadow: 0 0 30px #ff9800;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* Particles */
+        .particle {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: #fff;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 6;
+            animation: rise 1.5s linear forwards;
+        }
+
+        @keyframes rise {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-100px) scale(0); opacity: 0; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="speed-lines"></div>
+    <div class="zoom-overlay"></div>
+    
+    <div class="ambient-layer" id="ambientLayer">
+        <!-- Background candles generated by JS -->
+    </div>
+
+    <div class="ui-layer">
+        <h1 id="title">THE VIGIL</h1>
+        <p id="subtitle">Click to light the candle.</p>
+        <div class="progress-bar hidden" id="progressBarContainer">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <button class="start-btn" id="startBtn">IGNITE</button>
+    </div>
+
+    <div class="candle-container">
+        <div class="flame-wrapper" id="flameWrapper">
+            <div class="flame" id="flame"></div>
+        </div>
+        <div class="wick"></div>
+        <div class="wax"></div>
+    </div>
+
+    <div class="hand-cursor" id="handCursor"></div>
+    <div class="wind-warning" id="windWarning">💨</div>
+
+    <script>
+        // Game State
+        const state = {
+            isLit: false,
+            health: 100,
+            windX: 0,
+            windStrength: 0,
+            score: 0,
+            level: 0,
+            mouseX: window.innerWidth / 2,
+            mouseY: window.innerHeight / 2
+        };
+
+        // Elements
+        const flame = document.getElementById('flame');
+        const flameWrapper = document.getElementById('flameWrapper');
+        const handCursor = document.getElementById('handCursor');
+        const startBtn = document.getElementById('startBtn');
+        const title = document.getElementById('title');
+        const subtitle = document.getElementById('subtitle');
+        const progressFill = document.getElementById('progressFill');
+        const progressBarContainer = document.getElementById('progressBarContainer');
+        const ambientLayer = document.getElementById('ambientLayer');
+        const windWarning = document.getElementById('windWarning');
+
+        // Audio Context (Simulated with visual pulsing for now, keeping it silent/visual-only per strict instructions or adding simple oscillator if desired. Sticking to visual.)
+        
+        // Mouse Tracking
+        document.addEventListener('mousemove', (e) => {
+            state.mouseX = e.clientX;
+            state.mouseY = e.clientY;
+            
+            // Move custom cursor
+            handCursor.style.left = e.clientX + 'px';
+            handCursor.style.top = e.clientY + 'px';
+        });
+
+        // Start Game
+        startBtn.addEventListener('click', () => {
+            state.isLit = true;
+            state.health = 100;
+            state.score = 0;
+            state.level = 0;
+            
+            flame.style.opacity = '1';
+            startBtn.classList.add('hidden');
+            progressBarContainer.classList.remove('hidden');
+            title.innerText = "PROTECT THE FLAME";
+            subtitle.innerText = "Keep your hand (mouse) close to shield it from the wind.";
+            
+            generateBackgroundCandles();
+            gameLoop();
+        });
+
+        // Generate Background Candles (The Crowd)
+        const candles = [];
+        function generateBackgroundCandles() {
+            ambientLayer.innerHTML = '';
+            candles.length = 0;
+            for(let i=0; i<15; i++) {
+                const el = document.createElement('div');
+                el.classList.add('bg-candle');
+                // Random positions around the center
+                const angle = Math.random() * Math.PI * 2;
+                const dist = 150 + Math.random() * 400;
+                const x = window.innerWidth/2 + Math.cos(angle) * dist;
+                const y = window.innerHeight/2 + Math.sin(angle) * dist; // flattened perspective
+                
+                el.style.left = x + 'px';
+                el.style.top = y + 'px';
+                
+                // Perspective sizing
+                const scale = 0.5 + Math.random() * 0.5;
+                el.style.transform = `scale(${scale})`;
+                
+                ambientLayer.appendChild(el);
+                candles.push({ el, lit: false });
+            }
+        }
+
+        function lightBackgroundCandle() {
+            const unlit = candles.filter(c => !c.lit);
+            if(unlit.length > 0) {
+                const target = unlit[Math.floor(Math.random() * unlit.length)];
+                target.lit = true;
+                target.el.classList.add('lit');
+                state.level++;
+                
+                // Create a "connection" spark
+                createSpark(window.innerWidth/2, window.innerHeight/2 + 100, parseFloat(target.el.style.left), parseFloat(target.el.style.top));
+            }
+            
+            if(state.level >= candles.length) {
+                winGame();
+            }
+        }
+
+        function createSpark(x1, y1, x2, y2) {
+            const spark = document.createElement('div');
+            spark.className = 'particle';
+            spark.style.left = x1 + 'px';
+            spark.style.top = y1 + 'px';
+            spark.style.background = '#ffeb3b';
+            spark.style.transition = 'all 1s ease-out';
+            document.body.appendChild(spark);
+            
+            setTimeout(() => {
+                spark.style.left = x2 + 'px';
+                spark.style.top = y2 + 'px';
+            }, 10);
+            
+            setTimeout(() => spark.remove(), 1000);
+        }
+
+        // Physics & Logic Loop
+        let windChangeTimer = 0;
+        
+        function gameLoop() {
+            if(!state.isLit) return;
+
+            // 1. Calculate Wind
+            windChangeTimer++;
+            if(windChangeTimer > 100) {
+                // Change wind direction and strength randomly
+                state.windStrength = Math.random() * 2 - 1; // -1 to 1
+                windChangeTimer = 0;
+                
+                // Visual indicator of wind
+                if(Math.abs(state.windStrength) > 0.5) {
+                    windWarning.style.opacity = 1;
+                    windWarning.style.left = state.windStrength > 0 ? '10%' : '90%';
+                    windWarning.style.top = '50%';
+                    windWarning.innerText = state.windStrength > 0 ? '💨' : '💨';
+                    windWarning.style.transform = state.windStrength > 0 ? 'scaleX(1)' : 'scaleX(-1)';
+                } else {
+                    windWarning.style.opacity = 0;
+                }
+            }
+
+            // 2. Calculate Shielding (Distance from mouse to candle center)
+            const candleX = window.innerWidth / 2;
+            const candleY = window.innerHeight / 2 + 100; // Approximate flame position
+            const dist = Math.hypot(state.mouseX - candleX, state.mouseY - candleY);
+            
+            // Shield logic: Closer is better. 
+            // If wind is strong, you need to be closer.
+            // If wind is coming from Left, you should ideally be on the Left (simplified to just proximity for UX ease).
+            
+            let protection = Math.max(0, 1 - (dist / 250)); // 0 to 1
+            
+            // Flame Physics
+            // Base instability
+            let instability = Math.abs(state.windStrength) * 2; 
+            
+            // Protection reduces instability
+            instability *= (1 - protection * 0.9); 
+            
+            // Apply rotation to flame based on wind vs protection
+            let lean = state.windStrength * 45 * (1 - protection);
+            flameWrapper.style.transform = `rotate(${lean}deg)`;
+
+            // Health Logic
+            if(instability > 0.3) {
+                state.health -= 0.5;
+                flame.style.height = (80 * (state.health/100)) + 'px';
+                flame.style.filter = `blur(${instability * 5}px)`;
+            } else {
+                state.health = Math.min(100, state.health + 0.2);
+                flame.style.height = (80 * (state.health/100)) + 'px';
+                flame.style.filter = `blur(1px)`;
+                
+                // Score/Progress
+                state.score += 1;
+                if(state.score % 300 === 0) { // Every ~5 seconds of good health
+                    lightBackgroundCandle();
+                }
+            }
+
+            // Update UI
+            progressFill.style.width = (state.level / 15 * 100) + '%';
+            
+            // Emit particles if healthy
+            if(state.health > 80 && Math.random() > 0.9) {
+                const p = document.createElement('div');
+                p.classList.add('particle');
+                p.style.left = (window.innerWidth/2 + (Math.random()*20 - 10)) + 'px';
+                p.style.top = (window.innerHeight/2 + 100) + 'px';
+                document.body.appendChild(p);
+                setTimeout(() => p.remove(), 1500);
+            }
+
+            // Game Over Check
+            if(state.health <= 0) {
+                gameOver();
+            } else {
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
+        function gameOver() {
+            state.isLit = false;
+            flame.style.opacity = 0;
+            title.innerText = "THE FLAME FADED";
+            subtitle.innerText = "The wind was too strong. Try again.";
+            startBtn.innerText = "REKINDLE";
+            startBtn.classList.remove('hidden');
+            windWarning.style.opacity = 0;
+        }
+
+        function winGame() {
+            title.innerText = "A SEA OF LIGHT";
+            subtitle.innerText = "You have united the gathering.";
+            progressFill.style.background = "#fff";
+            // Celebrate
+            setInterval(() => {
+                createSpark(window.innerWidth/2, window.innerHeight/2 + 100, Math.random()*window.innerWidth, Math.random()*window.innerHeight);
+            }, 50);
+        }
+
+    </script>
+<script>
+    // ===== MOBILE TOUCH SUPPORT =====
+    // Added for mobile-friendly gameplay
+
+    (function() {
+        // Touch to click conversion
+        document.addEventListener('touchstart', function(e) {
+            if (e.target.tagName === 'BUTTON' || e.target.onclick) {
+                e.preventDefault();
+                e.target.click();
+            }
+        }, { passive: false });
+
+        // Swipe detection for mobile
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchEndX = 0;
+        let touchEndY = 0;
+
+        document.addEventListener('touchstart', function(e) {
+            touchStartX = e.changedTouches[0].screenX;
+            touchStartY = e.changedTouches[0].screenY;
+        }, false);
+
+        document.addEventListener('touchend', function(e) {
+            touchEndX = e.changedTouches[0].screenX;
+            touchEndY = e.changedTouches[0].screenY;
+            handleSwipe();
+        }, false);
+
+        function handleSwipe() {
+            const deltaX = touchEndX - touchStartX;
+            const deltaY = touchEndY - touchStartY;
+            const minSwipeDistance = 50;
+
+            if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > minSwipeDistance) {
+                if (deltaX > 0) {
+                    // Swipe right - simulate right arrow
+                    simulateKey('ArrowRight', 39);
+                } else {
+                    // Swipe left - simulate left arrow
+                    simulateKey('ArrowLeft', 37);
+                }
+            } else if (Math.abs(deltaY) > minSwipeDistance) {
+                if (deltaY > 0) {
+                    // Swipe down - simulate down arrow
+                    simulateKey('ArrowDown', 40);
+                } else {
+                    // Swipe up - simulate up arrow
+                    simulateKey('ArrowUp', 38);
+                }
+            }
+        }
+
+        function simulateKey(key, keyCode) {
+            const event = new KeyboardEvent('keydown', {
+                key: key,
+                keyCode: keyCode,
+                code: key,
+                which: keyCode,
+                bubbles: true
+            });
+            document.dispatchEvent(event);
+        }
+
+        // Tap anywhere to start (for games requiring click to begin)
+        let hasStarted = false;
+        document.addEventListener('touchstart', function(e) {
+            if (!hasStarted) {
+                hasStarted = true;
+                // Simulate spacebar/enter for start
+                simulateKey(' ', 32);
+            }
+        }, { once: true });
+
+        // Prevent double-tap zoom
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function(e) {
+            const now = Date.now();
+            if (now - lastTouchEnd <= 300) {
+                e.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+
+        // Add mobile controls hint
+        const style = document.createElement('style');
+        style.textContent = `
+            @media (max-width: 768px) {
+                body::after {
+                    content: '👆 Tap to play • Swipe to move';
+                    position: fixed;
+                    bottom: 10px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background: rgba(0,0,0,0.7);
+                    color: white;
+                    padding: 8px 16px;
+                    border-radius: 20px;
+                    font-size: 12px;
+                    z-index: 10000;
+                    pointer-events: none;
+                    animation: fadeOut 4s forwards;
+                }
+                @keyframes fadeOut {
+                    0%, 70% { opacity: 1; }
+                    100% { opacity: 0; }
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    })();
+    </script>
+</body>
+</html>

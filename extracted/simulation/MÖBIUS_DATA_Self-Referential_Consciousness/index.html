@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MÖBIUS DATA | Self-Referential Consciousness</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;500;700&family=Share+Tech+Mono&display=swap');
+
+        :root {
+            --neon-cyan: #00f3ff;
+            --neon-gold: #ffd700;
+            --neon-purple: #bc13fe;
+            --bg-dark: #05050a;
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: var(--bg-dark);
+            color: white;
+            font-family: 'Rajdhani', sans-serif;
+        }
+
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* UI Overlay */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none; /* Let clicks pass through to canvas where needed */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 2rem;
+            box-sizing: border-box;
+            background: radial-gradient(circle at center, transparent 0%, #000000 120%);
+        }
+
+        .glass-panel {
+            background: rgba(10, 15, 30, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-left: 2px solid var(--neon-cyan);
+            padding: 1.5rem;
+            border-radius: 4px;
+            pointer-events: auto;
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .glass-panel:hover {
+            border-left: 2px solid var(--neon-purple);
+            box-shadow: 0 0 30px rgba(188, 19, 254, 0.2);
+        }
+
+        h1 {
+            font-family: 'Share Tech Mono', monospace;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            text-shadow: 0 0 10px var(--neon-cyan);
+        }
+
+        .subtitle {
+            font-size: 0.8rem;
+            letter-spacing: 0.4em;
+            color: rgba(255, 255, 255, 0.7);
+            text-transform: uppercase;
+            margin-top: 0.5rem;
+            border-top: 1px solid rgba(255,255,255,0.2);
+            padding-top: 0.5rem;
+            display: inline-block;
+        }
+
+        /* Controls */
+        .control-group {
+            margin-bottom: 1rem;
+        }
+
+        label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: var(--neon-cyan);
+            margin-bottom: 0.25rem;
+            font-family: 'Share Tech Mono', monospace;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            background: var(--neon-gold);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--neon-gold);
+        }
+
+        /* Terminal/Log */
+        .terminal {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--neon-cyan);
+            height: 150px;
+            overflow-y: hidden;
+            position: relative;
+        }
+        
+        .terminal::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 50px;
+            background: linear-gradient(to top, rgba(10,15,30,0.9), transparent);
+        }
+
+        .log-entry {
+            margin-bottom: 4px;
+            opacity: 0.7;
+        }
+        .log-entry span { color: var(--neon-purple); }
+
+        /* Decorative Elements */
+        .reticle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 600px;
+            height: 600px;
+            border: 1px dashed rgba(255, 255, 255, 0.05);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: spin 60s linear infinite;
+        }
+
+        @keyframes spin { 100% { transform: translate(-50%, -50%) rotate(360deg); } }
+
+        .corner-deco {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--neon-cyan);
+            opacity: 0.5;
+        }
+        .tl { top: 20px; left: 20px; border-right: 0; border-bottom: 0; }
+        .tr { top: 20px; right: 20px; border-left: 0; border-bottom: 0; }
+        .bl { bottom: 20px; left: 20px; border-right: 0; border-top: 0; }
+        .br { bottom: 20px; right: 20px; border-left: 0; border-top: 0; }
+
+        .scanline {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, transparent 50%, rgba(0, 0, 0, 0.3) 51%);
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 20;
+            opacity: 0.3;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="canvas-container">
+        <canvas id="spaceCanvas"></canvas>
+    </div>
+
+    <div class="scanline"></div>
+
+    <div id="ui-layer">
+        <!-- Header -->
+        <div class="flex justify-between items-start">
+            <div class="glass-panel max-w-md">
+                <h1 class="text-4xl font-bold text-white">MÖBIUS DATA</h1>
+                <div class="subtitle">SELF-REFERENTIAL CONSCIOUSNESS</div>
+                <div class="mt-4 text-sm text-gray-400">
+                    System Status: <span class="text-green-400">ONLINE</span><br>
+                    Core Stability: <span id="stability-readout">98.4%</span>
+                </div>
+            </div>
+            <div class="glass-panel hidden md:block">
+                <div class="text-xs text-right font-mono text-gray-400">
+                    COORD: <span id="coord-x">00.00</span>, <span id="coord-y">00.00</span><br>
+                    SECTOR: 7G-ALPHA<br>
+                    TIME: <span id="clock">00:00:00</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center Decorative Reticle -->
+        <div class="reticle"></div>
+        
+        <!-- Decorative Corners -->
+        <div class="corner-deco tl"></div>
+        <div class="corner-deco tr"></div>
+        <div class="corner-deco bl"></div>
+        <div class="corner-deco br"></div>
+
+        <!-- Bottom Controls -->
+        <div class="flex flex-col md:flex-row justify-between items-end gap-4">
+            
+            <!-- Terminal -->
+            <div class="glass-panel w-full md:w-1/3 terminal" id="terminal">
+                <div class="log-entry">> Initializing Kernel...</div>
+                <div class="log-entry">> <span>Loading</span> Geometry Shaders</div>
+                <div class="log-entry">> Neural Link Established.</div>
+            </div>
+
+            <!-- Controls -->
+            <div class="glass-panel w-full md:w-1/3">
+                <div class="control-group">
+                    <label>ROTATION VELOCITY <span id="val-speed">1.0</span></label>
+                    <input type="range" id="speed" min="0" max="5" step="0.1" value="1">
+                </div>
+                <div class="control-group">
+                    <label>DATA DENSITY <span id="val-density">2000</span></label>
+                    <input type="range" id="density" min="500" max="5000" step="100" value="2000">
+                </div>
+                <div class="control-group">
+                    <label>ENTROPY (CHAOS) <span id="val-chaos">0.1</span></label>
+                    <input type="range" id="chaos" min="0" max="2" step="0.01" value="0.1">
+                </div>
+                <div class="flex gap-2 mt-4">
+                    <button id="btn-pulse" class="flex-1 bg-cyan-900 hover:bg-cyan-700 text-cyan-100 font-mono text-xs py-2 px-4 rounded border border-cyan-500 transition-colors">
+                        INITIATE PULSE
+                    </button>
+                    <button id="btn-color" class="flex-1 bg-purple-900 hover:bg-purple-700 text-purple-100 font-mono text-xs py-2 px-4 rounded border border-purple-500 transition-colors">
+                        SHIFT SPECTRUM
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * MÖBIUS DATA CORE ENGINE
+         * A Vanilla JS 3D Particle Engine simulating a Torus structure
+         */
+        
+        const canvas = document.getElementById('spaceCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Configuration State
+        const config = {
+            particleCount: 2000,
+            rotationSpeed: 0.005,
+            chaos: 0.1,
+            baseRadius: 200,
+            tubeRadius: 80,
+            colors: ['#00f3ff', '#ffd700', '#bc13fe', '#ffffff'], // Cyan, Gold, Purple, White
+            colorMode: 0
+        };
+
+        let particles = [];
+        let width, height;
+        let mouseX = 0, mouseY = 0;
+        let time = 0;
+
+        // Resize Handler
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+            config.baseRadius = Math.min(width, height) * 0.25;
+            config.tubeRadius = config.baseRadius * 0.4;
+            initParticles();
+        }
+        window.addEventListener('resize', resize);
+
+        // Particle Class
+        class Particle {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                // Torus coordinates: (u, v)
+                this.u = Math.random() * Math.PI * 2;
+                this.v = Math.random() * Math.PI * 2;
+                
+                // Random offset for "volume"
+                this.offset = (Math.random() - 0.5) * 10; 
+                
+                // Color assignment
+                this.color = config.colors[Math.floor(Math.random() * config.colors.length)];
+                this.size = Math.random() * 2;
+                
+                // Pulse animation offset
+                this.pulseOffset = Math.random() * 100;
+            }
+
+            update() {
+                // Add rotation
+                this.u += config.rotationSpeed;
+                
+                // Add chaos/entropy movement
+                if (config.chaos > 0) {
+                    this.u += (Math.random() - 0.5) * config.chaos * 0.1;
+                    this.v += (Math.random() - 0.5) * config.chaos * 0.1;
+                }
+            }
+
+            project() {
+                // Torus Math
+                // x = (R + r cos v) cos u
+                // y = (R + r cos v) sin u
+                // z = r sin v
+                
+                const R = config.baseRadius;
+                const r = config.tubeRadius + this.offset + (Math.sin(time * 2 + this.pulseOffset) * (config.chaos * 20));
+
+                // 3D Coordinates
+                let x = (R + r * Math.cos(this.v)) * Math.cos(this.u);
+                let y = (R + r * Math.cos(this.v)) * Math.sin(this.u);
+                let z = r * Math.sin(this.v);
+
+                // Rotate entire object based on mouse interaction (3D rotation matrix)
+                // Rotate around X
+                const angleX = (mouseY - height/2) * 0.001;
+                const angleY = (mouseX - width/2) * 0.001;
+
+                // Rotate Y
+                let tx = x * Math.cos(angleY) - z * Math.sin(angleY);
+                let tz = x * Math.sin(angleY) + z * Math.cos(angleY);
+                x = tx; z = tz;
+
+                // Rotate X
+                let ty = y * Math.cos(angleX) - z * Math.sin(angleX);
+                tz = y * Math.sin(angleX) + z * Math.cos(angleX);
+                y = ty; z = tz;
+
+                // Perspective Projection
+                const fov = 500;
+                const scale = fov / (fov + z);
+                
+                const x2d = x * scale + width / 2;
+                const y2d = y * scale + height / 2;
+
+                return { x: x2d, y: y2d, scale: scale, z: z };
+            }
+
+            draw() {
+                const p = this.project();
+                
+                // Depth sorting hack: only draw if scale is reasonable
+                if (p.scale > 0) {
+                    const alpha = Math.max(0.1, p.scale - 0.2); // Fade distant points
+                    
+                    ctx.beginPath();
+                    ctx.fillStyle = this.color;
+                    ctx.globalAlpha = alpha;
+                    
+                    // Draw particle
+                    const s = this.size * p.scale;
+                    ctx.arc(p.x, p.y, s, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Draw connections (expensive, so we limit it)
+                    if (Math.random() > 0.98 - (config.chaos * 0.05)) {
+                        ctx.strokeStyle = this.color;
+                        ctx.lineWidth = 0.5 * p.scale;
+                        ctx.beginPath();
+                        ctx.moveTo(p.x, p.y);
+                        // Connect to a fake point for visual effect (glitch lines)
+                        ctx.lineTo(p.x + (Math.random()-0.5)*20, p.y + (Math.random()-0.5)*20);
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+
+        function initParticles() {
+            particles = [];
+            for (let i = 0; i < config.particleCount; i++) {
+                particles.push(new Particle());
+            }
+        }
+
+        // Background Stars
+        const stars = [];
+        function initStars() {
+            for(let i=0; i<200; i++) {
+                stars.push({
+                    x: Math.random() * width,
+                    y: Math.random() * height,
+                    size: Math.random() * 1.5,
+                    alpha: Math.random()
+                });
+            }
+        }
+
+        function drawStars() {
+            ctx.fillStyle = 'white';
+            stars.forEach(star => {
+                ctx.globalAlpha = star.alpha * (0.5 + Math.sin(time * 2 + star.x) * 0.5);
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.size, 0, Math.PI*2);
+                ctx.fill();
+            });
+        }
+
+        // Main Loop
+        function animate() {
+            ctx.fillStyle = 'rgba(5, 5, 10, 0.3)'; // Trails effect
+            ctx.fillRect(0, 0, width, height);
+            
+            // Composite operation for glow
+            ctx.globalCompositeOperation = 'lighter';
+
+            drawStars();
+
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+
+            ctx.globalCompositeOperation = 'source-over';
+            
+            time += 0.01;
+            requestAnimationFrame(animate);
+            
+            updateUI();
+        }
+
+        // UI Updates
+        function updateUI() {
+            // Update Clock
+            const now = new Date();
+            document.getElementById('clock').innerText = now.toLocaleTimeString();
+            
+            // Update Coords
+            document.getElementById('coord-x').innerText = (mouseX - width/2).toFixed(2);
+            document.getElementById('coord-y').innerText = (mouseY - height/2).toFixed(2);
+            
+            // Random stability fluctuation
+            if (Math.random() > 0.95) {
+                const stab = (98 + Math.random() * 2 - config.chaos * 10).toFixed(1);
+                document.getElementById('stability-readout').innerText = stab + '%';
+                if(stab < 80) document.getElementById('stability-readout').style.color = 'red';
+                else document.getElementById('stability-readout').style.color = '#4ade80';
+            }
+        }
+
+        // Event Listeners
+        window.addEventListener('mousemove', e => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
+
+        // Control Wiring
+        document.getElementById('speed').addEventListener('input', (e) => {
+            config.rotationSpeed = parseFloat(e.target.value) * 0.01;
+            document.getElementById('val-speed').innerText = e.target.value;
+            log("Rotation velocity adjusted.");
+        });
+
+        document.getElementById('density').addEventListener('input', (e) => {
+            const diff = parseInt(e.target.value) - config.particleCount;
+            config.particleCount = parseInt(e.target.value);
+            document.getElementById('val-density').innerText = config.particleCount;
+            
+            if (diff > 0) {
+                for(let i=0; i<diff; i++) particles.push(new Particle());
+            } else {
+                particles.splice(0, Math.abs(diff));
+            }
+        });
+
+        document.getElementById('chaos').addEventListener('input', (e) => {
+            config.chaos = parseFloat(e.target.value);
+            document.getElementById('val-chaos').innerText = config.chaos.toFixed(2);
+            if(config.chaos > 1.5) log("WARNING: High Entropy Detected!");
+        });
+
+        document.getElementById('btn-pulse').addEventListener('click', () => {
+            log("Initiating Energy Pulse...");
+            particles.forEach(p => {
+                p.offset += (Math.random() - 0.5) * 100;
+            });
+            setTimeout(() => {
+                particles.forEach(p => p.offset = (Math.random() - 0.5) * 10);
+            }, 500);
+        });
+
+        document.getElementById('btn-color').addEventListener('click', () => {
+            log("Shifting Spectrum...");
+            config.colorMode = (config.colorMode + 1) % 3;
+            
+            let newColors;
+            if(config.colorMode === 0) newColors = ['#00f3ff', '#ffd700', '#bc13fe', '#ffffff'];
+            else if(config.colorMode === 1) newColors = ['#ff0055', '#ff4400', '#ffcc00', '#ffffff']; // Fire
+            else newColors = ['#00ff88', '#00ffcc', '#ccff00', '#ffffff']; // Matrix
+
+            config.colors = newColors;
+            particles.forEach(p => p.color = config.colors[Math.floor(Math.random() * config.colors.length)]);
+        });
+
+        // Logging System
+        function log(msg) {
+            const term = document.getElementById('terminal');
+            const div = document.createElement('div');
+            div.className = 'log-entry';
+            div.innerHTML = `> ${msg}`;
+            term.appendChild(div);
+            term.scrollTop = term.scrollHeight;
+        }
+
+        // Boot
+        resize();
+        initStars();
+        animate();
+        
+        // Initial log burst
+        setTimeout(() => log("Möbius Loop: Synchronized"), 1000);
+        setTimeout(() => log("Data Stream: Active"), 2000);
+
+    </script>
+</body>
+</html>

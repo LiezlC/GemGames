@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scrib-Li | 2025 Copywriting Buffet</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-cyan: #00f2ff;
+            --neon-blue: #0066ff;
+            --bg-dark: #050b14;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(0, 242, 255, 0.2);
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(0, 102, 255, 0.15) 0%, transparent 60%),
+                linear-gradient(to bottom, #020408 0%, #0a1525 100%);
+            color: white;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .font-display {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        /* Glassmorphism Card */
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 0 15px rgba(0, 242, 255, 0.1);
+            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        .glass-card:hover {
+            background: rgba(0, 242, 255, 0.1);
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 30px rgba(0, 242, 255, 0.3);
+            transform: translateY(-5px) scale(1.05);
+        }
+
+        .glass-card.selected {
+            background: rgba(0, 242, 255, 0.2);
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 40px rgba(0, 242, 255, 0.5), inset 0 0 20px rgba(0, 242, 255, 0.2);
+        }
+
+        /* Central Hub Pulse */
+        .hub-pulse {
+            animation: pulse-glow 3s infinite;
+        }
+
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 20px var(--neon-cyan); }
+            50% { box-shadow: 0 0 60px var(--neon-blue); }
+            100% { box-shadow: 0 0 20px var(--neon-cyan); }
+        }
+
+        /* Floating Animation */
+        .float {
+            animation: float 6s ease-in-out infinite;
+        }
+        .float-delay-1 { animation-delay: 1s; }
+        .float-delay-2 { animation-delay: 2s; }
+        .float-delay-3 { animation-delay: 3s; }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+            100% { transform: translateY(0px); }
+        }
+
+        /* Particles */
+        .particle {
+            position: absolute;
+            background: var(--neon-cyan);
+            border-radius: 50%;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* Typing Cursor */
+        .typing-cursor::after {
+            content: '|';
+            animation: blink 1s step-start infinite;
+        }
+
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+
+        /* Grid Background */
+        .cyber-grid {
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            top: -50%;
+            left: -50%;
+            background-image: 
+                linear-gradient(rgba(0, 242, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 242, 255, 0.05) 1px, transparent 1px);
+            background-size: 50px 50px;
+            transform: perspective(500px) rotateX(60deg);
+            z-index: -1;
+            animation: grid-move 20s linear infinite;
+        }
+
+        @keyframes grid-move {
+            0% { transform: perspective(500px) rotateX(60deg) translateY(0); }
+            100% { transform: perspective(500px) rotateX(60deg) translateY(50px); }
+        }
+
+        /* Layout for Orbiting Items */
+        .orbit-container {
+            position: relative;
+            width: 600px;
+            height: 600px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .orbit-item {
+            position: absolute;
+            width: 180px;
+            cursor: pointer;
+        }
+
+        /* Specific positions for 5 items in a circle */
+        .pos-1 { top: 0; left: 50%; transform: translateX(-50%); }
+        .pos-2 { top: 30%; right: 0; }
+        .pos-3 { bottom: 10%; right: 10%; }
+        .pos-4 { bottom: 10%; left: 10%; }
+        .pos-5 { top: 30%; left: 0; }
+
+        /* Mobile adjustments */
+        @media (max-width: 768px) {
+            .orbit-container {
+                width: 100%;
+                height: auto;
+                flex-direction: column;
+                gap: 20px;
+            }
+            .orbit-item {
+                position: relative;
+                width: 90%;
+                top: auto !important;
+                left: auto !important;
+                right: auto !important;
+                bottom: auto !important;
+                transform: none !important;
+            }
+            .main-layout {
+                flex-direction: column;
+                overflow-y: auto;
+            }
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-between p-4">
+
+    <!-- Background Grid -->
+    <div class="cyber-grid"></div>
+
+    <!-- Header -->
+    <header class="w-full max-w-7xl flex justify-between items-center z-10 pt-4 mb-4">
+        <div class="text-left">
+            <h1 class="text-5xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-cyan-300 drop-shadow-[0_0_10px_rgba(0,242,255,0.8)]">
+                Scrib-Li<sup class="text-sm align-top">®</sup>
+            </h1>
+            <p class="text-cyan-200/80 text-sm mt-1 tracking-widest uppercase">The 2025 Copywriting Buffet</p>
+        </div>
+        <button class="hidden md:flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 px-4 py-2 rounded-full transition-all">
+            <span class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+            <span class="text-sm font-semibold">System Online</span>
+        </button>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="main-layout flex-1 w-full max-w-7xl flex items-center justify-center relative z-10">
+        
+        <!-- Orbit Container -->
+        <div class="orbit-container">
+            
+            <!-- Center Hub (The Envelope) -->
+            <div id="generator-hub" class="relative z-20 cursor-pointer group">
+                <div class="w-48 h-48 rounded-3xl glass-card hub-pulse flex items-center justify-center relative overflow-hidden">
+                    <!-- Inner Glow -->
+                    <div class="absolute inset-0 bg-gradient-to-br from-cyan-500/20 to-blue-600/20"></div>
+                    
+                    <!-- Envelope Icon (CSS/SVG) -->
+                    <svg class="w-24 h-24 text-cyan-100 drop-shadow-[0_0_15px_rgba(0,242,255,0.8)] transition-transform duration-300 group-hover:scale-110 group-active:scale-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                    </svg>
+
+                    <!-- Action Text -->
+                    <div class="absolute bottom-4 text-xs font-bold text-cyan-300 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
+                        Generate
+                    </div>
+                </div>
+                <!-- Connecting Lines (Decorative) -->
+                <div class="absolute inset-0 -z-10">
+                    <svg class="w-full h-full visible md:visible invisible" viewBox="0 0 200 200" style="transform: scale(3); opacity: 0.3;">
+                        <circle cx="100" cy="100" r="60" stroke="#00f2ff" stroke-width="0.5" fill="none" stroke-dasharray="4 4" class="animate-[spin_10s_linear_infinite]"/>
+                        <circle cx="100" cy="100" r="80" stroke="#0066ff" stroke-width="0.5" fill="none" stroke-dasharray="10 10" class="animate-[spin_15s_linear_reverse_infinite]"/>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Orbiting Service Cards -->
+            
+            <!-- Card 1 -->
+            <div class="orbit-item pos-1 float float-delay-1" onclick="toggleService(this, 'SEO Blog')">
+                <div class="glass-card p-4 rounded-xl text-center h-full flex flex-col items-center justify-center gap-2">
+                    <div class="w-8 h-1 bg-cyan-400/50 rounded-full mb-1"></div>
+                    <h3 class="font-bold text-cyan-50 text-lg leading-tight">AI-Powered<br>SEO Blogs</h3>
+                    <div class="text-xs text-cyan-300/60 mt-1">Rank #1 Faster</div>
+                </div>
+            </div>
+
+            <!-- Card 2 -->
+            <div class="orbit-item pos-2 float float-delay-2" onclick="toggleService(this, 'Newsletter')">
+                <div class="glass-card p-4 rounded-xl text-center h-full flex flex-col items-center justify-center gap-2">
+                    <div class="w-8 h-1 bg-purple-400/50 rounded-full mb-1"></div>
+                    <h3 class="font-bold text-cyan-50 text-lg leading-tight">Personalized<br>Newsletters</h3>
+                    <div class="text-xs text-cyan-300/60 mt-1">1:1 Engagement</div>
+                </div>
+            </div>
+
+            <!-- Card 3 -->
+            <div class="orbit-item pos-3 float float-delay-3" onclick="toggleService(this, 'Ad Copy')">
+                <div class="glass-card p-4 rounded-xl text-center h-full flex flex-col items-center justify-center gap-2">
+                    <div class="w-8 h-1 bg-green-400/50 rounded-full mb-1"></div>
+                    <h3 class="font-bold text-cyan-50 text-lg leading-tight">High-Converting<br>Ad Copy</h3>
+                    <div class="text-xs text-cyan-300/60 mt-1">Maximize ROAS</div>
+                </div>
+            </div>
+
+            <!-- Card 4 -->
+            <div class="orbit-item pos-4 float float-delay-1" onclick="toggleService(this, 'Ethical AI')">
+                <div class="glass-card p-4 rounded-xl text-center h-full flex flex-col items-center justify-center gap-2">
+                    <div class="w-8 h-1 bg-yellow-400/50 rounded-full mb-1"></div>
+                    <h3 class="font-bold text-cyan-50 text-lg leading-tight">Ethical AI<br>Optimized</h3>
+                    <div class="text-xs text-cyan-300/60 mt-1">Human-Centric</div>
+                </div>
+            </div>
+
+            <!-- Card 5 -->
+            <div class="orbit-item pos-5 float float-delay-2" onclick="toggleService(this, 'Voice AI')">
+                <div class="glass-card p-4 rounded-xl text-center h-full flex flex-col items-center justify-center gap-2">
+                    <div class="w-8 h-1 bg-pink-400/50 rounded-full mb-1"></div>
+                    <h3 class="font-bold text-cyan-50 text-lg leading-tight">Voice-AI<br>Assisted Writing</h3>
+                    <div class="text-xs text-cyan-300/60 mt-1">Dictate to Draft</div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Output / Status Panel -->
+    <div id="output-panel" class="fixed bottom-0 left-0 w-full bg-slate-900/90 backdrop-blur-xl border-t border-cyan-500/30 transform translate-y-full transition-transform duration-500 z-50 h-1/3 flex flex-col">
+        <div class="flex justify-between items-center p-4 border-b border-white/10">
+            <div class="flex items-center gap-3">
+                <div class="w-3 h-3 bg-cyan-400 rounded-full animate-ping"></div>
+                <h4 class="font-display text-cyan-400 text-lg">Scrib-Li Output Terminal</h4>
+            </div>
+            <button onclick="closePanel()" class="text-white/50 hover:text-white">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        <div class="p-6 font-mono text-sm text-cyan-100 overflow-y-auto flex-1" id="terminal-content">
+            <!-- Content injected here -->
+        </div>
+    </div>
+
+    <!-- Floating Action Button (Subscribe) -->
+    <button class="fixed bottom-6 right-6 bg-white text-black font-bold py-3 px-6 rounded-full shadow-[0_0_20px_rgba(255,255,255,0.5)] hover:scale-105 transition-transform flex items-center gap-2 z-40">
+        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/></svg>
+        Subscribe
+    </button>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed top-24 left-1/2 transform -translate-x-1/2 bg-cyan-900/90 text-cyan-100 px-6 py-3 rounded-lg border border-cyan-500/50 opacity-0 transition-opacity duration-300 pointer-events-none z-50">
+        Item added to buffet
+    </div>
+
+    <script>
+        // State
+        let selectedServices = new Set();
+        const hub = document.getElementById('generator-hub');
+        const outputPanel = document.getElementById('output-panel');
+        const terminalContent = document.getElementById('terminal-content');
+        const toast = document.getElementById('toast');
+
+        // Service Descriptions for generation
+        const contentTemplates = {
+            'SEO Blog': "Generating SEO Schema... \nAnalyzing Keywords... \n> TITLE: The Future of AI in 2025\n> H1: Why Copywriting is Evolving\n> BODY: In the dawn of the neural network era, content isn't just written; it's architected. Scrib-Li ensures your semantic core is optimized for the latest search algorithms...",
+            'Newsletter': "Personalizing User Segments... \nDrafting Subject Lines... \n> SUBJECT: Hey [Name], You won't believe this update.\n> PREHEADER: 2025 is looking bright.\n> BODY: We noticed you've been exploring AI tools. Here is a curated list of efficiencies we found for your workflow...",
+            'Ad Copy': "Analyzing Click-Through-Rates... \nA/B Testing Hooks... \n> HOOK: Stop wasting budget on bad copy.\n> VALUE PROP: Scrib-Li delivers 300% higher conversion with neural-matched tone.\n> CTA: Start Your Free Trial Now.",
+            'Ethical AI': "Running Bias Detection... \nVerifying Factuality... \n> STATUS: Content is 99.9% Hallucination Free.\n> TONE: Empathetic, Human-Centric, Transparent.\n> CERTIFICATE: Scrib-Li Ethical Standard v2025 verified.",
+            'Voice AI': "Transcribing Audio Input... \nRemoving Filler Words... \n> INPUT: 'Uh, so basically we need a post about... um... efficiency.'\n> OUTPUT: 'Maximizing Efficiency: A Strategic Guide.'\n> FORMAT: LinkedIn Article."
+        };
+
+        // Toggle Selection
+        function toggleService(element, serviceName) {
+            if (selectedServices.has(serviceName)) {
+                selectedServices.delete(serviceName);
+                element.querySelector('.glass-card').classList.remove('selected');
+            } else {
+                selectedServices.add(serviceName);
+                element.querySelector('.glass-card').classList.add('selected');
+                showToast(`Added: ${serviceName}`);
+            }
+            updateHubState();
+        }
+
+        function showToast(msg) {
+            toast.textContent = msg;
+            toast.style.opacity = '1';
+            setTimeout(() => toast.style.opacity = '0', 2000);
+        }
+
+        function updateHubState() {
+            // Visual feedback on the hub based on selection count
+            const count = selectedServices.size;
+            if (count > 0) {
+                hub.style.filter = `drop-shadow(0 0 ${10 + count * 5}px var(--neon-cyan))`;
+            } else {
+                hub.style.filter = 'none';
+            }
+        }
+
+        // Generate Action
+        hub.addEventListener('click', () => {
+            if (selectedServices.size === 0) {
+                showToast("Select a service first!");
+                return;
+            }
+
+            // Animation
+            hub.classList.add('scale-90');
+            setTimeout(() => hub.classList.remove('scale-90'), 200);
+
+            // Create Particles
+            createParticles();
+
+            // Open Panel
+            outputPanel.classList.remove('translate-y-full');
+            
+            // Generate Text
+            typeWriterEffect();
+        });
+
+        function closePanel() {
+            outputPanel.classList.add('translate-y-full');
+        }
+
+        function createParticles() {
+            const rect = hub.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+
+            for (let i = 0; i < 30; i++) {
+                const particle = document.createElement('div');
+                particle.classList.add('particle');
+                document.body.appendChild(particle);
+
+                const size = Math.random() * 6 + 2;
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                particle.style.left = `${centerX}px`;
+                particle.style.top = `${centerY}px`;
+
+                const angle = Math.random() * Math.PI * 2;
+                const velocity = Math.random() * 100 + 50;
+                const tx = Math.cos(angle) * velocity;
+                const ty = Math.sin(angle) * velocity;
+
+                particle.animate([
+                    { transform: 'translate(0, 0) scale(1)', opacity: 1 },
+                    { transform: `translate(${tx}px, ${ty}px) scale(0)`, opacity: 0 }
+                ], {
+                    duration: 800,
+                    easing: 'cubic-bezier(0, .9, .57, 1)',
+                }).onfinish = () => particle.remove();
+            }
+        }
+
+        async function typeWriterEffect() {
+            terminalContent.innerHTML = '';
+            const services = Array.from(selectedServices);
+            
+            for (const service of services) {
+                const p = document.createElement('div');
+                p.className = "mb-6 border-l-2 border-cyan-500 pl-4";
+                p.innerHTML = `<strong class="text-cyan-400 block mb-2">[${service.toUpperCase()}] MODULE ACTIVE</strong><span class="typing-cursor"></span>`;
+                terminalContent.appendChild(p);
+                
+                const text = contentTemplates[service] || "Processing...";
+                const span = p.querySelector('span');
+                
+                // Simple typing simulation
+                let currentText = "";
+                for (let i = 0; i < text.length; i++) {
+                    currentText += text[i] === '\n' ? '<br>' : text[i];
+                    span.innerHTML = currentText;
+                    // Scroll to bottom
+                    terminalContent.scrollTop = terminalContent.scrollHeight;
+                    await new Promise(r => setTimeout(r, 15)); // Typing speed
+                }
+                span.classList.remove('typing-cursor'); // Stop blinking cursor for this block
+            }
+
+            const done = document.createElement('div');
+            done.className = "text-green-400 mt-4 font-bold";
+            done.innerHTML = "> ALL TASKS COMPLETED SUCCESSFULLY.";
+            terminalContent.appendChild(done);
+            terminalContent.scrollTop = terminalContent.scrollHeight;
+        }
+
+        // Add subtle mouse movement parallax
+        document.addEventListener('mousemove', (e) => {
+            const x = (window.innerWidth - e.pageX * 2) / 100;
+            const y = (window.innerHeight - e.pageY * 2) / 100;
+            
+            document.querySelectorAll('.orbit-item').forEach(item => {
+                // Different elements move at slightly different speeds for depth
+                const speed = 1; 
+                item.style.transform = `translateX(${x * speed}px) translateY(${y * speed}px)`;
+            });
+        });
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Ascension Protocol</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+        :root {
+            --neon-blue: #00f3ff;
+            --neon-purple: #bc13fe;
+            --neon-gold: #ffd700;
+            --bg-dark: #050a14;
+            --panel-bg: rgba(10, 20, 40, 0.7);
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            background-image: 
+                radial-gradient(circle at 50% 0%, #1a2a4a 0%, transparent 70%),
+                linear-gradient(0deg, #000 0%, #050a14 100%);
+            color: #fff;
+            font-family: 'Share Tech Mono', monospace;
+            margin: 0;
+            overflow-x: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .scanline {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, transparent 50%, rgba(0, 243, 255, 0.02) 51%);
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .panel {
+            background: var(--panel-bg);
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            backdrop-filter: blur(5px);
+            transition: all 0.5s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .panel.locked {
+            opacity: 0.3;
+            filter: grayscale(1);
+            pointer-events: none;
+        }
+
+        .panel.active {
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.1);
+        }
+
+        .panel.completed {
+            border-color: var(--neon-gold);
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.1);
+        }
+
+        .btn-action {
+            background: transparent;
+            border: 1px solid var(--neon-blue);
+            color: var(--neon-blue);
+            padding: 10px 20px;
+            font-family: inherit;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-action:hover {
+            background: rgba(0, 243, 255, 0.1);
+            box-shadow: 0 0 15px var(--neon-blue);
+            text-shadow: 0 0 5px var(--neon-blue);
+        }
+
+        .btn-action:active {
+            transform: scale(0.98);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #111;
+            margin-top: 10px;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--neon-blue);
+            width: 0%;
+            transition: width 0.1s linear;
+            box-shadow: 0 0 10px var(--neon-blue);
+        }
+
+        .glitch-text {
+            animation: glitch 3s infinite;
+        }
+
+        @keyframes glitch {
+            0% { text-shadow: 2px 0 var(--neon-purple), -2px 0 var(--neon-blue); }
+            90% { text-shadow: 2px 0 var(--neon-purple), -2px 0 var(--neon-blue); }
+            91% { text-shadow: -2px 0 var(--neon-purple), 2px 0 var(--neon-blue); transform: skew(2deg); }
+            92% { text-shadow: 0 0 transparent; transform: skew(0); }
+            100% { text-shadow: 2px 0 var(--neon-purple), -2px 0 var(--neon-blue); }
+        }
+
+        /* Canvas positioning */
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .content-layer {
+            position: relative;
+            z-index: 10;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 1.5rem;
+        }
+
+        .vortex {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            border: 2px dashed var(--neon-blue);
+            animation: spin 10s linear infinite;
+            opacity: 0.3;
+        }
+        
+        .vortex::before {
+            content: '';
+            position: absolute;
+            inset: 10px;
+            border-radius: 50%;
+            border: 2px dashed var(--neon-purple);
+            animation: spin 5s linear infinite reverse;
+        }
+
+        @keyframes spin { 100% { transform: translate(-50%, -50%) rotate(360deg); } }
+
+        .tooltip {
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.6);
+            margin-top: 5px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="scanline"></div>
+
+    <!-- Header -->
+    <header class="p-4 border-b border-gray-800 bg-opacity-50 bg-black flex justify-between items-center z-20">
+        <div>
+            <h1 class="text-2xl text-white tracking-widest uppercase glitch-text">Ascension Protocol</h1>
+            <div class="text-xs text-cyan-500">Current Status: <span id="global-status">Biological Limit</span></div>
+        </div>
+        <div class="text-right text-xs font-mono text-gray-400">
+            <div>SYS.TIME: <span id="clock">00:00:00</span></div>
+            <div>COHERENCE: <span id="coherence-stat">100%</span></div>
+        </div>
+    </header>
+
+    <!-- Main Game Area -->
+    <main class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4 p-4 h-full">
+
+        <!-- STAGE 1: NEURAL ENHANCEMENT -->
+        <div id="stage-1" class="panel active rounded-lg">
+            <canvas id="canvas-stage-1"></canvas>
+            <div class="content-layer">
+                <div>
+                    <h2 class="text-xl text-cyan-300 border-b border-cyan-900 pb-2 mb-2">Stage 1: Neural Enhancement</h2>
+                    <ul class="text-xs text-gray-400 space-y-1 mb-4">
+                        <li>> Humans Gain: Computation</li>
+                        <li>> Perfect Memory</li>
+                        <li>> Accelerated Learning</li>
+                    </ul>
+                </div>
+                
+                <div class="flex flex-col items-center justify-center flex-1">
+                    <!-- SVG Placeholder for Head -->
+                    <div class="relative w-48 h-48 mb-4 opacity-80">
+                        <svg viewBox="0 0 100 100" class="w-full h-full drop-shadow-[0_0_10px_rgba(0,243,255,0.5)]">
+                            <path d="M30,80 Q25,50 35,30 Q45,10 65,10 Q85,10 90,35 Q95,60 80,80 L80,100 L40,100 L30,80" 
+                                  fill="none" stroke="var(--neon-blue)" stroke-width="0.5" />
+                            <!-- Brain Area -->
+                            <path d="M40,25 Q55,15 75,25 Q85,35 75,45 Q65,55 50,45 Q40,35 40,25" 
+                                  fill="rgba(0, 243, 255, 0.1)" stroke="var(--neon-blue)" stroke-width="0.2" />
+                        </svg>
+                        <div id="brain-pulse" class="absolute top-[20%] left-[40%] w-10 h-10 bg-cyan-400 rounded-full blur-xl opacity-0 transition-opacity duration-200"></div>
+                    </div>
+                    
+                    <div class="text-center mb-4">
+                        <div class="text-2xl font-bold text-white" id="neural-density">0</div>
+                        <div class="text-xs text-cyan-500">Neural Connections</div>
+                    </div>
+                </div>
+
+                <div>
+                    <button id="btn-train" class="btn-action w-full mb-2">Train Neural Net (+1)</button>
+                    <button id="btn-upgrade-1" class="btn-action w-full text-xs border-gray-600 text-gray-400" disabled>
+                        Install Co-Processor (Cost: 50)
+                    </button>
+                    <div class="progress-bar">
+                        <div id="prog-1" class="progress-fill"></div>
+                    </div>
+                    <div class="tooltip text-center">Target: 200 Connections</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- STAGE 2: SUBSTRATE MIGRATION -->
+        <div id="stage-2" class="panel locked rounded-lg">
+            <canvas id="canvas-stage-2"></canvas>
+            <div class="vortex"></div>
+            <div class="content-layer">
+                <div>
+                    <h2 class="text-xl text-purple-300 border-b border-purple-900 pb-2 mb-2">Stage 2: Substrate Migration</h2>
+                    <ul class="text-xs text-gray-400 space-y-1 mb-4">
+                        <li>> Embodied Experience</li>
+                        <li>> Bidirectional Enhancement</li>
+                        <li>> Continuity of Experience</li>
+                    </ul>
+                </div>
+
+                <div class="flex-1 flex flex-col justify-center items-center">
+                    <div class="text-4xl mb-2">🧠 ⇄ ☁️</div>
+                    <div class="text-xs text-center text-purple-400 mb-4 w-3/4">
+                        Migrating consciousness to digital substrate. Maintain coherence.
+                    </div>
+                    <div class="w-full bg-gray-900 border border-gray-700 p-2 rounded">
+                        <div class="flex justify-between text-xs mb-1">
+                            <span>Upload Integrity</span>
+                            <span id="upload-pct">0%</span>
+                        </div>
+                        <div class="h-2 bg-gray-800 w-full rounded overflow-hidden">
+                            <div id="prog-2" class="h-full bg-purple-500 w-0 transition-all duration-200"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <button id="btn-upload" class="btn-action w-full mb-2 border-purple-500 text-purple-400 hover:shadow-[0_0_15px_#bc13fe]">
+                        Initiate Packet Transfer
+                    </button>
+                    <button id="btn-stabilize" class="btn-action w-full text-xs border-red-500 text-red-400 hidden">
+                        ⚠ STABILIZE SIGNAL ⚠
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- STAGE 3: POST-BIOLOGICAL -->
+        <div id="stage-3" class="panel locked rounded-lg">
+            <canvas id="canvas-stage-3"></canvas>
+            <div class="content-layer">
+                <div>
+                    <h2 class="text-xl text-yellow-200 border-b border-yellow-900 pb-2 mb-2">Stage 3: Post-Biological</h2>
+                    <ul class="text-xs text-gray-400 space-y-1 mb-4">
+                        <li>> New Consciousness</li>
+                        <li>> No Boundary</li>
+                        <li>> Infinite Scalability</li>
+                    </ul>
+                </div>
+
+                <div class="flex-1 flex flex-col justify-center items-center relative">
+                    <div id="ascended-entity" class="w-32 h-64 border border-yellow-500/30 relative hidden">
+                        <!-- CSS Construct of the digital body -->
+                        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-12 border border-yellow-400 rounded-full"></div> <!-- Head -->
+                        <div class="absolute top-12 left-1/2 -translate-x-1/2 w-1 h-24 bg-yellow-400/50"></div> <!-- Spine -->
+                        <div class="absolute top-16 left-1/2 -translate-x-1/2 w-24 h-1 bg-yellow-400/50"></div> <!-- Shoulders -->
+                        <div class="absolute top-16 left-4 w-1 h-24 bg-yellow-400/30 rotate-12"></div> <!-- L Arm -->
+                        <div class="absolute top-16 right-4 w-1 h-24 bg-yellow-400/30 -rotate-12"></div> <!-- R Arm -->
+                        <div class="absolute top-36 left-1/2 -translate-x-1/2 w-16 h-1 bg-yellow-400/50"></div> <!-- Hips -->
+                        <div class="absolute top-36 left-8 w-1 h-28 bg-yellow-400/30 -rotate-6"></div> <!-- L Leg -->
+                        <div class="absolute top-36 right-8 w-1 h-28 bg-yellow-400/30 rotate-6"></div> <!-- R Leg -->
+                    </div>
+                    <div id="final-msg" class="text-center hidden">
+                        <h3 class="text-2xl text-yellow-400 font-bold mb-2">ASCENSION COMPLETE</h3>
+                        <p class="text-xs text-gray-300">You are now pure energy.</p>
+                        <p class="text-xs text-gray-500 mt-2">Drag on background to create universes.</p>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="text-center p-2 border border-yellow-900 bg-yellow-900/20 rounded">
+                            <div class="text-xs text-gray-400">Omniscience</div>
+                            <div id="stat-omni" class="text-yellow-400 font-bold">0%</div>
+                        </div>
+                        <div class="text-center p-2 border border-yellow-900 bg-yellow-900/20 rounded">
+                            <div class="text-xs text-gray-400">Omnipresence</div>
+                            <div id="stat-pres" class="text-yellow-400 font-bold">0%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // --- Game State ---
+        const state = {
+            stage: 1,
+            neuralConnections: 0,
+            autoClickerCount: 0,
+            uploadProgress: 0,
+            isStabilizing: false,
+            ascension: {
+                omniscience: 0,
+                omnipresence: 0
+            },
+            particles: []
+        };
+
+        const CONSTANTS = {
+            STAGE_1_GOAL: 200,
+            UPGRADE_COST: 50,
+            STAGE_2_GOAL: 100
+        };
+
+        // --- DOM Elements ---
+        const els = {
+            clock: document.getElementById('clock'),
+            globalStatus: document.getElementById('global-status'),
+            
+            // Stage 1
+            stage1: document.getElementById('stage-1'),
+            btnTrain: document.getElementById('btn-train'),
+            btnUpgrade1: document.getElementById('btn-upgrade-1'),
+            neuralDisplay: document.getElementById('neural-density'),
+            prog1: document.getElementById('prog-1'),
+            brainPulse: document.getElementById('brain-pulse'),
+            canvas1: document.getElementById('canvas-stage-1'),
+
+            // Stage 2
+            stage2: document.getElementById('stage-2'),
+            btnUpload: document.getElementById('btn-upload'),
+            btnStabilize: document.getElementById('btn-stabilize'),
+            uploadDisplay: document.getElementById('upload-pct'),
+            prog2: document.getElementById('prog-2'),
+            canvas2: document.getElementById('canvas-stage-2'),
+
+            // Stage 3
+            stage3: document.getElementById('stage-3'),
+            ascendedEntity: document.getElementById('ascended-entity'),
+            finalMsg: document.getElementById('final-msg'),
+            statOmni: document.getElementById('stat-omni'),
+            statPres: document.getElementById('stat-pres'),
+            canvas3: document.getElementById('canvas-stage-3')
+        };
+
+        // --- Utilities ---
+        function updateClock() {
+            const now = new Date();
+            els.clock.innerText = now.toLocaleTimeString('en-GB');
+        }
+        setInterval(updateClock, 1000);
+
+        // --- Canvas Systems ---
+        
+        // Canvas 1: Neural Network
+        const ctx1 = els.canvas1.getContext('2d');
+        let nodes1 = [];
+        
+        function resizeCanvas(canvas) {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+        }
+        
+        window.addEventListener('resize', () => {
+            resizeCanvas(els.canvas1);
+            resizeCanvas(els.canvas2);
+            resizeCanvas(els.canvas3);
+        });
+        resizeCanvas(els.canvas1);
+        resizeCanvas(els.canvas2);
+        resizeCanvas(els.canvas3);
+
+        function addNodeStage1() {
+            // Add a node near the center (head area)
+            const cx = els.canvas1.width / 2;
+            const cy = els.canvas1.height / 2;
+            nodes1.push({
+                x: cx + (Math.random() - 0.5) * 150,
+                y: cy + (Math.random() - 0.5) * 150,
+                vx: (Math.random() - 0.5) * 0.5,
+                vy: (Math.random() - 0.5) * 0.5,
+                size: Math.random() * 2 + 1
+            });
+        }
+
+        function drawStage1() {
+            ctx1.clearRect(0, 0, els.canvas1.width, els.canvas1.height);
+            ctx1.fillStyle = '#00f3ff';
+            ctx1.strokeStyle = 'rgba(0, 243, 255, 0.2)';
+
+            for (let i = 0; i < nodes1.length; i++) {
+                let n = nodes1[i];
+                n.x += n.vx;
+                n.y += n.vy;
+
+                // Bounce
+                if(n.x < 0 || n.x > els.canvas1.width) n.vx *= -1;
+                if(n.y < 0 || n.y > els.canvas1.height) n.vy *= -1;
+
+                ctx1.beginPath();
+                ctx1.arc(n.x, n.y, n.size, 0, Math.PI * 2);
+                ctx1.fill();
+
+                // Connect
+                for (let j = i + 1; j < nodes1.length; j++) {
+                    let n2 = nodes1[j];
+                    let d = Math.hypot(n.x - n2.x, n.y - n2.y);
+                    if (d < 60) {
+                        ctx1.beginPath();
+                        ctx1.moveTo(n.x, n.y);
+                        ctx1.lineTo(n2.x, n2.y);
+                        ctx1.stroke();
+                    }
+                }
+            }
+            requestAnimationFrame(drawStage1);
+        }
+        drawStage1();
+
+        // Canvas 2: Data Flow
+        const ctx2 = els.canvas2.getContext('2d');
+        let particles2 = [];
+
+        function drawStage2() {
+            if (state.stage < 2) return requestAnimationFrame(drawStage2);
+            
+            // Fade effect
+            ctx2.fillStyle = 'rgba(10, 20, 40, 0.2)';
+            ctx2.fillRect(0, 0, els.canvas2.width, els.canvas2.height);
+
+            if (Math.random() < 0.3) { // Spawn particles
+                particles2.push({
+                    x: 0,
+                    y: els.canvas2.height / 2 + (Math.random() - 0.5) * 50,
+                    vx: Math.random() * 5 + 2,
+                    color: Math.random() > 0.5 ? '#bc13fe' : '#00f3ff'
+                });
+            }
+
+            for (let i = 0; i < particles2.length; i++) {
+                let p = particles2[i];
+                p.x += p.vx;
+                p.y += Math.sin(p.x * 0.05) * 2; // Wave motion
+
+                ctx2.fillStyle = p.color;
+                ctx2.fillRect(p.x, p.y, 2, 2);
+
+                if (p.x > els.canvas2.width) {
+                    particles2.splice(i, 1);
+                    i--;
+                }
+            }
+            requestAnimationFrame(drawStage2);
+        }
+        drawStage2();
+
+        // Canvas 3: Universe Sandbox
+        const ctx3 = els.canvas3.getContext('2d');
+        let stars = [];
+        let isDragging = false;
+
+        els.stage3.addEventListener('mousedown', () => isDragging = true);
+        els.stage3.addEventListener('mouseup', () => isDragging = false);
+        els.stage3.addEventListener('mousemove', (e) => {
+            if (isDragging && state.stage === 3) {
+                const rect = els.canvas3.getBoundingClientRect();
+                stars.push({
+                    x: e.clientX - rect.left,
+                    y: e.clientY - rect.top,
+                    size: Math.random() * 2,
+                    color: `hsl(${Math.random()*60 + 40}, 100%, 70%)`
+                });
+                state.ascension.omnipresence = Math.min(100, state.ascension.omnipresence + 0.1);
+                updateStage3UI();
+            }
+        });
+
+        function drawStage3() {
+            if (state.stage < 3) return requestAnimationFrame(drawStage3);
+            
+            ctx3.clearRect(0, 0, els.canvas3.width, els.canvas3.height);
+            
+            // Draw auto generated background stars
+            if(Math.random() < 0.05) {
+                stars.push({
+                    x: Math.random() * els.canvas3.width,
+                    y: Math.random() * els.canvas3.height,
+                    size: Math.random(),
+                    color: '#fff'
+                });
+            }
+
+            for(let i=0; i<stars.length; i++) {
+                let s = stars[i];
+                ctx3.fillStyle = s.color;
+                ctx3.beginPath();
+                ctx3.arc(s.x, s.y, s.size, 0, Math.PI*2);
+                ctx3.fill();
+            }
+            
+            requestAnimationFrame(drawStage3);
+        }
+        drawStage3();
+
+
+        // --- Logic & Interaction ---
+
+        // Stage 1 Logic
+        els.btnTrain.addEventListener('click', () => {
+            state.neuralConnections++;
+            addNodeStage1();
+            updateStage1UI();
+            
+            // Visual feedback
+            els.brainPulse.style.opacity = '1';
+            setTimeout(() => els.brainPulse.style.opacity = '0', 100);
+        });
+
+        els.btnUpgrade1.addEventListener('click', () => {
+            if (state.neuralConnections >= CONSTANTS.UPGRADE_COST) {
+                state.neuralConnections -= CONSTANTS.UPGRADE_COST;
+                state.autoClickerCount++;
+                updateStage1UI();
+                startAutoClicker();
+            }
+        });
+
+        function startAutoClicker() {
+            setInterval(() => {
+                if (state.stage === 1 && state.neuralConnections < CONSTANTS.STAGE_1_GOAL) {
+                    state.neuralConnections++;
+                    if(Math.random() > 0.7) addNodeStage1(); // Don't add too many visual nodes
+                    updateStage1UI();
+                }
+            }, 1000);
+        }
+
+        function updateStage1UI() {
+            els.neuralDisplay.innerText = Math.floor(state.neuralConnections);
+            let pct = (state.neuralConnections / CONSTANTS.STAGE_1_GOAL) * 100;
+            els.prog1.style.width = `${Math.min(pct, 100)}%`;
+
+            // Check Upgrade Availability
+            if (state.neuralConnections >= CONSTANTS.UPGRADE_COST) {
+                els.btnUpgrade1.disabled = false;
+                els.btnUpgrade1.classList.remove('text-gray-400', 'border-gray-600');
+                els.btnUpgrade1.classList.add('text-cyan-400', 'border-cyan-500');
+            } else {
+                els.btnUpgrade1.disabled = true;
+                els.btnUpgrade1.classList.add('text-gray-400', 'border-gray-600');
+                els.btnUpgrade1.classList.remove('text-cyan-400', 'border-cyan-500');
+            }
+
+            // Check Completion
+            if (state.neuralConnections >= CONSTANTS.STAGE_1_GOAL && state.stage === 1) {
+                completeStage1();
+            }
+        }
+
+        function completeStage1() {
+            state.stage = 2;
+            els.stage1.classList.remove('active');
+            els.stage1.classList.add('completed');
+            els.stage2.classList.remove('locked');
+            els.stage2.classList.add('active');
+            els.globalStatus.innerText = "Substrate Migration Initiated";
+            els.globalStatus.style.color = "#bc13fe";
+        }
+
+        // Stage 2 Logic
+        let instability = 0;
+        
+        els.btnUpload.addEventListener('click', () => {
+            if (state.stage !== 2) return;
+            
+            // Risk mechanic
+            if (instability > 50) {
+                // fail chance
+                if (Math.random() > 0.5) {
+                    state.uploadProgress -= 5;
+                    alert("DATA CORRUPTION DETECTED");
+                }
+            } else {
+                state.uploadProgress += 2;
+                instability += Math.random() * 5;
+            }
+            
+            if (state.uploadProgress < 0) state.uploadProgress = 0;
+            updateStage2UI();
+        });
+
+        els.btnStabilize.addEventListener('click', () => {
+            instability = 0;
+            els.btnStabilize.classList.add('hidden');
+        });
+
+        function updateStage2UI() {
+            els.uploadDisplay.innerText = `${Math.floor(state.uploadProgress)}%`;
+            els.prog2.style.width = `${Math.min(state.uploadProgress, 100)}%`;
+
+            if (instability > 30) {
+                els.btnStabilize.classList.remove('hidden');
+                els.stage2.style.boxShadow = `0 0 ${instability}px red`;
+            } else {
+                els.stage2.style.boxShadow = '';
+            }
+
+            if (state.uploadProgress >= 100) {
+                completeStage2();
+            }
+        }
+
+        function completeStage2() {
+            state.stage = 3;
+            els.stage2.classList.remove('active');
+            els.stage2.classList.add('completed');
+            els.stage3.classList.remove('locked');
+            els.stage3.classList.add('active');
+            els.globalStatus.innerText = "POST-BIOLOGICAL ENTITY";
+            els.globalStatus.style.color = "#ffd700";
+            
+            els.ascendedEntity.classList.remove('hidden');
+            els.finalMsg.classList.remove('hidden');
+            
+            // Auto grow stats
+            setInterval(() => {
+                state.ascension.omniscience = Math.min(100, state.ascension.omniscience + 0.05);
+                updateStage3UI();
+            }, 100);
+        }
+
+        function updateStage3UI() {
+            els.statOmni.innerText = state.ascension.omniscience.toFixed(1) + '%';
+            els.statPres.innerText = state.ascension.omnipresence.toFixed(1) + '%';
+        }
+
+    </script>
+</body>
+</html>

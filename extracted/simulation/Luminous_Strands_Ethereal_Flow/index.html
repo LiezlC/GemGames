@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luminous Strands: Ethereal Flow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --bg-color: #050508;
+            --glass-bg: rgba(20, 20, 30, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --accent: #fbbf24; /* Amber-400 */
+            --accent-glow: rgba(251, 191, 36, 0.5);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            overflow: hidden;
+            font-family: 'Inter', system-ui, sans-serif;
+            color: white;
+        }
+
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        /* UI Overlay */
+        .ui-layer {
+            position: absolute;
+            z-index: 10;
+            pointer-events: none; /* Let clicks pass through to canvas where not on UI */
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 2rem;
+        }
+
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            pointer-events: auto;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .glass-panel:hover {
+            box-shadow: 0 15px 40px rgba(251, 191, 36, 0.1);
+        }
+
+        h1 {
+            font-weight: 200;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            background: linear-gradient(to right, #fff, #fbbf24);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .control-group {
+            margin-top: 1rem;
+        }
+
+        label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: #a1a1aa;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--accent);
+            transition: transform 0.1s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        button {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        button:hover {
+            background: rgba(251, 191, 36, 0.2);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        button.active {
+            background: var(--accent);
+            color: black;
+            border-color: var(--accent);
+            font-weight: bold;
+        }
+
+        .stats {
+            font-family: 'Courier New', monospace;
+            font-size: 0.7rem;
+            color: #52525b;
+            margin-top: 1rem;
+        }
+
+        /* Silhouette SVG Icon */
+        .icon-silhouette {
+            width: 24px;
+            height: 24px;
+            fill: currentColor;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="canvas-container">
+        <canvas id="flowCanvas"></canvas>
+    </div>
+
+    <div class="ui-layer">
+        <!-- Header -->
+        <div class="flex justify-between items-start">
+            <div class="glass-panel">
+                <h1>
+                    <svg class="icon-silhouette" viewBox="0 0 24 24">
+                        <path d="M12 4a4 4 0 100 8 4 4 0 000-8zM6 14a6 6 0 0112 0v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4z" />
+                    </svg>
+                    Ethereal Weaver
+                </h1>
+                <div class="stats">
+                    Entities: <span id="entity-count">0</span> | Flow State: <span id="flow-state">Stable</span>
+                </div>
+            </div>
+            
+            <div class="glass-panel flex gap-2">
+                <button id="mode-attract" class="active">Attract</button>
+                <button id="mode-repel">Repel</button>
+                <button id="mode-calm">Calm</button>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="flex justify-end items-end">
+            <div class="glass-panel w-80">
+                <div class="control-group">
+                    <label>Strand Length <span id="val-length">50</span></label>
+                    <input type="range" id="input-length" min="10" max="100" value="50">
+                </div>
+                <div class="control-group">
+                    <label>Flow Turbulence <span id="val-turb">0.5</span></label>
+                    <input type="range" id="input-turb" min="0" max="2" step="0.1" value="0.5">
+                </div>
+                <div class="control-group">
+                    <label>Entity Count <span id="val-count">150</span></label>
+                    <input type="range" id="input-count" min="50" max="400" value="150">
+                </div>
+                <div class="control-group mt-4 pt-4 border-t border-gray-700">
+                    <button id="btn-reset" class="w-full">Reset Simulation</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('flowCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Configuration
+        let config = {
+            particleCount: 150,
+            trailLength: 50,
+            turbulence: 0.5,
+            speed: 1.5,
+            interactionRadius: 250,
+            interactionForce: 0.05,
+            mode: 'attract' // attract, repel, calm
+        };
+
+        let particles = [];
+        let width, height;
+        let mouse = { x: -1000, y: -1000, active: false };
+
+        // Resize handling
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Mouse handling
+        window.addEventListener('mousemove', e => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+            mouse.active = true;
+        });
+        window.addEventListener('mouseleave', () => {
+            mouse.active = false;
+        });
+
+        // Simplex Noise helper (Simplified implementation for flow field)
+        // Using a simple pseudo-random gradient approach
+        const noise = (x, y, z) => {
+            const p = 50; // Period
+            return Math.sin(x/p) * Math.cos(y/p) + Math.sin((x+y)/p + z);
+        };
+
+        class Particle {
+            constructor() {
+                this.reset(true);
+            }
+
+            reset(randomY = false) {
+                this.x = Math.random() * width;
+                this.y = randomY ? Math.random() * height : height + 50; // Start from bottom or random
+                this.vx = 0;
+                this.vy = 0;
+                this.history = [];
+                // Each particle represents a figure, so they have slight variations
+                this.speedVar = 0.5 + Math.random() * 0.5; 
+                this.size = 1 + Math.random() * 2;
+                // Color variation: Gold to Orange to White
+                const hue = 30 + Math.random() * 20; // 30-50 (Orange-Gold)
+                const light = 50 + Math.random() * 40; // 50-90%
+                this.color = `hsla(${hue}, 100%, ${light}%,`;
+            }
+
+            update(time) {
+                // Base Flow Field (upward and slightly wavy)
+                // The image shows strands flowing up/out.
+                // We use noise to create the "hair" texture.
+                const angle = noise(this.x * 0.005, this.y * 0.005, time * 0.2) * config.turbulence;
+                
+                // Natural upward drift
+                let fx = Math.sin(angle) * 0.5;
+                let fy = -1 * config.speed * this.speedVar; // Move up
+
+                // Mouse Interaction
+                if (mouse.active) {
+                    const dx = mouse.x - this.x;
+                    const dy = mouse.y - this.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < config.interactionRadius) {
+                        const force = (1 - dist / config.interactionRadius) * config.interactionForce * 10;
+                        
+                        if (config.mode === 'attract') {
+                            fx += dx * force * 0.02;
+                            fy += dy * force * 0.02;
+                        } else if (config.mode === 'repel') {
+                            fx -= dx * force * 0.05;
+                            fy -= dy * force * 0.05;
+                        } else if (config.mode === 'calm') {
+                            fx *= 0.1;
+                            fy *= 0.1;
+                        }
+                    }
+                }
+
+                // Apply forces
+                this.vx += fx;
+                this.vy += fy;
+
+                // Friction
+                this.vx *= 0.95;
+                this.vy *= 0.95;
+
+                // Update position
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Store history for trails
+                this.history.push({ x: this.x, y: this.y });
+                if (this.history.length > config.trailLength) {
+                    this.history.shift();
+                }
+
+                // Wrap around / Reset
+                if (this.y < -100 || this.x < -50 || this.x > width + 50) {
+                    this.reset();
+                    this.y = height + 50; // Force restart at bottom
+                    this.history = []; // Clear trail so it doesn't streak across screen
+                }
+            }
+
+            draw(ctx) {
+                if (this.history.length < 2) return;
+
+                ctx.beginPath();
+                ctx.moveTo(this.history[0].x, this.history[0].y);
+
+                // Draw smooth curve through history points
+                for (let i = 1; i < this.history.length; i++) {
+                    // Simple line join for performance, or quadratic for smoothness
+                    // Using simple lines for "hair" texture look
+                    ctx.lineTo(this.history[i].x, this.history[i].y);
+                }
+
+                // Gradient stroke for the strand
+                // We simulate gradient by setting stroke style (Canvas doesn't support gradient along path easily without heavy perf cost)
+                // Instead, we use a solid color with low opacity to create the "glow" when they overlap
+                ctx.strokeStyle = this.color + ' 0.3)'; 
+                ctx.lineWidth = this.size;
+                ctx.stroke();
+
+                // Draw the "Head" (Silhouette) at the latest position
+                // The image shows silhouettes. We draw a dark shape with a glowing rim.
+                const head = this.history[this.history.length - 1];
+                
+                // Glow behind head
+                ctx.fillStyle = this.color + ' 0.8)';
+                ctx.beginPath();
+                ctx.arc(head.x, head.y, this.size * 2, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Silhouette (Dark center)
+                ctx.fillStyle = '#000';
+                ctx.beginPath();
+                ctx.arc(head.x, head.y, this.size * 1.2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function initParticles() {
+            particles = [];
+            for (let i = 0; i < config.particleCount; i++) {
+                particles.push(new Particle());
+            }
+            document.getElementById('entity-count').innerText = config.particleCount;
+        }
+
+        let time = 0;
+        function animate() {
+            requestAnimationFrame(animate);
+            time += 0.01;
+
+            // Create trails effect by not clearing completely
+            // Dark blueish fade to match image background
+            ctx.fillStyle = 'rgba(5, 5, 8, 0.2)'; 
+            ctx.fillRect(0, 0, width, height);
+
+            // Global Composite Operation to make lights blend additively
+            ctx.globalCompositeOperation = 'lighter';
+
+            particles.forEach(p => {
+                p.update(time);
+                p.draw(ctx);
+            });
+
+            // Reset composite for next frame background clear
+            ctx.globalCompositeOperation = 'source-over';
+        }
+
+        // UI Logic
+        const inputs = {
+            length: document.getElementById('input-length'),
+            turb: document.getElementById('input-turb'),
+            count: document.getElementById('input-count')
+        };
+
+        const displays = {
+            length: document.getElementById('val-length'),
+            turb: document.getElementById('val-turb'),
+            count: document.getElementById('val-count')
+        };
+
+        inputs.length.addEventListener('input', (e) => {
+            config.trailLength = parseInt(e.target.value);
+            displays.length.innerText = config.trailLength;
+        });
+
+        inputs.turb.addEventListener('input', (e) => {
+            config.turbulence = parseFloat(e.target.value);
+            displays.turb.innerText = config.turbulence;
+        });
+
+        inputs.count.addEventListener('change', (e) => { // Change on release to avoid lag
+            config.particleCount = parseInt(e.target.value);
+            displays.count.innerText = config.particleCount;
+            initParticles();
+        });
+        inputs.count.addEventListener('input', (e) => {
+            displays.count.innerText = e.target.value;
+        });
+
+        // Mode Buttons
+        const modes = ['attract', 'repel', 'calm'];
+        modes.forEach(m => {
+            document.getElementById(`mode-${m}`).addEventListener('click', (e) => {
+                config.mode = m;
+                // Update UI classes
+                modes.forEach(btn => document.getElementById(`mode-${btn}`).classList.remove('active'));
+                e.target.classList.add('active');
+            });
+        });
+
+        document.getElementById('btn-reset').addEventListener('click', () => {
+            initParticles();
+        });
+
+        // Start
+        initParticles();
+        animate();
+
+    </script>
+</body>
+</html>

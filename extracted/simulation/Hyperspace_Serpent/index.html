@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hyperspace Serpent</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600&display=swap');
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            font-family: 'Inter', sans-serif;
+            color: white;
+        }
+
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        #game-container {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            backdrop-filter: blur(2px);
+        }
+
+        #game-canvas {
+            background: rgba(10, 15, 30, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 50px rgba(0, 150, 255, 0.2), inset 0 0 20px rgba(0, 0, 0, 0.5);
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+        }
+
+        .ui-panel {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 2rem;
+            border-radius: 16px;
+            text-align: center;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            transition: all 0.3s ease;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: scale(0.9);
+        }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            background: linear-gradient(to right, #fff, #00d2ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 20px rgba(0, 210, 255, 0.5);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #00c6ff, #0072ff);
+            border: none;
+            padding: 12px 32px;
+            color: white;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 0 20px rgba(0, 114, 255, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(0, 114, 255, 0.6);
+        }
+
+        .btn-primary:active {
+            transform: scale(0.95);
+        }
+
+        .hud {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 40px;
+            z-index: 20;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .hud-item {
+            text-align: center;
+        }
+
+        .hud-label {
+            font-size: 0.7rem;
+            color: #88ccff;
+            letter-spacing: 2px;
+            margin-bottom: 4px;
+        }
+
+        .hud-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-shadow: 0 0 10px rgba(0, 200, 255, 0.5);
+        }
+
+        /* CRT Scanline effect overlay */
+        .scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+            z-index: 50;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Background Warp Effect -->
+    <canvas id="bg-canvas"></canvas>
+
+    <!-- Scanline Overlay -->
+    <div class="scanlines"></div>
+
+    <!-- Game HUD -->
+    <div class="hud">
+        <div class="hud-item">
+            <div class="hud-label">SCORE</div>
+            <div class="hud-value" id="score-display">0</div>
+        </div>
+        <div class="hud-item">
+            <div class="hud-label">SPEED</div>
+            <div class="hud-value" id="speed-display">1x</div>
+        </div>
+    </div>
+
+    <!-- Main Game Container -->
+    <div id="game-container">
+        <canvas id="game-canvas" width="600" height="600"></canvas>
+
+        <!-- Start Menu -->
+        <div id="start-screen" class="ui-panel">
+            <div class="mb-6">
+                <svg class="w-16 h-16 mx-auto mb-4 text-cyan-400 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                </svg>
+                <h1 class="text-4xl mb-2">HYPER SERPENT</h1>
+                <p class="text-gray-400 text-sm">Navigate the data stream. Consume energy packets. Do not crash.</p>
+            </div>
+            <button class="btn-primary" onclick="startGame()">Initialize</button>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="game-over-screen" class="ui-panel hidden">
+            <h1 class="text-3xl mb-2 text-red-500" style="background: none; -webkit-text-fill-color: #ff4d4d; text-shadow: 0 0 20px rgba(255, 0, 0, 0.5);">SYSTEM FAILURE</h1>
+            <p class="text-gray-300 mb-6">Data stream connection lost.</p>
+            <div class="mb-6 p-4 bg-white/5 rounded-lg border border-white/10">
+                <div class="text-xs text-gray-400 uppercase tracking-widest">Final Score</div>
+                <div class="text-4xl font-bold text-white" id="final-score">0</div>
+            </div>
+            <button class="btn-primary" onclick="resetGame()">Reboot System</button>
+        </div>
+    </div>
+
+    <script>
+        /* --- BACKGROUND WARP ENGINE --- */
+        const bgCanvas = document.getElementById('bg-canvas');
+        const bgCtx = bgCanvas.getContext('2d');
+        let width, height;
+        
+        // The image shows rectangular streaks, not just stars.
+        // We will create "DataBits" that fly towards the screen.
+        class DataBit {
+            constructor() {
+                this.init();
+            }
+
+            init() {
+                this.x = (Math.random() - 0.5) * width;
+                this.y = (Math.random() - 0.5) * height;
+                this.z = Math.random() * width; // Depth
+                this.length = Math.random() * 10 + 5;
+                this.color = Math.random() > 0.8 ? '#ffffff' : (Math.random() > 0.5 ? '#00d2ff' : '#0051ff');
+                this.thickness = Math.random() * 2 + 0.5;
+            }
+
+            update(speed) {
+                this.z -= speed;
+                if (this.z <= 0) {
+                    this.init();
+                    this.z = width;
+                }
+            }
+
+            draw() {
+                // Perspective projection
+                let sx = (this.x / this.z) * width + width / 2;
+                let sy = (this.y / this.z) * height + height / 2;
+
+                // Previous position for streak effect
+                let prevZ = this.z + 20; // Length of streak based on Z
+                let px = (this.x / prevZ) * width + width / 2;
+                let py = (this.y / prevZ) * height + height / 2;
+
+                // Opacity based on depth
+                let alpha = 1 - (this.z / width);
+
+                bgCtx.beginPath();
+                bgCtx.moveTo(px, py);
+                bgCtx.lineTo(sx, sy);
+                bgCtx.strokeStyle = this.color;
+                bgCtx.lineWidth = this.thickness * (1 + (width - this.z)/width); // Thicker as it gets closer
+                bgCtx.globalAlpha = alpha;
+                bgCtx.stroke();
+                bgCtx.globalAlpha = 1.0;
+            }
+        }
+
+        let dataBits = [];
+        const BIT_COUNT = 400;
+        let warpSpeed = 15;
+
+        function resizeBg() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            bgCanvas.width = width;
+            bgCanvas.height = height;
+        }
+
+        function initBg() {
+            resizeBg();
+            dataBits = [];
+            for(let i=0; i<BIT_COUNT; i++) {
+                dataBits.push(new DataBit());
+            }
+        }
+
+        function animateBg() {
+            bgCtx.fillStyle = 'rgba(0, 0, 0, 0.3)'; // Trail effect
+            bgCtx.fillRect(0, 0, width, height);
+
+            dataBits.forEach(bit => {
+                bit.update(warpSpeed);
+                bit.draw();
+            });
+
+            requestAnimationFrame(animateBg);
+        }
+
+        window.addEventListener('resize', resizeBg);
+        initBg();
+        animateBg();
+
+
+        /* --- GAME ENGINE --- */
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score-display');
+        const finalScoreEl = document.getElementById('final-score');
+        const speedEl = document.getElementById('speed-display');
+        const startScreen = document.getElementById('start-screen');
+        const gameOverScreen = document.getElementById('game-over-screen');
+
+        const GRID_SIZE = 20;
+        const TILE_COUNT = canvas.width / GRID_SIZE;
+        
+        let snake = [];
+        let food = {};
+        let dx = 0;
+        let dy = 0;
+        let score = 0;
+        let gameSpeed = 100;
+        let gameLoopId;
+        let lastTime = 0;
+        let isPaused = false;
+        let isGameOver = false;
+
+        // Initialize Snake
+        function initGame() {
+            snake = [
+                {x: 10, y: 10},
+                {x: 9, y: 10},
+                {x: 8, y: 10}
+            ];
+            dx = 1;
+            dy = 0;
+            score = 0;
+            gameSpeed = 100;
+            warpSpeed = 10; // Reset BG speed
+            scoreEl.innerText = score;
+            speedEl.innerText = "1x";
+            spawnFood();
+            isGameOver = false;
+            isPaused = false;
+        }
+
+        function spawnFood() {
+            food = {
+                x: Math.floor(Math.random() * TILE_COUNT),
+                y: Math.floor(Math.random() * TILE_COUNT)
+            };
+            // Don't spawn on snake
+            for (let part of snake) {
+                if (part.x === food.x && part.y === food.y) spawnFood();
+            }
+        }
+
+        function drawRect(x, y, color, glowColor, isHead = false) {
+            ctx.fillStyle = color;
+            ctx.shadowBlur = isHead ? 20 : 10;
+            ctx.shadowColor = glowColor;
+            
+            // Rounded rect
+            const size = GRID_SIZE - 2;
+            const r = isHead ? 6 : 4;
+            const px = x * GRID_SIZE + 1;
+            const py = y * GRID_SIZE + 1;
+
+            ctx.beginPath();
+            ctx.roundRect(px, py, size, size, r);
+            ctx.fill();
+            ctx.shadowBlur = 0; // Reset
+        }
+
+        function drawSnake() {
+            snake.forEach((part, index) => {
+                const isHead = index === 0;
+                // White/Silver snake like the image
+                const color = isHead ? '#ffffff' : `rgba(200, 200, 255, ${1 - (index/snake.length)*0.8})`;
+                const glow = isHead ? '#00d2ff' : '#0051ff';
+                
+                drawRect(part.x, part.y, color, glow, isHead);
+
+                // Draw Eyes if head
+                if (isHead) {
+                    ctx.fillStyle = '#ff0000';
+                    ctx.shadowColor = '#ff0000';
+                    ctx.shadowBlur = 5;
+                    
+                    // Determine eye position based on direction
+                    let ex1, ey1, ex2, ey2;
+                    const offset = 4;
+                    const eyeSize = 3;
+                    
+                    // Center of head
+                    const cx = part.x * GRID_SIZE + GRID_SIZE/2;
+                    const cy = part.y * GRID_SIZE + GRID_SIZE/2;
+
+                    if (dx === 1) { // Right
+                        ex1 = cx + offset; ey1 = cy - offset;
+                        ex2 = cx + offset; ey2 = cy + offset;
+                    } else if (dx === -1) { // Left
+                        ex1 = cx - offset; ey1 = cy - offset;
+                        ex2 = cx - offset; ey2 = cy + offset;
+                    } else if (dy === -1) { // Up
+                        ex1 = cx - offset; ey1 = cy - offset;
+                        ex2 = cx + offset; ey2 = cy - offset;
+                    } else { // Down
+                        ex1 = cx - offset; ey1 = cy + offset;
+                        ex2 = cx + offset; ey2 = cy + offset;
+                    }
+
+                    ctx.beginPath(); ctx.arc(ex1, ey1, eyeSize/2, 0, Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(ex2, ey2, eyeSize/2, 0, Math.PI*2); ctx.fill();
+                    ctx.shadowBlur = 0;
+                }
+            });
+        }
+
+        function drawFood() {
+            // Draw energy orb
+            const cx = food.x * GRID_SIZE + GRID_SIZE/2;
+            const cy = food.y * GRID_SIZE + GRID_SIZE/2;
+            
+            ctx.fillStyle = '#ff0055';
+            ctx.shadowColor = '#ff0055';
+            ctx.shadowBlur = 15;
+            
+            ctx.beginPath();
+            ctx.arc(cx, cy, GRID_SIZE/2 - 2, 0, Math.PI*2);
+            ctx.fill();
+            
+            // Inner core
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(cx, cy, GRID_SIZE/4, 0, Math.PI*2);
+            ctx.fill();
+            
+            ctx.shadowBlur = 0;
+        }
+
+        function update() {
+            if (isGameOver || isPaused) return;
+
+            const head = {x: snake[0].x + dx, y: snake[0].y + dy};
+
+            // Wall Wrapping (Hyperspace tunnel logic)
+            if (head.x < 0) head.x = TILE_COUNT - 1;
+            if (head.x >= TILE_COUNT) head.x = 0;
+            if (head.y < 0) head.y = TILE_COUNT - 1;
+            if (head.y >= TILE_COUNT) head.y = 0;
+
+            // Self Collision
+            for (let part of snake) {
+                if (head.x === part.x && head.y === part.y) {
+                    endGame();
+                    return;
+                }
+            }
+
+            snake.unshift(head);
+
+            // Eat Food
+            if (head.x === food.x && head.y === food.y) {
+                score += 10;
+                scoreEl.innerText = score;
+                spawnFood();
+                
+                // Increase difficulty/warp speed
+                warpSpeed += 2;
+                if (score % 50 === 0) {
+                    // Speed up game slightly every 50 points
+                    gameSpeed = Math.max(50, gameSpeed - 5);
+                    speedEl.innerText = ((100 - gameSpeed + 50)/50).toFixed(1) + "x";
+                }
+            } else {
+                snake.pop();
+            }
+        }
+
+        function draw() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Grid (Subtle)
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+            ctx.lineWidth = 1;
+            for(let i=0; i<TILE_COUNT; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i*GRID_SIZE, 0);
+                ctx.lineTo(i*GRID_SIZE, canvas.height);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(0, i*GRID_SIZE);
+                ctx.lineTo(canvas.width, i*GRID_SIZE);
+                ctx.stroke();
+            }
+
+            drawFood();
+            drawSnake();
+        }
+
+        function gameLoop(timestamp) {
+            if (!lastTime) lastTime = timestamp;
+            const deltaTime = timestamp - lastTime;
+
+            if (deltaTime >= gameSpeed) {
+                update();
+                draw();
+                lastTime = timestamp;
+            }
+
+            if (!isGameOver) {
+                gameLoopId = requestAnimationFrame(gameLoop);
+            }
+        }
+
+        function startGame() {
+            startScreen.classList.add('hidden');
+            gameOverScreen.classList.add('hidden');
+            initGame();
+            gameLoopId = requestAnimationFrame(gameLoop);
+        }
+
+        function resetGame() {
+            gameOverScreen.classList.add('hidden');
+            startGame();
+        }
+
+        function endGame() {
+            isGameOver = true;
+            cancelAnimationFrame(gameLoopId);
+            finalScoreEl.innerText = score;
+            gameOverScreen.classList.remove('hidden');
+            warpSpeed = 2; // Slow down warp on death
+        }
+
+        // Controls
+        document.addEventListener('keydown', (e) => {
+            if (isGameOver) return;
+            
+            switch(e.key) {
+                case 'ArrowUp':
+                case 'w':
+                case 'W':
+                    if (dy !== 1) { dx = 0; dy = -1; }
+                    break;
+                case 'ArrowDown':
+                case 's':
+                case 'S':
+                    if (dy !== -1) { dx = 0; dy = 1; }
+                    break;
+                case 'ArrowLeft':
+                case 'a':
+                case 'A':
+                    if (dx !== 1) { dx = -1; dy = 0; }
+                    break;
+                case 'ArrowRight':
+                case 'd':
+                case 'D':
+                    if (dx !== -1) { dx = 1; dy = 0; }
+                    break;
+            }
+        });
+
+        // Initial Draw
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.font = '16px Orbitron';
+        ctx.textAlign = 'center';
+        ctx.fillText("SYSTEM READY", canvas.width/2, canvas.height/2);
+
+    </script>
+</body>
+</html>

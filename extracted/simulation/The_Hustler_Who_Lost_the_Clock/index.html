@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Hustler Who Lost the Clock</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;1,400&family=Roboto+Mono:wght@400;700&display=swap');
+
+        :root {
+            --bg-hustle: #f3f4f6;
+            --bg-farm: #fef3c7;
+            --text-hustle: #1f2937;
+            --text-farm: #451a03;
+            --accent-hustle: #3b82f6;
+            --accent-farm: #d97706;
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Merriweather', serif;
+            transition: background-color 1s ease, color 1s ease;
+        }
+
+        /* Scene Containers */
+        .scene {
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.8s ease-in-out;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .scene.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        /* Hustle Mode Styles */
+        .hustle-mode {
+            background-color: var(--bg-hustle);
+            color: var(--text-hustle);
+            font-family: 'Roboto Mono', monospace;
+        }
+        
+        .notification {
+            position: absolute;
+            background: white;
+            border: 1px solid #ccc;
+            box-shadow: 2px 2px 10px rgba(0,0,0,0.1);
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: #ef4444;
+            z-index: 10;
+        }
+
+        @keyframes popIn {
+            from { transform: scale(0); }
+            to { transform: scale(1); }
+        }
+
+        /* Farm Mode Styles */
+        .farm-mode {
+            background: linear-gradient(to bottom, #fef3c7, #fffbeb);
+            color: var(--text-farm);
+        }
+
+        .cob-wall {
+            width: 200px;
+            height: 200px;
+            background: #a16207;
+            border-radius: 10px;
+            position: relative;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            overflow: hidden;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.2);
+        }
+
+        .cob-progress {
+            width: 100%;
+            background: #d97706;
+            transition: height 0.3s ease;
+            border-top: 4px solid #78350f;
+        }
+
+        /* Utilities */
+        .btn {
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.1s;
+            border: none;
+            font-family: inherit;
+            margin-top: 20px;
+        }
+        .btn:active { transform: scale(0.95); }
+        
+        .btn-hustle { background: #1f2937; color: white; }
+        .btn-farm { background: #d97706; color: white; box-shadow: 0 4px 10px rgba(217, 119, 6, 0.3); }
+
+        .breathing-circle {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: rgba(217, 119, 6, 0.2);
+            border: 2px solid #d97706;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            cursor: pointer;
+            transition: all 0.1s linear;
+            user-select: none;
+        }
+
+        /* Goat Animation */
+        .goat-container {
+            position: relative;
+            width: 300px;
+            height: 200px;
+        }
+        .goat {
+            font-size: 5rem;
+            position: absolute;
+            transition: all 0.5s ease;
+            cursor: pointer;
+        }
+        .watch {
+            font-size: 3rem;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            transition: opacity 0.3s;
+        }
+
+        /* Barn CSS Art */
+        .barn {
+            position: relative;
+            width: 200px;
+            height: 140px;
+            background: #991b1b;
+            margin-bottom: 0;
+        }
+        .barn-roof {
+            position: absolute;
+            top: -60px;
+            left: -10px;
+            width: 0;
+            height: 0;
+            border-left: 110px solid transparent;
+            border-right: 110px solid transparent;
+            border-bottom: 60px solid #7f1d1d;
+        }
+        .barn-door {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 80px;
+            background: #450a0a;
+            border-top-left-radius: 30px;
+            border-top-right-radius: 30px;
+        }
+
+        .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+
+        .fade-text {
+            max-width: 600px;
+            line-height: 1.6;
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+        }
+
+    </style>
+</head>
+<body class="hustle-mode">
+
+    <!-- SCENE 1: INTRO -->
+    <div id="scene-intro" class="scene active">
+        <div class="text-6xl mb-4">🏙️ ➡️ 🚜</div>
+        <h1 class="text-4xl font-bold mb-2">The Hustler Who Lost the Clock</h1>
+        <p class="text-gray-500 mb-8">An interactive story about slowing down.</p>
+        <button class="btn btn-hustle" onclick="startGame()">Begin Journey</button>
+    </div>
+
+    <!-- SCENE 2: THE HUSTLE -->
+    <div id="scene-hustle" class="scene">
+        <div class="absolute top-4 right-4 text-red-600 font-mono font-bold text-xl" id="stress-meter">STRESS: 0%</div>
+        <div class="absolute top-4 left-4 font-mono text-gray-500">
+            <span id="clock-display">09:00 AM</span>
+        </div>
+        
+        <div class="text-center z-20 bg-white/90 p-6 rounded-xl shadow-xl max-w-md">
+            <div class="text-4xl mb-4">🏃‍♂️💨</div>
+            <h2 class="text-2xl font-bold mb-2">The Arrival</h2>
+            <p class="mb-4">You are late. The farm is just background noise. The notifications are real.</p>
+            <p class="text-sm text-red-500 font-bold">CLEAR 10 NOTIFICATIONS TO SURVIVE!</p>
+        </div>
+        
+        <!-- Notification Container -->
+        <div id="notification-area" class="absolute inset-0 pointer-events-none"></div>
+    </div>
+
+    <!-- SCENE 3: THE CRASH (GOAT) -->
+    <div id="scene-goat" class="scene">
+        <h2 class="text-2xl font-bold mb-4">The Interruption</h2>
+        <p class="fade-text">Kernel the goat doesn't care about your metrics. He cares about that shiny thing on your wrist.</p>
+        
+        <div class="goat-container border-b-4 border-green-800/20 rounded-full bg-green-100/50">
+            <div id="the-watch" class="watch">⌚</div>
+            <div id="the-goat" class="goat" style="left: 0; top: 20px;">🐐</div>
+        </div>
+
+        <p class="mt-8 text-gray-600 italic">Tap the goat to bring him closer to the watch...</p>
+    </div>
+
+    <!-- SCENE 4: FARM CHORES (RHYTHM) -->
+    <div id="scene-farm" class="scene">
+        <div class="text-4xl mb-4">🌾🐄</div>
+        <h2 class="text-2xl font-bold mb-2">The Shift</h2>
+        <p class="fade-text">The watch is gone. The silence is loud. SageByte hands you a bucket.<br>"Don't rush the milk. Find the rhythm."</p>
+        
+        <div class="relative mt-8">
+            <div id="breathing-circle" class="breathing-circle" onclick="handleFarmClick()">
+                🥛
+            </div>
+            <div id="farm-feedback" class="absolute -bottom-12 left-1/2 transform -translate-x-1/2 text-sm font-bold w-64">
+                Wait for the circle to expand...
+            </div>
+        </div>
+
+        <div class="w-64 h-2 bg-gray-200 rounded-full mt-16 overflow-hidden">
+            <div id="milk-progress" class="h-full bg-orange-500 w-0 transition-all duration-300"></div>
+        </div>
+    </div>
+
+    <!-- SCENE 5: BUILDING (SLOW) -->
+    <div id="scene-build" class="scene">
+        <h2 class="text-2xl font-bold mb-2">Building Together</h2>
+        <p class="fade-text">"We build from the earth," says Sage. "Cob walls that breathe."<br>Stomp the clay. Mix the straw. Build slow.</p>
+        
+        <div class="flex items-end gap-4 mt-8">
+            <div class="text-center">
+                <div class="cob-wall">
+                    <div id="wall-1" class="cob-progress" style="height: 10%;"></div>
+                </div>
+                <button class="btn btn-farm mt-4" onmousedown="startBuilding('wall-1')" onmouseup="stopBuilding()" onmouseleave="stopBuilding()">Hold to Stomp Clay</button>
+            </div>
+        </div>
+        <p id="build-msg" class="mt-4 text-sm text-orange-800 h-6"></p>
+    </div>
+
+    <!-- SCENE 6: ENDING -->
+    <div id="scene-end" class="scene">
+        <div class="barn">
+            <div class="barn-roof"></div>
+            <div class="barn-door"></div>
+        </div>
+        <div class="flex gap-4 text-4xl mt-4">
+            <span>👩‍🌾</span><span>👔</span><span>🐐</span>
+        </div>
+        
+        <h2 class="text-3xl font-bold mt-8 text-orange-900">"Build Slow. Build Well."</h2>
+        <p class="fade-text mt-4 text-orange-800">
+            The Hustler, once haunted by minutes, finally sat still. 
+            You don't need to chase time when you're already inside it.
+        </p>
+        <button class="btn btn-farm mt-8" onclick="location.reload()">Read Again</button>
+    </div>
+
+    <script>
+        // --- STATE MANAGEMENT ---
+        const scenes = ['scene-intro', 'scene-hustle', 'scene-goat', 'scene-farm', 'scene-build', 'scene-end'];
+        let currentSceneIdx = 0;
+        
+        function switchScene(id) {
+            document.querySelectorAll('.scene').forEach(el => el.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            
+            // Theme switching
+            if (id === 'scene-intro' || id === 'scene-hustle') {
+                document.body.className = 'hustle-mode';
+            } else {
+                document.body.className = 'farm-mode';
+            }
+
+            // Init specific scene logic
+            if (id === 'scene-hustle') initHustle();
+            if (id === 'scene-goat') initGoat();
+            if (id === 'scene-farm') initFarm();
+            if (id === 'scene-build') initBuild();
+        }
+
+        function startGame() {
+            switchScene('scene-hustle');
+        }
+
+        // --- SCENE 2: HUSTLE LOGIC ---
+        let stress = 0;
+        let notificationsCleared = 0;
+        let hustleInterval;
+        const notifications = ["MEETING!", "EMAIL!", "SLACK!", "KPIs!", "Q3 GOALS!", "URGENT!", "CALL MOM", "DEADLINE"];
+
+        function initHustle() {
+            stress = 0;
+            notificationsCleared = 0;
+            document.getElementById('stress-meter').innerText = "STRESS: 0%";
+            
+            hustleInterval = setInterval(() => {
+                spawnNotification();
+                stress += 2;
+                updateStress();
+            }, 800);
+        }
+
+        function spawnNotification() {
+            const area = document.getElementById('notification-area');
+            const notif = document.createElement('div');
+            notif.className = 'notification pointer-events-auto';
+            notif.innerText = notifications[Math.floor(Math.random() * notifications.length)];
+            
+            // Random position
+            const x = Math.random() * (window.innerWidth - 100);
+            const y = Math.random() * (window.innerHeight - 200) + 100;
+            notif.style.left = `${x}px`;
+            notif.style.top = `${y}px`;
+
+            notif.onclick = () => {
+                notif.remove();
+                notificationsCleared++;
+                stress = Math.max(0, stress - 5);
+                updateStress();
+                checkHustleWin();
+            };
+
+            area.appendChild(notif);
+
+            // Auto remove after 3s and increase stress
+            setTimeout(() => {
+                if(notif.parentNode) {
+                    notif.remove();
+                    stress += 5;
+                    updateStress();
+                }
+            }, 2500);
+        }
+
+        function updateStress() {
+            if (stress > 100) stress = 100;
+            document.getElementById('stress-meter').innerText = `STRESS: ${stress}%`;
+            document.getElementById('stress-meter').style.color = `rgb(${stress * 2.5}, 0, 0)`;
+            
+            if (stress > 80) {
+                document.body.classList.add('shake');
+            } else {
+                document.body.classList.remove('shake');
+            }
+        }
+
+        function checkHustleWin() {
+            if (notificationsCleared >= 10) {
+                clearInterval(hustleInterval);
+                document.getElementById('notification-area').innerHTML = '';
+                document.body.classList.remove('shake');
+                setTimeout(() => switchScene('scene-goat'), 500);
+            }
+        }
+
+        // --- SCENE 3: GOAT LOGIC ---
+        let goatPosition = 0; // 0 to 100%
+        
+        function initGoat() {
+            const goat = document.getElementById('the-goat');
+            const watch = document.getElementById('the-watch');
+            goatPosition = 0;
+            goat.style.left = '0%';
+            watch.style.opacity = '1';
+
+            goat.onclick = () => {
+                goatPosition += 20;
+                goat.style.left = `${goatPosition}%`;
+                
+                if (goatPosition >= 45) {
+                    // CHOMP
+                    goat.innerText = "🐐🍴";
+                    setTimeout(() => {
+                        watch.style.opacity = '0'; // Watch gone
+                        goat.innerText = "🐐😋"; // Happy goat
+                        setTimeout(() => switchScene('scene-farm'), 1500);
+                    }, 500);
+                }
+            };
+        }
+
+        // --- SCENE 4: FARM RHYTHM LOGIC ---
+        let milkProgress = 0;
+        let breathingState = 'inhale'; // inhale or exhale
+        let circleScale = 1;
+        
+        function initFarm() {
+            milkProgress = 0;
+            const circle = document.getElementById('breathing-circle');
+            
+            // Breathing animation loop
+            setInterval(() => {
+                if (breathingState === 'inhale') {
+                    circleScale += 0.02;
+                    if (circleScale >= 1.5) breathingState = 'exhale';
+                } else {
+                    circleScale -= 0.02;
+                    if (circleScale <= 1.0) breathingState = 'inhale';
+                }
+                circle.style.transform = `scale(${circleScale})`;
+            }, 50);
+        }
+
+        function handleFarmClick() {
+            const feedback = document.getElementById('farm-feedback');
+            const bar = document.getElementById('milk-progress');
+
+            // User must click when circle is large (expanded)
+            if (circleScale > 1.35) {
+                // Good click
+                milkProgress += 15;
+                feedback.innerText = "Good rhythm...";
+                feedback.style.color = "green";
+                
+                // Visual feedback
+                const circle = document.getElementById('breathing-circle');
+                circle.innerText = "🥛";
+                setTimeout(() => circle.innerText = "🐄", 200);
+
+            } else {
+                // Bad click
+                milkProgress = Math.max(0, milkProgress - 5);
+                feedback.innerText = "Too fast! You spilled it.";
+                feedback.style.color = "red";
+            }
+
+            bar.style.width = `${milkProgress}%`;
+
+            if (milkProgress >= 100) {
+                setTimeout(() => switchScene('scene-build'), 1000);
+            }
+        }
+
+        // --- SCENE 5: BUILD LOGIC ---
+        let buildInterval;
+        let wallHeight = 10;
+
+        function initBuild() {
+            wallHeight = 10;
+            updateWall();
+        }
+
+        function startBuilding(wallId) {
+            const msg = document.getElementById('build-msg');
+            msg.innerText = "Stomping clay... steady...";
+            
+            buildInterval = setInterval(() => {
+                wallHeight += 1;
+                updateWall();
+                
+                // Random chance to slip if too fast (simulated by just random checks here for simplicity)
+                if (Math.random() > 0.95) {
+                    msg.innerText = "Slipped! Slow down.";
+                    wallHeight -= 2;
+                }
+
+                if (wallHeight >= 100) {
+                    stopBuilding();
+                    msg.innerText = "The wall is strong.";
+                    setTimeout(() => switchScene('scene-end'), 1500);
+                }
+            }, 100); // Slow steady increment
+        }
+
+        function stopBuilding() {
+            clearInterval(buildInterval);
+            document.getElementById('build-msg').innerText = "";
+        }
+
+        function updateWall() {
+            document.getElementById('wall-1').style.height = `${wallHeight}%`;
+        }
+
+    </script>
+</body>
+</html>

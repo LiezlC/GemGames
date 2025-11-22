@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEURAL_SYNC // PROTOCOL</title>
+    <style>
+        :root {
+            --bg-color: #050510;
+            --neon-cyan: #00f3ff;
+            --neon-pink: #ff0055;
+            --neon-yellow: #ffe600;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --text-color: #e0e0e0;
+            --font-mono: 'Courier New', Courier, monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            margin: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-mono);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            background: radial-gradient(circle at 20% 30%, #1a0b2e 0%, #000000 100%);
+        }
+
+        /* CRT Scanline Effect */
+        body::after {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 10;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+        }
+
+        header {
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--neon-cyan);
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
+            background: rgba(0,0,0,0.8);
+            z-index: 20;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.2rem;
+            letter-spacing: 4px;
+            text-shadow: 0 0 5px var(--neon-cyan);
+        }
+
+        .status-badge {
+            padding: 5px 10px;
+            background: rgba(255, 0, 85, 0.2);
+            border: 1px solid var(--neon-pink);
+            color: var(--neon-pink);
+            font-size: 0.8rem;
+            border-radius: 4px;
+            animation: pulse 2s infinite;
+        }
+
+        .main-interface {
+            flex: 1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            position: relative;
+        }
+
+        /* Character Containers */
+        .entity-container {
+            width: 25%;
+            height: 70%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .entity-visual {
+            width: 200px;
+            height: 250px;
+            position: relative;
+        }
+
+        /* SVG Styles */
+        .profile-svg {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 0 10px rgba(0, 243, 255, 0.3));
+        }
+        
+        .human-path {
+            fill: none;
+            stroke: var(--neon-pink);
+            stroke-width: 2;
+            stroke-dasharray: 500;
+            stroke-dashoffset: 0;
+            animation: dash 5s linear infinite;
+        }
+
+        .robot-path {
+            fill: none;
+            stroke: var(--neon-cyan);
+            stroke-width: 2;
+        }
+
+        .brain-node {
+            fill: var(--neon-yellow);
+            animation: blink 1s infinite alternate;
+        }
+
+        /* Central Visualizer */
+        .sync-visualizer {
+            flex: 1;
+            height: 80%;
+            background: var(--glass-bg);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            margin: 0 20px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+        }
+
+        .overlay-text {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.5);
+        }
+
+        .sync-meter {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+        }
+
+        .sync-fill {
+            height: 100%;
+            width: 0%;
+            background: var(--neon-yellow);
+            box-shadow: 0 0 10px var(--neon-yellow);
+            transition: width 0.1s;
+        }
+
+        /* Controls Deck */
+        .controls-deck {
+            height: 180px;
+            background: rgba(10, 10, 20, 0.95);
+            border-top: 1px solid var(--neon-cyan);
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            z-index: 20;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            width: 200px;
+        }
+
+        .control-group label {
+            font-size: 0.8rem;
+            color: var(--neon-cyan);
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            background: #333;
+            border-radius: 3px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: var(--neon-pink);
+            border: 2px solid #fff;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--neon-pink);
+        }
+
+        .btn-sync {
+            width: 150px;
+            height: 60px;
+            align-self: center;
+            background: transparent;
+            border: 2px solid var(--neon-yellow);
+            color: var(--neon-yellow);
+            font-family: var(--font-mono);
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            box-shadow: 0 0 10px rgba(255, 230, 0, 0.1);
+        }
+
+        .btn-sync:hover {
+            background: var(--neon-yellow);
+            color: #000;
+            box-shadow: 0 0 20px var(--neon-yellow);
+        }
+
+        .terminal-log {
+            position: absolute;
+            bottom: 190px;
+            left: 20px;
+            width: 300px;
+            height: 100px;
+            overflow-y: hidden;
+            font-size: 0.7rem;
+            color: rgba(0, 243, 255, 0.7);
+            pointer-events: none;
+            display: flex;
+            flex-direction: column-reverse;
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0% { opacity: 0.6; box-shadow: 0 0 5px var(--neon-pink); }
+            50% { opacity: 1; box-shadow: 0 0 15px var(--neon-pink); }
+            100% { opacity: 0.6; box-shadow: 0 0 5px var(--neon-pink); }
+        }
+
+        @keyframes dash {
+            to { stroke-dashoffset: 1000; }
+        }
+
+        @keyframes blink {
+            from { opacity: 0.3; }
+            to { opacity: 1; }
+        }
+
+        .success-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 243, 255, 0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 1s;
+        }
+
+        .success-message {
+            font-size: 3rem;
+            color: #fff;
+            text-shadow: 0 0 20px var(--neon-cyan);
+            border: 4px solid #fff;
+            padding: 20px 40px;
+            background: rgba(0,0,0,0.8);
+            transform: scale(0.8);
+            transition: transform 0.5s;
+        }
+
+        .visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        
+        .visible .success-message {
+            transform: scale(1);
+        }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>NEURAL_SYNC // PROTOCOL v9.2</h1>
+        <div class="status-badge" id="statusBadge">DISCONNECTED</div>
+    </header>
+
+    <div class="main-interface">
+        <!-- Human Entity -->
+        <div class="entity-container">
+            <div class="entity-visual">
+                <svg class="profile-svg" viewBox="0 0 100 100">
+                    <defs>
+                        <linearGradient id="humanGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#ff0055;stop-opacity:0.2" />
+                            <stop offset="100%" style="stop-color:#1a0b2e;stop-opacity:0" />
+                        </linearGradient>
+                    </defs>
+                    <!-- Stylized Human Profile -->
+                    <path class="human-path" d="M30,80 L30,60 Q25,55 25,45 Q25,20 50,20 Q75,20 75,45 L75,55 L80,60 L80,80" fill="url(#humanGrad)" />
+                    <!-- Goggles -->
+                    <rect x="65" y="35" width="15" height="10" rx="2" fill="#333" stroke="#ff0055" stroke-width="1" />
+                    <circle cx="72" cy="40" r="2" fill="#ff0055" class="brain-node" />
+                    <!-- Neural Nodes -->
+                    <circle cx="40" cy="35" r="1" fill="#ff0055" opacity="0.8" />
+                    <circle cx="50" cy="30" r="1" fill="#ff0055" opacity="0.8" />
+                    <circle cx="45" cy="45" r="1" fill="#ff0055" opacity="0.8" />
+                    <line x1="40" y1="35" x2="50" y2="30" stroke="#ff0055" stroke-width="0.5" opacity="0.5" />
+                    <line x1="50" y1="30" x2="45" y2="45" stroke="#ff0055" stroke-width="0.5" opacity="0.5" />
+                </svg>
+            </div>
+            <div style="color: var(--neon-pink); font-size: 0.8rem; margin-top: 10px;">SUBJECT: HUMAN</div>
+            <div style="font-size: 0.6rem; color: #666;">SIGNAL: ANALOG</div>
+        </div>
+
+        <!-- Center Visualizer -->
+        <div class="sync-visualizer">
+            <div class="overlay-text">WAVEFORM MONITORING...</div>
+            <canvas id="waveCanvas"></canvas>
+            <div class="sync-meter">
+                <div class="sync-fill" id="syncFill"></div>
+            </div>
+            <div style="position: absolute; bottom: 5px; width: 100%; text-align: center; font-size: 0.7rem; color: #888;">SYNC STABILITY</div>
+        </div>
+
+        <!-- AI Entity -->
+        <div class="entity-container">
+            <div class="entity-visual">
+                <svg class="profile-svg" viewBox="0 0 100 100">
+                    <defs>
+                        <linearGradient id="robotGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#00f3ff;stop-opacity:0.2" />
+                            <stop offset="100%" style="stop-color:#1a0b2e;stop-opacity:0" />
+                        </linearGradient>
+                    </defs>
+                    <!-- Stylized Robot Profile -->
+                    <path class="robot-path" d="M70,80 L70,60 L75,55 L75,30 Q75,20 50,20 Q25,20 25,30 L25,55 L30,60 L30,80" fill="url(#robotGrad)" />
+                    <!-- Robot Eye -->
+                    <circle cx="35" cy="35" r="4" fill="#111" stroke="#00f3ff" stroke-width="1" />
+                    <circle cx="35" cy="35" r="1.5" fill="#00f3ff" class="brain-node" />
+                    <!-- Circuit Lines -->
+                    <path d="M50,25 L50,40 L60,45" stroke="#00f3ff" stroke-width="0.5" fill="none" />
+                    <path d="M50,25 L40,30" stroke="#00f3ff" stroke-width="0.5" fill="none" />
+                    <rect x="48" y="23" width="4" height="4" fill="#00f3ff" />
+                </svg>
+            </div>
+            <div style="color: var(--neon-cyan); font-size: 0.8rem; margin-top: 10px;">TARGET: AI CORE</div>
+            <div style="font-size: 0.6rem; color: #666;">SIGNAL: DIGITAL</div>
+        </div>
+    </div>
+
+    <div class="terminal-log" id="terminalLog">
+        <div>> System initialized...</div>
+    </div>
+
+    <div class="controls-deck">
+        <div class="control-group">
+            <label>FREQUENCY <span id="freqVal">50</span></label>
+            <input type="range" id="freqSlider" min="1" max="100" value="50">
+        </div>
+        
+        <div class="control-group">
+            <label>AMPLITUDE <span id="ampVal">50</span></label>
+            <input type="range" id="ampSlider" min="1" max="100" value="50">
+        </div>
+
+        <div class="control-group">
+            <label>PHASE SHIFT <span id="phaseVal">0</span></label>
+            <input type="range" id="phaseSlider" min="0" max="100" value="0">
+        </div>
+
+        <button class="btn-sync" id="resetBtn">RESET SIGNAL</button>
+    </div>
+
+    <div class="success-overlay" id="successOverlay">
+        <div class="success-message">
+            SYNC COMPLETE<br>
+            <span style="font-size: 1rem; display:block; margin-top:10px; text-align:center; color: var(--neon-cyan);">NEURAL PATHWAY ESTABLISHED</span>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const canvas = document.getElementById('waveCanvas');
+        const ctx = canvas.getContext('2d');
+        const terminal = document.getElementById('terminalLog');
+        const syncFill = document.getElementById('syncFill');
+        const statusBadge = document.getElementById('statusBadge');
+        const successOverlay = document.getElementById('successOverlay');
+
+        // State
+        let width, height;
+        let time = 0;
+        let syncScore = 0;
+        let gameActive = true;
+
+        // Target Wave (The AI Pattern)
+        let targetFreq = Math.random() * 80 + 10;
+        let targetAmp = Math.random() * 60 + 20;
+        let targetPhase = Math.random() * 50;
+
+        // User Wave (Controlled by Sliders)
+        const controls = {
+            freq: document.getElementById('freqSlider'),
+            amp: document.getElementById('ampSlider'),
+            phase: document.getElementById('phaseSlider')
+        };
+
+        const displays = {
+            freq: document.getElementById('freqVal'),
+            amp: document.getElementById('ampVal'),
+            phase: document.getElementById('phaseVal')
+        };
+
+        // Resize Canvas
+        function resize() {
+            width = canvas.parentElement.clientWidth;
+            height = canvas.parentElement.clientHeight;
+            canvas.width = width;
+            canvas.height = height;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Logging
+        function log(msg) {
+            const div = document.createElement('div');
+            div.textContent = `> ${msg}`;
+            terminal.prepend(div);
+            if (terminal.children.length > 6) terminal.lastChild.remove();
+        }
+
+        // Game Loop
+        function animate() {
+            if (!gameActive) return;
+
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+            ctx.fillRect(0, 0, width, height);
+
+            // Grid
+            ctx.strokeStyle = 'rgba(0, 243, 255, 0.1)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            for(let i=0; i<width; i+=40) { ctx.moveTo(i,0); ctx.lineTo(i,height); }
+            for(let i=0; i<height; i+=40) { ctx.moveTo(0,i); ctx.lineTo(width,i); }
+            ctx.stroke();
+
+            time += 0.05;
+
+            // Get User Values
+            const userFreq = parseInt(controls.freq.value);
+            const userAmp = parseInt(controls.amp.value);
+            const userPhase = parseInt(controls.phase.value);
+
+            // Update Displays
+            displays.freq.textContent = userFreq;
+            displays.amp.textContent = userAmp;
+            displays.phase.textContent = userPhase;
+
+            // Draw Target Wave (AI - Cyan)
+            drawWave(targetFreq, targetAmp, targetPhase, '#00f3ff', 2, false);
+
+            // Draw User Wave (Human - Pink)
+            drawWave(userFreq, userAmp, userPhase, '#ff0055', 3, true);
+
+            // Calculate Sync
+            calculateSync(userFreq, userAmp, userPhase);
+
+            requestAnimationFrame(animate);
+        }
+
+        function drawWave(freq, amp, phase, color, widthLine, isUser) {
+            ctx.beginPath();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = widthLine;
+            // Add glow
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = color;
+
+            for (let x = 0; x < width; x++) {
+                // Normalized values for drawing
+                const f = freq / 1000; 
+                const a = (amp / 100) * (height / 3);
+                const p = phase / 10;
+                
+                // Add some noise to the target wave to make it look "digital"
+                let noise = 0;
+                if (!isUser) {
+                    noise = Math.sin(x * 0.1 + time) * 5;
+                }
+
+                const y = height / 2 + Math.sin(x * f + time + p) * a + noise;
+                
+                if (x === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            ctx.shadowBlur = 0; // Reset
+        }
+
+        function calculateSync(f, a, p) {
+            // Calculate difference percentages
+            const diffF = Math.abs(targetFreq - f);
+            const diffA = Math.abs(targetAmp - a);
+            const diffP = Math.abs(targetPhase - p);
+
+            // Thresholds
+            const isClose = diffF < 10 && diffA < 15 && diffP < 20;
+
+            if (isClose) {
+                syncScore += 0.5;
+                if(Math.random() > 0.9) log("Harmonics aligning...");
+            } else {
+                syncScore -= 0.5;
+            }
+
+            // Clamp Score
+            if (syncScore < 0) syncScore = 0;
+            if (syncScore > 100) syncScore = 100;
+
+            // Update UI
+            syncFill.style.width = `${syncScore}%`;
+            
+            // Color change based on score
+            if (syncScore > 80) {
+                syncFill.style.backgroundColor = '#00ff00';
+                syncFill.style.boxShadow = '0 0 10px #00ff00';
+                statusBadge.textContent = "SYNCING...";
+                statusBadge.style.borderColor = "#00ff00";
+                statusBadge.style.color = "#00ff00";
+            } else {
+                syncFill.style.backgroundColor = '#ffe600';
+                syncFill.style.boxShadow = '0 0 10px #ffe600';
+                statusBadge.textContent = "DISCONNECTED";
+                statusBadge.style.borderColor = "#ff0055";
+                statusBadge.style.color = "#ff0055";
+            }
+
+            // Win Condition
+            if (syncScore >= 100) {
+                winGame();
+            }
+        }
+
+        function winGame() {
+            gameActive = false;
+            successOverlay.classList.add('visible');
+            log("CONNECTION ESTABLISHED.");
+            log("UPLOAD COMPLETE.");
+            statusBadge.textContent = "CONNECTED";
+        }
+
+        // Reset Button logic
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            targetFreq = Math.random() * 80 + 10;
+            targetAmp = Math.random() * 60 + 20;
+            targetPhase = Math.random() * 50;
+            syncScore = 0;
+            gameActive = true;
+            successOverlay.classList.remove('visible');
+            log("Signal reset. New target acquired.");
+            animate();
+        });
+
+        // Initial Log
+        setTimeout(() => log("Detecting neural interface..."), 500);
+        setTimeout(() => log("Target signal acquired."), 1500);
+        setTimeout(() => log("Adjust sliders to match waveforms."), 2500);
+
+        animate();
+
+    </script>
+</body>
+</html>

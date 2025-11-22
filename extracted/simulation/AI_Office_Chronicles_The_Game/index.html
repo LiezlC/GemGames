@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Office Chronicles: The Game</title>
+    <style>
+        :root {
+            --neon-blue: #00f3ff;
+            --neon-red: #ff0055;
+            --neon-yellow: #ffe600;
+            --bg-dark: #0a0a12;
+            --panel-bg: rgba(20, 20, 30, 0.9);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-dark);
+            background-image: 
+                radial-gradient(circle at 20% 50%, #002244 0%, transparent 50%),
+                radial-gradient(circle at 80% 50%, #221100 0%, transparent 50%);
+            font-family: 'Courier New', Courier, monospace;
+            overflow: hidden;
+            color: white;
+            height: 100vh;
+            width: 100vw;
+            user-select: none;
+        }
+
+        /* UI Overlay */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 20px;
+            box-sizing: border-box;
+            display: flex;
+            justify-content: space-between;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        .stat-box {
+            background: var(--panel-bg);
+            border: 2px solid var(--neon-blue);
+            padding: 10px 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px var(--neon-blue);
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+
+        #chaos-meter-container {
+            width: 200px;
+            height: 20px;
+            background: #333;
+            border: 2px solid white;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        #chaos-meter-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--neon-blue), var(--neon-red));
+            transition: width 0.2s;
+        }
+
+        /* Game Area */
+        #game-stage {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Digital Rain */
+        .rain-drop {
+            position: absolute;
+            width: 2px;
+            background: rgba(255, 255, 255, 0.3);
+            top: -100px;
+            animation: fall linear infinite;
+            z-index: 0;
+        }
+
+        @keyframes fall {
+            to { transform: translateY(110vh); }
+        }
+
+        /* Characters */
+        .character {
+            position: absolute;
+            bottom: 50px;
+            transition: transform 0.1s;
+        }
+
+        /* The AI Hive (Left) */
+        #ai-hive {
+            left: 5%;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            opacity: 0.7;
+        }
+        .hologram-head {
+            font-size: 3rem;
+            filter: drop-shadow(0 0 10px var(--neon-blue));
+            animation: pulse 2s infinite;
+        }
+
+        /* The Worker Robot (Center) */
+        #worker-bot {
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 10;
+        }
+        .bot-avatar {
+            font-size: 5rem;
+            filter: drop-shadow(0 0 15px var(--neon-blue));
+        }
+        .desk {
+            width: 200px;
+            height: 10px;
+            background: #444;
+            border-radius: 5px;
+            margin-top: -10px;
+            box-shadow: 0 10px 20px black;
+        }
+        .typing-effect {
+            position: absolute;
+            top: -20px;
+            font-size: 1.5rem;
+            color: var(--neon-blue);
+            font-weight: bold;
+            opacity: 0;
+        }
+
+        /* Mona Lisa (Right) */
+        #mona-lisa {
+            right: 10%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            z-index: 20;
+        }
+        .frame {
+            width: 120px;
+            height: 150px;
+            background: linear-gradient(to bottom, #4a3c31, #2a1c11);
+            border: 8px solid #c5a059;
+            border-radius: 4px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            position: relative;
+            overflow: hidden;
+        }
+        .mona-emoji {
+            font-size: 4rem;
+            position: relative;
+            z-index: 2;
+        }
+        .mona-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(180deg, #87CEEB 0%, #228B22 100%);
+            opacity: 0.3;
+            z-index: 1;
+        }
+        .coffee-cup {
+            position: absolute;
+            bottom: -10px;
+            right: -10px;
+            font-size: 2.5rem;
+            z-index: 3;
+            animation: steam 3s infinite;
+        }
+        .chill-meter {
+            margin-top: 10px;
+            background: #222;
+            color: #fff;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            border: 1px solid #c5a059;
+        }
+
+        /* Popups (Enemies) */
+        .popup {
+            position: absolute;
+            background: white;
+            border-radius: 4px;
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.5);
+            width: 140px;
+            padding: 5px;
+            cursor: pointer;
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 50;
+            font-family: Arial, sans-serif;
+            border: 1px solid #ccc;
+        }
+        .popup-header {
+            height: 20px;
+            background: linear-gradient(90deg, #0078d7, #005a9e);
+            color: white;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            padding-left: 5px;
+            border-radius: 2px 2px 0 0;
+        }
+        .popup-body {
+            padding: 10px;
+            color: #333;
+            font-size: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+        .popup-icon {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+        .popup.urgent .popup-header { background: linear-gradient(90deg, #ff4b4b, #d10000); }
+        .popup.calendar .popup-header { background: linear-gradient(90deg, #ff9900, #cc7a00); }
+
+        @keyframes popIn {
+            from { transform: scale(0); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        @keyframes pulse {
+            0% { opacity: 0.5; }
+            50% { opacity: 1; }
+            100% { opacity: 0.5; }
+        }
+        @keyframes steam {
+            0% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-5px) rotate(5deg); }
+            100% { transform: translateY(0) rotate(0deg); }
+        }
+
+        /* Game Over Screen */
+        #game-over {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0000aa; /* BSOD Blue */
+            color: white;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            font-family: 'Courier New', Courier, monospace;
+            text-align: center;
+        }
+        #game-over h1 { font-size: 3rem; margin-bottom: 20px; }
+        #game-over button {
+            background: white;
+            color: #0000aa;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+
+        /* Start Screen */
+        #start-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(5px);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            text-align: center;
+        }
+        .title {
+            font-size: 3rem;
+            text-transform: uppercase;
+            background: linear-gradient(90deg, #fff, var(--neon-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            font-size: 1.2rem;
+            color: var(--neon-yellow);
+            margin-bottom: 40px;
+        }
+        .btn-start {
+            background: var(--neon-blue);
+            color: #000;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 50px;
+            box-shadow: 0 0 20px var(--neon-blue);
+            transition: transform 0.2s;
+        }
+        .btn-start:hover {
+            transform: scale(1.1);
+        }
+
+        /* Floating particles on click */
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            animation: floatUp 1s ease-out forwards;
+            font-weight: bold;
+            color: var(--neon-blue);
+            z-index: 100;
+        }
+        @keyframes floatUp {
+            to { transform: translateY(-50px); opacity: 0; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Digital Rain Background -->
+    <div id="rain-container"></div>
+
+    <!-- UI Layer -->
+    <div id="ui-layer">
+        <div class="stat-box">
+            <div class="stat-value" id="score">0</div>
+            <div class="stat-label">Tasks Resolved</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-label">SYSTEM CHAOS</div>
+            <div id="chaos-meter-container">
+                <div id="chaos-meter-fill"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Stage -->
+    <div id="game-stage">
+        
+        <!-- Left: AI Hive -->
+        <div id="ai-hive" class="character">
+            <div class="hologram-head">🤖</div>
+            <div class="hologram-head" style="animation-delay: 0.5s">🤖</div>
+            <div class="hologram-head" style="animation-delay: 1s">🤖</div>
+        </div>
+
+        <!-- Center: Worker Bot -->
+        <div id="worker-bot" class="character">
+            <div class="typing-effect" id="typing-text">//! ERROR</div>
+            <div class="bot-avatar">🦾🤖</div>
+            <div class="desk"></div>
+        </div>
+
+        <!-- Right: Mona Lisa -->
+        <div id="mona-lisa" class="character" onclick="giveCoffee()">
+            <div class="frame">
+                <div class="mona-bg"></div>
+                <div class="mona-emoji">👩‍🎨</div>
+            </div>
+            <div class="coffee-cup">☕</div>
+            <div class="chill-meter">Click to Sip</div>
+        </div>
+
+    </div>
+
+    <!-- Start Screen -->
+    <div id="start-screen">
+        <h1 class="title">AI Office Chronicles</h1>
+        <h2 class="subtitle">When As Go To Work</h2>
+        <p style="max-width: 500px; margin-bottom: 30px; line-height: 1.5;">
+            You are the Office Manager.<br>
+            The AI is generating tasks faster than humanly possible.<br>
+            <strong>Click the popups</strong> to clear the queue.<br>
+            <strong>Click Mona Lisa</strong> to take a coffee break and reduce chaos.<br>
+            Don't let the System Chaos reach 100%!
+        </p>
+        <button class="btn-start" onclick="startGame()">START SHIFT</button>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="game-over">
+        <h1>:(</h1>
+        <h2>Your PC ran into a problem.</h2>
+        <p>Stop Code: CHAOS_OVERLOAD</p>
+        <p>Score: <span id="final-score">0</span></p>
+        <button onclick="location.reload()">REBOOT SYSTEM</button>
+    </div>
+
+    <script>
+        // Game State
+        let score = 0;
+        let chaos = 0;
+        let isPlaying = false;
+        let spawnRate = 2000;
+        let gameLoopId;
+        let spawnId;
+        let difficultyMultiplier = 1;
+
+        // DOM Elements
+        const gameStage = document.getElementById('game-stage');
+        const scoreEl = document.getElementById('score');
+        const chaosFill = document.getElementById('chaos-meter-fill');
+        const typingText = document.getElementById('typing-text');
+        const rainContainer = document.getElementById('rain-container');
+
+        // Popup Types
+        const popupTypes = [
+            { type: 'urgent', icon: '⚠️', title: 'Alert', msgs: ['Server Down', 'Null Pointer', '404 Error'] },
+            { type: 'calendar', icon: '📅', title: 'Meeting', msgs: ['Sync Up', 'Stand Up', 'Retro'] },
+            { type: 'email', icon: '📧', title: 'Message', msgs: ['Pls Fix', 'Urgent!', 'Re: Re: Re:'] },
+            { type: 'code', icon: '💻', title: 'Terminal', msgs: ['Compiling...', 'Syntax Error', 'Deploying'] }
+        ];
+
+        // Initialize Rain
+        function createRain() {
+            for(let i=0; i<50; i++) {
+                let drop = document.createElement('div');
+                drop.className = 'rain-drop';
+                drop.style.left = Math.random() * 100 + 'vw';
+                drop.style.height = Math.random() * 50 + 20 + 'px';
+                drop.style.animationDuration = Math.random() * 1 + 0.5 + 's';
+                drop.style.animationDelay = Math.random() * 2 + 's';
+                rainContainer.appendChild(drop);
+            }
+        }
+        createRain();
+
+        function startGame() {
+            document.getElementById('start-screen').style.display = 'none';
+            isPlaying = true;
+            score = 0;
+            chaos = 0;
+            difficultyMultiplier = 1;
+            updateUI();
+            
+            // Start Loops
+            gameLoopId = setInterval(gameLoop, 100);
+            scheduleSpawn();
+            
+            // Typing animation
+            setInterval(() => {
+                if(!isPlaying) return;
+                const codes = ["//! ERROR", "TODO: Fix", "git push -f", "rm -rf /", "console.log"];
+                typingText.innerText = codes[Math.floor(Math.random() * codes.length)];
+                typingText.style.opacity = 1;
+                setTimeout(() => typingText.style.opacity = 0, 500);
+            }, 2000);
+        }
+
+        function scheduleSpawn() {
+            if (!isPlaying) return;
+            const nextSpawn = Math.max(500, 2000 - (score * 20)); // Gets faster
+            spawnId = setTimeout(() => {
+                spawnPopup();
+                scheduleSpawn();
+            }, nextSpawn);
+        }
+
+        function spawnPopup() {
+            const template = popupTypes[Math.floor(Math.random() * popupTypes.length)];
+            const msg = template.msgs[Math.floor(Math.random() * template.msgs.length)];
+            
+            const el = document.createElement('div');
+            el.className = `popup ${template.type}`;
+            
+            // Random Position within bounds (padding from edges)
+            const x = Math.random() * (window.innerWidth - 160) + 10;
+            const y = Math.random() * (window.innerHeight - 300) + 50; // Keep above desk
+            
+            el.style.left = `${x}px`;
+            el.style.top = `${y}px`;
+            
+            el.innerHTML = `
+                <div class="popup-header">
+                    <span>${template.title}</span>
+                    <span style="margin-left:auto">x</span>
+                </div>
+                <div class="popup-body">
+                    <div class="popup-icon">${template.icon}</div>
+                    <div>${msg}</div>
+                </div>
+            `;
+
+            // Interaction
+            el.onmousedown = () => resolveTask(el);
+            
+            gameStage.appendChild(el);
+
+            // Auto-increase chaos if ignored too long (simulated by just existing)
+        }
+
+        function resolveTask(el) {
+            if(!isPlaying) return;
+            
+            // Visual Feedback
+            const rect = el.getBoundingClientRect();
+            showFloatingText(rect.left, rect.top, "+100");
+            
+            el.remove();
+            score += 1;
+            // Reduce chaos slightly on success
+            chaos = Math.max(0, chaos - 2);
+            updateUI();
+        }
+
+        function giveCoffee() {
+            if(!isPlaying) return;
+            // Mona Lisa Powerup
+            chaos = Math.max(0, chaos - 15);
+            showFloatingText(window.innerWidth - 150, window.innerHeight - 150, "Chill Vibes ☕");
+            updateUI();
+        }
+
+        function showFloatingText(x, y, text) {
+            const el = document.createElement('div');
+            el.className = 'particle';
+            el.innerText = text;
+            el.style.left = x + 'px';
+            el.style.top = y + 'px';
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 1000);
+        }
+
+        function gameLoop() {
+            if(!isPlaying) return;
+
+            // Passive Chaos Increase based on number of active popups
+            const activePopups = document.querySelectorAll('.popup').length;
+            chaos += 0.1 + (activePopups * 0.05);
+
+            if (chaos >= 100) {
+                gameOver();
+            }
+
+            updateUI();
+        }
+
+        function updateUI() {
+            scoreEl.innerText = score;
+            chaosFill.style.width = Math.min(100, chaos) + '%';
+            
+            // Change color based on danger
+            if(chaos > 80) chaosFill.style.background = 'red';
+            else if(chaos > 50) chaosFill.style.background = 'orange';
+            else chaosFill.style.background = 'linear-gradient(90deg, var(--neon-blue), var(--neon-red))';
+        }
+
+        function gameOver() {
+            isPlaying = false;
+            clearInterval(gameLoopId);
+            clearTimeout(spawnId);
+            document.getElementById('final-score').innerText = score;
+            document.getElementById('game-over').style.display = 'flex';
+        }
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rise & Remix: The Ascension</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;600;800&family=Space+Mono:wght@400;700&display=swap');
+
+        :root {
+            --space-bg: #050510;
+            --star-color: #ffffff;
+            --robot-teal: #00d4ff;
+            --human-gold: #ffaa00;
+            --ladder-color: #ffcc00;
+            --ground-color: #1a1a2e;
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: var(--space-bg);
+            font-family: 'Inter', sans-serif;
+            color: white;
+            height: 100vh;
+            width: 100vw;
+            user-select: none;
+        }
+
+        /* --- Background Elements --- */
+        .starfield {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            overflow: hidden;
+        }
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            opacity: 0.8;
+            animation: twinkle 3s infinite ease-in-out;
+        }
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; transform: scale(0.8); }
+            50% { opacity: 1; transform: scale(1.2); }
+        }
+
+        .nebula {
+            position: absolute;
+            top: -20%;
+            right: -10%;
+            width: 80vw;
+            height: 80vw;
+            background: radial-gradient(circle, rgba(255, 100, 0, 0.2) 0%, rgba(100, 0, 255, 0.1) 40%, transparent 70%);
+            filter: blur(40px);
+            z-index: 0;
+            animation: rotateNebula 120s linear infinite;
+        }
+        @keyframes rotateNebula {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* --- Game Layers --- */
+        .game-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        /* Top Section: The Sky/Ascension */
+        .sky-layer {
+            flex-grow: 1;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            padding-bottom: 20px;
+        }
+
+        /* The Ladder */
+        .ladder-container {
+            position: absolute;
+            bottom: 0;
+            left: 60%;
+            width: 60px;
+            height: 100%; /* Grows dynamically */
+            display: flex;
+            flex-direction: column-reverse;
+            align-items: center;
+            z-index: 5;
+            opacity: 0.3; /* Starts dim */
+            transition: opacity 1s;
+        }
+        .ladder-rail {
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(to top, #ff8800, #ffe600);
+            position: absolute;
+            top: 0;
+        }
+        .ladder-rail.left { left: 0; }
+        .ladder-rail.right { right: 0; }
+        .ladder-rung {
+            width: 100%;
+            height: 4px;
+            background: #ffcc00;
+            margin-bottom: 30px;
+            box-shadow: 0 0 10px #ffcc00;
+        }
+
+        /* The Swing (SVG) */
+        .swing-set {
+            position: absolute;
+            bottom: 100px;
+            left: 15%;
+            width: 200px;
+            height: 300px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 1s;
+        }
+        .swing-rope {
+            stroke: #ff8800;
+            stroke-width: 2;
+            fill: none;
+        }
+        .swing-seat {
+            fill: #ffaa00;
+        }
+        .swing-anim {
+            transform-origin: 100px 0;
+            animation: swing 4s ease-in-out infinite;
+        }
+        @keyframes swing {
+            0% { transform: rotate(10deg); }
+            50% { transform: rotate(-10deg); }
+            100% { transform: rotate(10deg); }
+        }
+
+        /* Bottom Section: The Grind/Robots */
+        .ground-layer {
+            height: 250px;
+            background: linear-gradient(to top, #0a0a1a 0%, #1a1a2e 100%);
+            position: relative;
+            border-top: 2px solid #333;
+            overflow: hidden;
+        }
+        
+        /* Robots */
+        .robot-lane {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            width: 100%;
+            height: 100px;
+            display: flex;
+            align-items: flex-end;
+        }
+        .robot {
+            font-size: 40px;
+            position: absolute;
+            bottom: 10px;
+            transition: left 2s linear;
+            filter: drop-shadow(0 0 5px var(--robot-teal));
+        }
+        .robot::after {
+            content: '📦';
+            font-size: 20px;
+            position: absolute;
+            right: -10px;
+            bottom: 5px;
+        }
+
+        /* Humans */
+        .human {
+            font-size: 30px;
+            position: absolute;
+            transition: all 1s ease;
+            filter: drop-shadow(0 0 8px var(--human-gold));
+            z-index: 20;
+        }
+        .human.climbing {
+            left: 60%;
+            transform: translateX(-50%);
+        }
+        .human.flying {
+            animation: float 6s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+
+        /* --- UI / HUD --- */
+        .hud {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 800px;
+            background: rgba(20, 20, 30, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            z-index: 100;
+        }
+
+        .resource-panel {
+            text-align: center;
+        }
+        .res-count {
+            font-family: 'Space Mono', monospace;
+            font-size: 2rem;
+            font-weight: 700;
+        }
+        .res-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #aaa;
+        }
+        
+        .controls {
+            grid-column: 1 / -1;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        button:hover:not(:disabled) {
+            background: rgba(255,255,255,0.15);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(45deg, #00d4ff, #0055ff);
+            border: none;
+        }
+        .btn-ascend {
+            background: linear-gradient(45deg, #ffaa00, #ff4400);
+            border: none;
+            display: none; /* Hidden initially */
+        }
+
+        .progress-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 4px;
+            background: #00d4ff;
+            width: 0%;
+            transition: width 0.2s;
+        }
+
+        /* Floating Text */
+        .floater {
+            position: absolute;
+            color: white;
+            font-weight: bold;
+            pointer-events: none;
+            animation: floatUp 1s forwards;
+            font-size: 14px;
+        }
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-50px); }
+        }
+
+        /* Title Overlay */
+        .title-overlay {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 50;
+        }
+        h1 {
+            font-size: 1.5rem;
+            margin: 0;
+            background: linear-gradient(to right, #00d4ff, #ffaa00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        p.subtitle {
+            font-size: 0.8rem;
+            color: #888;
+            margin: 5px 0 0 0;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Background Visuals -->
+    <div class="nebula"></div>
+    <div class="starfield" id="starfield"></div>
+
+    <div class="title-overlay">
+        <h1>Rise & Remix</h1>
+        <p class="subtitle">AI clears the chores. You reach higher.</p>
+    </div>
+
+    <!-- Game Area -->
+    <div class="game-container">
+        
+        <!-- The Sky (Humans) -->
+        <div class="sky-layer" id="skyLayer">
+            <!-- Swings -->
+            <svg class="swing-set" id="swingSet" viewBox="0 0 200 300">
+                <g class="swing-anim">
+                    <line x1="100" y1="0" x2="50" y2="250" class="swing-rope" />
+                    <line x1="100" y1="0" x2="150" y2="250" class="swing-rope" />
+                    <rect x="40" y="250" width="120" height="10" rx="5" class="swing-seat" />
+                    <text x="85" y="240" font-size="30">👧</text>
+                </g>
+            </svg>
+
+            <!-- Ladder -->
+            <div class="ladder-container" id="ladder">
+                <div class="ladder-rail left"></div>
+                <div class="ladder-rail right"></div>
+                <!-- Rungs generated by JS -->
+            </div>
+        </div>
+
+        <!-- The Ground (Robots) -->
+        <div class="ground-layer">
+            <div class="progress-bar" id="choreProgress"></div>
+            <div class="robot-lane" id="robotLane">
+                <!-- Robots injected here -->
+            </div>
+        </div>
+
+        <!-- HUD -->
+        <div class="hud">
+            <div class="resource-panel">
+                <div class="res-count" id="efficiencyDisplay">0</div>
+                <div class="res-label" style="color: var(--robot-teal)">Efficiency</div>
+            </div>
+            <div class="resource-panel">
+                <div class="res-count" id="creativityDisplay">0</div>
+                <div class="res-label" style="color: var(--human-gold)">Creativity</div>
+            </div>
+
+            <div class="controls">
+                <button id="btnChore" onclick="doChore()">
+                    <span>📦</span> Do Chore
+                </button>
+                <button id="btnBuyBot" onclick="buyBot()" disabled>
+                    <span>🤖</span> Deploy AI Bot (50 Eff)
+                </button>
+                <button id="btnDream" onclick="dream()" style="display:none;">
+                    <span>✨</span> Dream
+                </button>
+                <button id="btnAscend" class="btn-ascend" onclick="ascend()">
+                    <span>🪜</span> Ascend (100 Cre)
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- Game State ---
+        let efficiency = 0;
+        let creativity = 0;
+        let bots = 0;
+        let botCost = 50;
+        let ascensionLevel = 0;
+        let choresAutomated = false;
+        
+        // --- DOM Elements ---
+        const elEff = document.getElementById('efficiencyDisplay');
+        const elCre = document.getElementById('creativityDisplay');
+        const elBtnBot = document.getElementById('btnBuyBot');
+        const elBtnChore = document.getElementById('btnChore');
+        const elBtnDream = document.getElementById('btnDream');
+        const elBtnAscend = document.getElementById('btnAscend');
+        const elRobotLane = document.getElementById('robotLane');
+        const elSky = document.getElementById('skyLayer');
+        const elLadder = document.getElementById('ladder');
+        const elSwing = document.getElementById('swingSet');
+
+        // --- Init Visuals ---
+        function initStars() {
+            const container = document.getElementById('starfield');
+            for(let i=0; i<100; i++) {
+                let star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                let size = Math.random() * 3;
+                star.style.width = size + 'px';
+                star.style.height = size + 'px';
+                star.style.animationDelay = Math.random() * 3 + 's';
+                container.appendChild(star);
+            }
+        }
+        
+        function buildLadder() {
+            // Create initial rungs
+            for(let i=0; i<20; i++) {
+                let rung = document.createElement('div');
+                rung.className = 'ladder-rung';
+                elLadder.appendChild(rung);
+            }
+        }
+
+        initStars();
+        buildLadder();
+
+        // --- Core Logic ---
+
+        function updateUI() {
+            elEff.innerText = Math.floor(efficiency);
+            elCre.innerText = Math.floor(creativity);
+
+            // Bot Button Logic
+            elBtnBot.disabled = efficiency < botCost;
+            elBtnBot.innerHTML = `<span>🤖</span> Deploy AI Bot (${botCost} Eff)`;
+
+            // Phase Transition: Manual -> Automation
+            if (bots > 0 && !choresAutomated) {
+                choresAutomated = true;
+                elBtnChore.style.display = 'none'; // Remove manual chore button
+                elBtnDream.style.display = 'flex'; // Unlock dreaming
+                elBtnDream.classList.add('btn-primary');
+                
+                // Visual cue
+                spawnFloatingText("AI taking over...", window.innerWidth/2, window.innerHeight - 100, '#00d4ff');
+            }
+
+            // Phase Transition: Dreaming -> Ascension
+            if (creativity >= 50) {
+                elLadder.style.opacity = 1;
+                elSwing.style.opacity = 1;
+            }
+            if (creativity >= 100) {
+                elBtnAscend.style.display = 'flex';
+            } else {
+                elBtnAscend.style.display = 'none';
+            }
+        }
+
+        function spawnFloatingText(text, x, y, color) {
+            let el = document.createElement('div');
+            el.className = 'floater';
+            el.innerText = text;
+            el.style.left = x + 'px';
+            el.style.top = y + 'px';
+            el.style.color = color;
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 1000);
+        }
+
+        // --- Actions ---
+
+        function doChore() {
+            efficiency += 10;
+            spawnFloatingText("+10", window.innerWidth/2 + (Math.random()*40-20), window.innerHeight - 150, '#fff');
+            
+            // Visual feedback
+            let box = document.createElement('div');
+            box.innerText = '📦';
+            box.style.position = 'absolute';
+            box.style.left = '50%';
+            box.style.bottom = '50px';
+            box.style.transition = 'all 0.5s';
+            box.style.opacity = '1';
+            document.body.appendChild(box);
+            setTimeout(() => {
+                box.style.transform = 'translateY(50px) scale(0.5)';
+                box.style.opacity = '0';
+            }, 50);
+            setTimeout(() => box.remove(), 550);
+
+            updateUI();
+        }
+
+        function buyBot() {
+            if (efficiency >= botCost) {
+                efficiency -= botCost;
+                bots++;
+                botCost = Math.floor(botCost * 1.3);
+                spawnRobot();
+                updateUI();
+            }
+        }
+
+        function spawnRobot() {
+            let bot = document.createElement('div');
+            bot.className = 'robot';
+            bot.innerText = '🤖';
+            bot.style.left = '-50px';
+            elRobotLane.appendChild(bot);
+
+            // Animate robot loop
+            animateRobot(bot);
+        }
+
+        function animateRobot(bot) {
+            // Move right
+            let duration = 3000 + Math.random() * 2000;
+            bot.style.transition = `left ${duration}ms linear`;
+            
+            setTimeout(() => {
+                bot.style.left = '110%';
+            }, 50);
+
+            // Reset
+            setTimeout(() => {
+                bot.style.transition = 'none';
+                bot.style.left = '-50px';
+                // Robot generates efficiency on completion
+                efficiency += 20;
+                spawnFloatingText("+20", window.innerWidth - 100, window.innerHeight - 100, '#00d4ff');
+                updateUI();
+                setTimeout(() => animateRobot(bot), 50);
+            }, duration + 50);
+        }
+
+        function dream() {
+            creativity += (10 + (bots * 2)); // Bots support creativity by freeing up time
+            spawnFloatingText(`+${10 + bots*2} ✨`, window.innerWidth/2, window.innerHeight/2, '#ffaa00');
+            createSparkle(window.innerWidth/2, window.innerHeight/2);
+            updateUI();
+        }
+
+        function createSparkle(x, y) {
+            const sparkle = document.createElement('div');
+            sparkle.innerText = ['✨', '🎨', '🎵', '🚀'][Math.floor(Math.random()*4)];
+            sparkle.style.position = 'absolute';
+            sparkle.style.left = x + (Math.random()*100 - 50) + 'px';
+            sparkle.style.top = y + (Math.random()*100 - 50) + 'px';
+            sparkle.style.fontSize = '24px';
+            sparkle.style.pointerEvents = 'none';
+            sparkle.style.animation = 'floatUp 1s forwards';
+            document.body.appendChild(sparkle);
+            setTimeout(() => sparkle.remove(), 1000);
+        }
+
+        function ascend() {
+            if (creativity >= 100) {
+                creativity -= 100;
+                ascensionLevel++;
+                spawnHuman();
+                updateUI();
+                
+                // Visual effect of climbing higher
+                document.body.style.backgroundPosition = `0 ${ascensionLevel * 10}px`;
+            }
+        }
+
+        function spawnHuman() {
+            let human = document.createElement('div');
+            human.className = 'human climbing';
+            // Random human type
+            const types = ['🧗', '🦸', '🧚', '🧘'];
+            human.innerText = types[Math.floor(Math.random() * types.length)];
+            
+            // Position on ladder
+            human.style.bottom = '0px';
+            elSky.appendChild(human);
+
+            // Animate climbing up
+            setTimeout(() => {
+                human.style.bottom = (100 + (ascensionLevel * 50)) + 'px';
+                if (ascensionLevel > 5) {
+                    // If very high, they start flying
+                    human.classList.remove('climbing');
+                    human.classList.add('flying');
+                    human.style.left = (Math.random() * 80 + 10) + '%';
+                    human.style.bottom = (Math.random() * 50 + 40) + '%';
+                }
+            }, 100);
+        }
+
+        // --- Auto Loop (Passive Income from Bots) ---
+        setInterval(() => {
+            if (bots > 0) {
+                // Passive efficiency trickle
+                efficiency += bots; 
+                updateUI();
+            }
+        }, 1000);
+
+        updateUI();
+
+    </script>
+</body>
+</html>

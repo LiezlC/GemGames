@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Horizon: Entropy Manager</title>
+    <style>
+        :root {
+            --space-black: #050508;
+            --nebula-blue: #1e3a8a;
+            --core-orange: #f59e0b;
+            --star-white: #ffffff;
+            --ui-glass: rgba(20, 20, 30, 0.6);
+            --ui-border: rgba(255, 255, 255, 0.1);
+            --accent: #3b82f6;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--space-black);
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: white;
+            user-select: none;
+        }
+
+        /* Dynamic Background for the Galaxy feel */
+        #galaxy-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 50% 50%, rgba(255, 100, 0, 0.1) 0%, transparent 40%),
+                radial-gradient(circle at 80% 20%, rgba(0, 100, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 20% 80%, rgba(100, 0, 255, 0.1) 0%, transparent 50%);
+            z-index: 0;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            cursor: crosshair;
+        }
+
+        /* UI Overlay */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none; /* Let clicks pass through to canvas */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .hud-panel {
+            background: var(--ui-glass);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--ui-border);
+            border-radius: 12px;
+            padding: 15px;
+            pointer-events: auto;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+            transition: transform 0.2s ease;
+        }
+
+        .hud-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .stats-group {
+            display: flex;
+            gap: 20px;
+            text-align: center;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #aaa;
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            font-family: 'Courier New', monospace;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+        }
+
+        .stat-value.danger { color: #ef4444; text-shadow: 0 0 10px #ef4444; }
+        .stat-value.safe { color: #10b981; text-shadow: 0 0 10px #10b981; }
+        .stat-value.warn { color: #f59e0b; text-shadow: 0 0 10px #f59e0b; }
+
+        /* Controls */
+        .hud-bottom {
+            align-self: center;
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--ui-border);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: var(--accent);
+            box-shadow: 0 0 15px var(--accent);
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        .btn-icon { font-size: 1.2rem; }
+
+        /* Floating Messages */
+        .floater {
+            position: absolute;
+            color: white;
+            font-weight: bold;
+            pointer-events: none;
+            animation: floatUp 1s forwards;
+            font-family: monospace;
+            text-shadow: 0 0 5px black;
+            z-index: 5;
+        }
+
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-30px) scale(1.2); }
+        }
+
+        /* Game Over Modal */
+        #game-over {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 20;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(5px);
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, #f59e0b, #ef4444);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        #restart-btn {
+            background: var(--accent);
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+        }
+
+        /* Tutorial Tooltip */
+        .tutorial {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            pointer-events: none;
+            opacity: 0;
+            animation: fadeInOut 4s forwards;
+            z-index: 8;
+        }
+        
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translate(-50%, -40%); }
+            20% { opacity: 1; transform: translate(-50%, -50%); }
+            80% { opacity: 1; transform: translate(-50%, -50%); }
+            100% { opacity: 0; transform: translate(-50%, -60%); }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="galaxy-bg"></div>
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="ui-layer">
+        <div class="hud-top hud-panel">
+            <div class="stats-group">
+                <div class="stat-item">
+                    <span class="stat-label">Singularity Mass</span>
+                    <span id="mass-display" class="stat-value safe">1.00 M☉</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Stability</span>
+                    <span id="stability-display" class="stat-value safe">100%</span>
+                </div>
+            </div>
+            <div class="stats-group">
+                <div class="stat-item">
+                    <span class="stat-label">Energy Harvested</span>
+                    <span id="score-display" class="stat-value">0 J</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="tutorial">
+            <h2>SYSTEM ONLINE</h2>
+            <p>Click ASTEROIDS to harvest Energy.<br>Let them hit the CORE to increase Mass.<br>Maintain Balance.</p>
+        </div>
+
+        <div class="hud-bottom hud-panel">
+            <button id="btn-stabilize"><span class="btn-icon">🛡️</span> Stabilize Field (500 J)</button>
+            <button id="btn-nova"><span class="btn-icon">💥</span> Gravity Pulse (1000 J)</button>
+        </div>
+    </div>
+
+    <div id="game-over">
+        <h1 id="go-title">CRITICAL FAILURE</h1>
+        <p id="go-reason" style="color: #ccc; margin-bottom: 30px; font-size: 1.2rem;">The singularity collapsed.</p>
+        <button id="restart-btn">Reboot System</button>
+    </div>
+
+    <script>
+        // --- Configuration & State ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let width, height, cx, cy;
+        
+        const GAME_STATE = {
+            mass: 1.0, // Solar masses
+            stability: 100,
+            energy: 0,
+            running: true,
+            time: 0
+        };
+
+        const ENTITIES = [];
+        const PARTICLES = [];
+        const STARS = [];
+
+        // --- Resizing ---
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+            cx = width / 2;
+            cy = height / 2;
+            initStars();
+        }
+        window.addEventListener('resize', resize);
+
+        // --- Classes ---
+
+        class Star {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.size = Math.random() * 1.5;
+                this.alpha = Math.random();
+                this.twinkleSpeed = 0.01 + Math.random() * 0.05;
+            }
+            draw() {
+                this.alpha += this.twinkleSpeed;
+                if (this.alpha > 1 || this.alpha < 0.2) this.twinkleSpeed *= -1;
+                ctx.fillStyle = `rgba(255, 255, 255, ${this.alpha})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function initStars() {
+            STARS.length = 0;
+            for(let i=0; i<200; i++) STARS.push(new Star());
+        }
+
+        class Entity {
+            constructor(type) {
+                this.type = type; // 'asteroid', 'comet', 'planet'
+                
+                // Spawn at edge
+                const angle = Math.random() * Math.PI * 2;
+                const dist = Math.max(width, height) * 0.6 + Math.random() * 200;
+                this.x = cx + Math.cos(angle) * dist;
+                this.y = cy + Math.sin(angle) * dist;
+                
+                // Velocity (spiraling in)
+                const speed = type === 'comet' ? 4 + Math.random() * 3 : 1 + Math.random();
+                const tangentAngle = angle + Math.PI / 2 + (Math.random() - 0.5) * 0.5;
+                
+                // Initial velocity aimed slightly off-center to create spiral
+                this.vx = -Math.cos(angle) * speed * 0.5 + Math.cos(tangentAngle) * speed * 0.5;
+                this.vy = -Math.sin(angle) * speed * 0.5 + Math.sin(tangentAngle) * speed * 0.5;
+
+                this.radius = type === 'planet' ? 15 : (type === 'comet' ? 4 : 6 + Math.random() * 8);
+                this.color = this.getColor(type);
+                this.trail = [];
+                this.dead = false;
+                this.value = type === 'planet' ? 500 : (type === 'comet' ? 100 : 50);
+                this.massValue = type === 'planet' ? 0.1 : 0.01;
+                this.stabilityHit = type === 'planet' ? 15 : 2;
+            }
+
+            getColor(type) {
+                if (type === 'asteroid') return `hsl(${20 + Math.random()*30}, 40%, ${40 + Math.random()*20}%)`; // Brown/Orange
+                if (type === 'comet') return '#aaddff'; // Blue-white
+                if (type === 'planet') return `hsl(${Math.random()*360}, 60%, 50%)`;
+                return '#fff';
+            }
+
+            update() {
+                // Gravity
+                const dx = cx - this.x;
+                const dy = cy - this.y;
+                const distSq = dx*dx + dy*dy;
+                const dist = Math.sqrt(distSq);
+                
+                // Gravity force increases as it gets closer, scaled by Singularity Mass
+                const force = (100 * GAME_STATE.mass) / distSq; 
+                const ax = (dx / dist) * force;
+                const ay = (dy / dist) * force;
+
+                this.vx += ax;
+                this.vy += ay;
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Trail for comets
+                if (this.type === 'comet' || this.type === 'asteroid') {
+                    this.trail.push({x: this.x, y: this.y});
+                    if (this.trail.length > 10) this.trail.shift();
+                }
+
+                // Collision with Black Hole
+                if (dist < 40 * GAME_STATE.mass) {
+                    this.dead = true;
+                    handleCoreCollision(this);
+                }
+            }
+
+            draw() {
+                // Draw Trail
+                if (this.trail.length > 1) {
+                    ctx.beginPath();
+                    ctx.strokeStyle = this.type === 'comet' ? 'rgba(100, 200, 255, 0.5)' : 'rgba(255, 100, 0, 0.2)';
+                    ctx.lineWidth = this.radius / 2;
+                    ctx.moveTo(this.trail[0].x, this.trail[0].y);
+                    for (let p of this.trail) ctx.lineTo(p.x, p.y);
+                    ctx.stroke();
+                }
+
+                // Draw Body
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                if (this.type === 'asteroid') {
+                    // Jagged shape
+                    ctx.arc(this.x, this.y, this.radius, 0, Math.PI*2);
+                } else {
+                    ctx.arc(this.x, this.y, this.radius, 0, Math.PI*2);
+                }
+                
+                // Glow
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = this.color;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        class Particle {
+            constructor(x, y, color, speed) {
+                this.x = x;
+                this.y = y;
+                const angle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(angle) * speed;
+                this.vy = Math.sin(angle) * speed;
+                this.life = 1.0;
+                this.decay = 0.02 + Math.random() * 0.03;
+                this.color = color;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.life -= this.decay;
+            }
+            draw() {
+                ctx.globalAlpha = this.life;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 2, 0, Math.PI*2);
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+            }
+        }
+
+        // --- Game Logic ---
+
+        function handleCoreCollision(entity) {
+            // Create visual splash
+            createExplosion(cx, cy, '#f59e0b', 10);
+            
+            // Update State
+            GAME_STATE.mass += entity.massValue;
+            GAME_STATE.stability -= entity.stabilityHit;
+            
+            // Feedback
+            updateUI();
+            checkGameOver();
+        }
+
+        function createExplosion(x, y, color, count) {
+            for(let i=0; i<count; i++) {
+                PARTICLES.push(new Particle(x, y, color, Math.random() * 5));
+            }
+        }
+
+        function spawnEntity() {
+            if (!GAME_STATE.running) return;
+            
+            // Spawn rate depends on mass (higher mass = more chaotic attraction)
+            const chance = 0.02 * GAME_STATE.mass; 
+            if (Math.random() < chance) {
+                const rand = Math.random();
+                let type = 'asteroid';
+                if (rand > 0.8) type = 'comet';
+                if (rand > 0.98) type = 'planet';
+                ENTITIES.push(new Entity(type));
+            }
+        }
+
+        function checkGameOver() {
+            if (GAME_STATE.stability <= 0) {
+                endGame("CORE DESTABILIZED", "The singularity became unstable and collapsed.");
+            } else if (GAME_STATE.mass > 5.0) {
+                endGame("CRITICAL MASS REACHED", "The black hole consumed the entire sector.");
+            }
+        }
+
+        function endGame(title, reason) {
+            GAME_STATE.running = false;
+            document.getElementById('game-over').style.display = 'flex';
+            document.getElementById('go-title').innerText = title;
+            document.getElementById('go-reason').innerText = reason;
+        }
+
+        function updateUI() {
+            const massEl = document.getElementById('mass-display');
+            const stabEl = document.getElementById('stability-display');
+            const scoreEl = document.getElementById('score-display');
+            
+            massEl.innerText = GAME_STATE.mass.toFixed(2) + " M☉";
+            stabEl.innerText = Math.floor(GAME_STATE.stability) + "%";
+            scoreEl.innerText = Math.floor(GAME_STATE.energy) + " J";
+
+            // Color coding
+            if (GAME_STATE.stability < 30) stabEl.className = "stat-value danger";
+            else if (GAME_STATE.stability < 60) stabEl.className = "stat-value warn";
+            else stabEl.className = "stat-value safe";
+
+            if (GAME_STATE.mass > 4.0) massEl.className = "stat-value danger";
+            else massEl.className = "stat-value safe";
+        }
+
+        function showFloater(x, y, text, color) {
+            const el = document.createElement('div');
+            el.className = 'floater';
+            el.style.left = x + 'px';
+            el.style.top = y + 'px';
+            el.style.color = color || 'white';
+            el.innerText = text;
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 1000);
+        }
+
+        // --- Input Handling ---
+
+        canvas.addEventListener('mousedown', (e) => {
+            if (!GAME_STATE.running) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const mx = e.clientX - rect.left;
+            const my = e.clientY - rect.top;
+
+            // Check clicks on entities
+            let hit = false;
+            for (let i = ENTITIES.length - 1; i >= 0; i--) {
+                const ent = ENTITIES[i];
+                const dx = mx - ent.x;
+                const dy = my - ent.y;
+                // Hitbox slightly larger than visual
+                if (dx*dx + dy*dy < (ent.radius + 10)**2) {
+                    // Harvest
+                    GAME_STATE.energy += ent.value;
+                    createExplosion(ent.x, ent.y, ent.color, 8);
+                    showFloater(ent.x, ent.y, `+${ent.value} J`, '#4ade80');
+                    ENTITIES.splice(i, 1);
+                    hit = true;
+                    break;
+                }
+            }
+
+            if (!hit) {
+                // Click on empty space creates a small gravity ripple visual
+                createExplosion(mx, my, 'rgba(255,255,255,0.5)', 3);
+            }
+            
+            updateUI();
+        });
+
+        // --- Buttons ---
+        document.getElementById('btn-stabilize').addEventListener('click', () => {
+            if (GAME_STATE.energy >= 500) {
+                GAME_STATE.energy -= 500;
+                GAME_STATE.stability = Math.min(100, GAME_STATE.stability + 25);
+                showFloater(width/2, height/2 - 50, "STABILIZING...", '#3b82f6');
+                updateUI();
+            } else {
+                showFloater(width/2, height/2, "INSUFFICIENT ENERGY", '#ef4444');
+            }
+        });
+
+        document.getElementById('btn-nova').addEventListener('click', () => {
+            if (GAME_STATE.energy >= 1000) {
+                GAME_STATE.energy -= 1000;
+                // Push all entities away
+                ENTITIES.forEach(ent => {
+                    const dx = ent.x - cx;
+                    const dy = ent.y - cy;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    ent.vx += (dx/dist) * 10;
+                    ent.vy += (dy/dist) * 10;
+                });
+                // Visual shockwave
+                createExplosion(cx, cy, '#ffffff', 50);
+                showFloater(width/2, height/2 - 50, "GRAVITY PULSE", '#f59e0b');
+                updateUI();
+            } else {
+                showFloater(width/2, height/2, "INSUFFICIENT ENERGY", '#ef4444');
+            }
+        });
+
+        document.getElementById('restart-btn').addEventListener('click', () => {
+            GAME_STATE.mass = 1.0;
+            GAME_STATE.stability = 100;
+            GAME_STATE.energy = 0;
+            GAME_STATE.running = true;
+            ENTITIES.length = 0;
+            PARTICLES.length = 0;
+            document.getElementById('game-over').style.display = 'none';
+            updateUI();
+        });
+
+
+        // --- Main Loop ---
+
+        function drawBlackHole() {
+            // Accretion Disk Gradient
+            const radius = 40 * GAME_STATE.mass;
+            
+            // Outer glow
+            const glow = ctx.createRadialGradient(cx, cy, radius * 0.5, cx, cy, radius * 3);
+            glow.addColorStop(0, 'rgba(0,0,0,1)');
+            glow.addColorStop(0.1, '#000');
+            glow.addColorStop(0.3, 'rgba(245, 158, 11, 0.8)'); // Orange core
+            glow.addColorStop(0.5, 'rgba(200, 50, 50, 0.4)'); // Reddish ring
+            glow.addColorStop(1, 'rgba(0,0,0,0)');
+
+            ctx.fillStyle = glow;
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius * 3, 0, Math.PI*2);
+            ctx.fill();
+
+            // Event Horizon (Pure Black)
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius * 0.8, 0, Math.PI*2);
+            ctx.fill();
+
+            // White ring (Photon sphere)
+            ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius * 0.85, 0, Math.PI*2);
+            ctx.stroke();
+        }
+
+        function loop() {
+            ctx.clearRect(0, 0, width, height);
+
+            // Draw Stars
+            STARS.forEach(star => star.draw());
+
+            // Draw Black Hole (Behind entities)
+            drawBlackHole();
+
+            // Update & Draw Entities
+            for (let i = ENTITIES.length - 1; i >= 0; i--) {
+                let ent = ENTITIES[i];
+                ent.update();
+                ent.draw();
+                if (ent.dead || ent.x < -500 || ent.x > width + 500 || ent.y < -500 || ent.y > height + 500) {
+                    ENTITIES.splice(i, 1);
+                }
+            }
+
+            // Particles
+            for (let i = PARTICLES.length - 1; i >= 0; i--) {
+                let p = PARTICLES[i];
+                p.update();
+                p.draw();
+                if (p.life <= 0) PARTICLES.splice(i, 1);
+            }
+
+            // Spawning
+            spawnEntity();
+
+            // Passive Stability Recovery (very slow)
+            if (GAME_STATE.running && GAME_STATE.stability < 100) {
+                GAME_STATE.stability += 0.02;
+                updateUI();
+            }
+
+            requestAnimationFrame(loop);
+        }
+
+        // Start
+        resize();
+        loop();
+
+    </script>
+</body>
+</html>
