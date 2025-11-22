@@ -532,5 +532,118 @@
         window.onload = () => game.init();
 
     </script>
+<script>
+    // ===== MOBILE TOUCH SUPPORT =====
+    // Added for mobile-friendly gameplay
+
+    (function() {
+        // Touch to click conversion
+        document.addEventListener('touchstart', function(e) {
+            if (e.target.tagName === 'BUTTON' || e.target.onclick) {
+                e.preventDefault();
+                e.target.click();
+            }
+        }, { passive: false });
+
+        // Swipe detection for mobile
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchEndX = 0;
+        let touchEndY = 0;
+
+        document.addEventListener('touchstart', function(e) {
+            touchStartX = e.changedTouches[0].screenX;
+            touchStartY = e.changedTouches[0].screenY;
+        }, false);
+
+        document.addEventListener('touchend', function(e) {
+            touchEndX = e.changedTouches[0].screenX;
+            touchEndY = e.changedTouches[0].screenY;
+            handleSwipe();
+        }, false);
+
+        function handleSwipe() {
+            const deltaX = touchEndX - touchStartX;
+            const deltaY = touchEndY - touchStartY;
+            const minSwipeDistance = 50;
+
+            if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > minSwipeDistance) {
+                if (deltaX > 0) {
+                    // Swipe right - simulate right arrow
+                    simulateKey('ArrowRight', 39);
+                } else {
+                    // Swipe left - simulate left arrow
+                    simulateKey('ArrowLeft', 37);
+                }
+            } else if (Math.abs(deltaY) > minSwipeDistance) {
+                if (deltaY > 0) {
+                    // Swipe down - simulate down arrow
+                    simulateKey('ArrowDown', 40);
+                } else {
+                    // Swipe up - simulate up arrow
+                    simulateKey('ArrowUp', 38);
+                }
+            }
+        }
+
+        function simulateKey(key, keyCode) {
+            const event = new KeyboardEvent('keydown', {
+                key: key,
+                keyCode: keyCode,
+                code: key,
+                which: keyCode,
+                bubbles: true
+            });
+            document.dispatchEvent(event);
+        }
+
+        // Tap anywhere to start (for games requiring click to begin)
+        let hasStarted = false;
+        document.addEventListener('touchstart', function(e) {
+            if (!hasStarted) {
+                hasStarted = true;
+                // Simulate spacebar/enter for start
+                simulateKey(' ', 32);
+            }
+        }, { once: true });
+
+        // Prevent double-tap zoom
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function(e) {
+            const now = Date.now();
+            if (now - lastTouchEnd <= 300) {
+                e.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+
+        // Add mobile controls hint
+        const style = document.createElement('style');
+        style.textContent = `
+            @media (max-width: 768px) {
+                body::after {
+                    content: '👆 Tap to play • Swipe to move';
+                    position: fixed;
+                    bottom: 10px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background: rgba(0,0,0,0.7);
+                    color: white;
+                    padding: 8px 16px;
+                    border-radius: 20px;
+                    font-size: 12px;
+                    z-index: 10000;
+                    pointer-events: none;
+                    animation: fadeOut 4s forwards;
+                }
+                @keyframes fadeOut {
+                    0%, 70% { opacity: 1; }
+                    100% { opacity: 0; }
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    })();
+    </script>
 </body>
 </html>
