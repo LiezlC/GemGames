@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GemGames - Thematic Collection</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 40px 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, #fff, #a8edea);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            font-size: 1.2em;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .stat {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px 20px;
+            border-radius: 10px;
+            backdrop-filter: blur(5px);
+        }
+
+        .stat strong {
+            color: #a8edea;
+        }
+
+        .view-toggle {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .view-toggle a {
+            display: inline-block;
+            padding: 12px 30px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            margin: 0 10px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .view-toggle a:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .view-toggle a.active {
+            background: rgba(168, 237, 234, 0.3);
+            border: 2px solid #a8edea;
+        }
+
+        .themes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .theme-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .theme-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            border-color: rgba(168, 237, 234, 0.5);
+        }
+
+        .theme-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .theme-icon {
+            font-size: 2em;
+            margin-right: 10px;
+        }
+
+        .theme-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            flex: 1;
+        }
+
+        .theme-count {
+            background: rgba(168, 237, 234, 0.3);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+
+        .theme-description {
+            opacity: 0.9;
+            margin-bottom: 15px;
+            font-size: 0.95em;
+        }
+
+        .games-list {
+            max-height: 300px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+        }
+
+        .games-list::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .games-list::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .games-list::-webkit-scrollbar-thumb {
+            background: rgba(168, 237, 234, 0.5);
+            border-radius: 10px;
+        }
+
+        .game-link {
+            display: block;
+            padding: 10px;
+            margin-bottom: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            color: white;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            font-size: 0.95em;
+        }
+
+        .game-link:hover {
+            background: rgba(168, 237, 234, 0.2);
+            transform: translateX(5px);
+            padding-left: 15px;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            padding: 30px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        footer a {
+            color: #a8edea;
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2em;
+            }
+
+            .themes-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎮 GemGames Thematic Collection</h1>
+            <p class="subtitle">AI-Generated Browser Games Organized by Theme</p>
+            <div class="stats">
+                <div class="stat">📊 <strong>107</strong> Games</div>
+                <div class="stat">🎨 <strong>14</strong> Themes</div>
+                <div class="stat">🔊 <strong>11</strong> With Audio</div>
+                <div class="stat">🚀 <strong>21</strong> Hyper Drive</div>
+            </div>
+        </header>
+
+        <div class="view-toggle">
+            <a href="../extracted/index.html">📂 View by Gameplay Type</a>
+            <a href="index.html" class="active">🎨 View by Theme</a>
+            <a href="../extracted/top_games.html">⭐ Top 11 Games</a>
+        </div>
+
+        <div class="themes-grid">
+            <!-- Blurring Boundaries -->
+            <div class="theme-card">
+                <div class="theme-header">
+                    <span class="theme-icon">🔄</span>
+                    <span class="theme-title">Blurring Boundaries</span>
+                    <span class="theme-count">85 games</span>
+                </div>
+                <p class="theme-description">AI-human convergence, AI consciousness, blurring lines between human and machine</p>
+                <div class="games-list" id="blurring-boundaries-games"></div>
+            </div>
+
+            <!-- Cosmo Spacer -->
+            <div class="theme-card">
+                <div class="theme-header">
+                    <span class="theme-icon">🌌</span>
+                    <span class="theme-title">Cosmo Spacer</span>
+                    <span class="theme-count">46 games</span>
+                </div>
+                <p class="theme-description">Space exploration, cosmic mysteries, and astronomical themes</p>
+                <div class="games-list" id="cosmo-spacer-games"></div>
+            </div>
+
+            <!-- Neon Cyber -->
+            <div class="theme-card">
+                <div class="theme-header">
+                    <span class="theme-icon">⚡</span>
+                    <span class="theme-title">Neon Cyber</span>
+                    <span class="theme-count">48 games</span>
+                </div>
+                <p class="theme-description">Cyberpunk aesthetics, neon-soaked environments, digital worlds</p>
+                <div class="games-list" id="neon-cyber-games"></div>
+            </div>
+
+            <!-- Nature Harmony -->
+            <div class="theme-card">
+                <div class="theme-header">
+                    <span class="theme-icon">🌿</span>
+                    <span class="theme-title">Nature Harmony</span>
+                    <span class="theme-count">12 games</span>
+                </div>
+                <p class="theme-description">Natural environments, ecology, and environmental themes</p>
+                <div class="games-list" id="nature-harmony-games"></div>
+            </div>
+
+            <!-- Dragons -->
+            <div class="theme-card">
+                <div class="theme-header">
+                    <span class="theme-icon">🐉</span>
+                    <span class="theme-title">Dragons</span>
+                    <span class="theme-count">9 games</span>
+                </div>
+                <p class="theme-description">Games featuring dragons, serpents, and mythical creatures</p>
+                <div class="games-list" id="dragons-games"></div>
+            </div>
+
+            <!-- Mystic Rituals -->
+            <div class="theme-card">
+                <div class="theme-header">
+                    <span class="theme-icon">🔮</span>
+                    <span class="theme-title">Mystic Rituals</span>
+                    <span class="theme-count">9 games</span>
+                </div>
+                <p class="theme-description">Mystical experiences, rituals, and spiritual journeys</p>
+                <div class="games-list" id="mystic-rituals-games"></div>
+            </div>
+
+            <!-- Farmy Fun -->
+            <div class="theme-card">
+                <div class="theme-header">
+                    <span class="theme-icon">🚜</span>
+                    <span class="theme-title">Farmy Fun</span>
+                    <span class="theme-count">7 games</span>
+                </div>
+                <p class="theme-description">Farming simulators, pastoral themes, and agricultural games</p>
+                <div class="games-list" id="farmy-fun-games"></div>
+            </div>
+
+            <!-- Paint Splash -->
+            <div class="theme-card">
+                <div class="theme-header">
+                    <span class="theme-icon">🎨</span>
+                    <span class="theme-title">Paint Splash</span>
+                    <span class="theme-count">14 games</span>
+                </div>
+                <p class="theme-description">Interactive paint splashing - click to splash paint on canvas, colors flow and merge</p>
+                <div class="games-list" id="paint-splash-games"></div>
+            </div>
+
+            <!-- Hyper Drive -->
+            <div class="theme-card">
+                <div class="theme-header">
+                    <span class="theme-icon">🚀</span>
+                    <span class="theme-title">Hyper Drive</span>
+                    <span class="theme-count">21 games</span>
+                </div>
+                <p class="theme-description">First-person motion through space or tunnels - feeling of being inside a moving vehicle</p>
+                <div class="games-list" id="hyper-drive-games"></div>
+            </div>
+
+            <!-- UX Landings -->
+            <div class="theme-card">
+                <div class="theme-header">
+                    <span class="theme-icon">🖥️</span>
+                    <span class="theme-title">UX Landings</span>
+                    <span class="theme-count">55 games</span>
+                </div>
+                <p class="theme-description">UI/UX focused games with interactive interfaces and dashboards</p>
+                <div class="games-list" id="ux-landings-games"></div>
+            </div>
+
+            <!-- Light Patterns -->
+            <div class="theme-card">
+                <div class="theme-header">
+                    <span class="theme-icon">💡</span>
+                    <span class="theme-title">Light Patterns</span>
+                    <span class="theme-count">12 games</span>
+                </div>
+                <p class="theme-description">Memory games with flickering light patterns that must be repeated</p>
+                <div class="games-list" id="light-patterns-games"></div>
+            </div>
+
+            <!-- Us vs Them -->
+            <div class="theme-card">
+                <div class="theme-header">
+                    <span class="theme-icon">⚔️</span>
+                    <span class="theme-title">Us vs Them</span>
+                    <span class="theme-count">10 games</span>
+                </div>
+                <p class="theme-description">Competitive games, conflicts, and adversarial challenges</p>
+                <div class="games-list" id="us-vs-them-games"></div>
+            </div>
+
+            <!-- HouseSim -->
+            <div class="theme-card">
+                <div class="theme-header">
+                    <span class="theme-icon">🏠</span>
+                    <span class="theme-title">HouseSim</span>
+                    <span class="theme-count">9 games</span>
+                </div>
+                <p class="theme-description">Home design, architecture, and interior simulation games</p>
+                <div class="games-list" id="housesim-games"></div>
+            </div>
+
+            <!-- Zazen -->
+            <div class="theme-card">
+                <div class="theme-header">
+                    <span class="theme-icon">🧘</span>
+                    <span class="theme-title">Zazen</span>
+                    <span class="theme-count">11 games</span>
+                </div>
+                <p class="theme-description">Ritual activities - lighting candles, moving objects to attain enlightenment</p>
+                <div class="games-list" id="zazen-games"></div>
+            </div>
+        </div>
+
+        <footer>
+            <p>🎨 <strong>All games AI-generated by Gemini 3.0 from images</strong></p>
+            <p style="margin-top: 10px;">Created with HTML5, Canvas, Web Audio API, and CSS3</p>
+            <p style="margin-top: 10px;">
+                <a href="https://github.com/LiezlC/GemGames">View on GitHub</a>
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        // Theme to folder mapping
+        const themes = {
+            'blurring-boundaries': 'Blurring_Boundaries',
+            'cosmo-spacer': 'Cosmo_Spacer',
+            'neon-cyber': 'Neon_Cyber',
+            'nature-harmony': 'Nature_Harmony',
+            'dragons': 'Dragons',
+            'mystic-rituals': 'Mystic_Rituals',
+            'farmy-fun': 'Farmy_Fun',
+            'paint-splash': 'Paint_Splash',
+            'hyper-drive': 'Hyper_Drive',
+            'ux-landings': 'UX_Landings',
+            'light-patterns': 'Light_Patterns',
+            'us-vs-them': 'Us_vs_Them',
+            'housesim': 'HouseSim',
+            'zazen': 'Zazen'
+        };
+
+        // Load games from categorization data
+        fetch('../theme_categorization.json')
+            .then(response => response.json())
+            .then(data => {
+                Object.entries(themes).forEach(([id, folder]) => {
+                    const container = document.getElementById(`${id}-games`);
+                    const games = data.themes[folder] || [];
+
+                    if (games.length > 0) {
+                        games.sort().forEach(game => {
+                            const link = document.createElement('a');
+                            link.href = `${folder}/${game}/index.html`;
+                            link.className = 'game-link';
+                            link.textContent = game.replace(/_/g, ' ');
+                            container.appendChild(link);
+                        });
+                    } else {
+                        container.innerHTML = '<p style="opacity: 0.5; text-align: center;">No games yet</p>';
+                    }
+                });
+            })
+            .catch(error => {
+                console.error('Error loading games:', error);
+            });
+    </script>
+</body>
+</html>
