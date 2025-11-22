@@ -62,19 +62,6 @@ All include:
 
 ---
 
-## 🗑️ What to Ignore
-
-### `jsons/` folder - OLD SOURCE FILES
-This folder has the original 111 JSON files with crazy-long filenames. **You can ignore this folder completely!**
-
-All games have been extracted, cleaned, and organized into:
-- `extracted/` (by gameplay type)
-- `content/` (by theme)
-
-The `jsons/` folder is just kept as a backup of the raw source files.
-
----
-
 ## 📖 Documentation
 
 All guides are ready:

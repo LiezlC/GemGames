@@ -43,13 +43,12 @@ Open **`extracted/top_games.html`** in your browser
 ```
 📁 GemGames/
 ├── 📄 START_HERE.md          ← READ THIS FIRST!
-├── 📁 content/               ← Browse by THEME
+├── 📁 content/               ← Browse by THEME (14 categories)
 │   └── index.html           ← Thematic gallery
-├── 📁 extracted/             ← Browse by GAMEPLAY
+├── 📁 extracted/             ← Browse by GAMEPLAY (9 categories)
 │   ├── index.html           ← Gameplay gallery
 │   └── top_games.html       ← Top 11 games
-├── 📁 itch_io_packages/      ← Ready for itch.io
-└── 📁 jsons/                 ← Source files (ignore this)
+└── 📁 itch_io_packages/      ← Ready for itch.io
 ```
 
 ---
