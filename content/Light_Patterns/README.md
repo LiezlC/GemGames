@@ -1,3 +1,3 @@
 # Light Patterns
 
-Games featuring light patterns, luminescence, and visual illumination
+Memory games with flickering light patterns that must be repeated

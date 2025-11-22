@@ -1,3 +1,3 @@
 # Zazen
 
-Meditation, mindfulness, and zen contemplative experiences
+Ritual activities - lighting candles, moving objects to attain enlightenment

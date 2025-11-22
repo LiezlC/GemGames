@@ -1,3 +1,3 @@
 # Paint Splash
 
-Artistic expression, painting, and creative visual experiences
+Interactive paint splashing - click to splash paint on canvas, colors flow and merge

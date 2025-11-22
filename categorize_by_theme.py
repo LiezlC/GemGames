@@ -10,17 +10,13 @@ import json
 
 # Thematic categories based on user request
 THEMES = {
-    'AI-Aware': {
+    'Blurring_Boundaries': {
         'keywords': ['ai', 'neural', 'synth_mind', 'ainther', 'agi', 'singularity',
                     'algorithm', 'synthetic', 'consciousness', 'convergence', 'interface',
-                    'neural sync', 'neural void', 'neural nexus', 'protocol 12'],
-        'description': 'Games exploring AI consciousness, neural networks, and artificial intelligence themes'
-    },
-    'Blurring_Boundaries': {
-        'keywords': ['cyber-organic', 'symbiosis', 'human-ai', 'resonance', 'authentic human',
+                    'cyber-organic', 'symbiosis', 'human-ai', 'resonance', 'authentic human',
                     'bio-acoustic', 'cyber-shepherd', 'eco-link', 'hybrid', 'fusion',
-                    'convergence interface', 'voice ai impact'],
-        'description': 'Games about the intersection of human and AI, organic and digital'
+                    'voice ai impact', 'neural sync', 'neural void', 'neural nexus'],
+        'description': 'AI-human convergence, AI consciousness, blurring lines between human and machine'
     },
     'Cosmo_Spacer': {
         'keywords': ['cosmic', 'void', 'event horizon', 'galactic', 'nebula', 'astral',
@@ -59,14 +55,13 @@ THEMES = {
         'description': 'Home design, architecture, and interior simulation games'
     },
     'Light_Patterns': {
-        'keywords': ['light', 'lumina', 'glow', 'illuminat', 'radiant', 'beam',
-                    'luminous', 'flicker', 'candlelight', 'bioluminescent', 'photon'],
-        'description': 'Games featuring light patterns, luminescence, and visual illumination'
+        'keywords': ['memory', 'sync', 'pattern', 'sequence', 'repeat', 'match',
+                    'lumina light memory', 'neural sync', 'flicker', 'sequence'],
+        'description': 'Memory games with flickering light patterns that must be repeated'
     },
     'Paint_Splash': {
-        'keywords': ['paint', 'art', 'canvas', 'color', 'chromatic', 'palette',
-                    'abstract', 'kinetic', 'splash', 'creative', 'artistic'],
-        'description': 'Artistic expression, painting, and creative visual experiences'
+        'keywords': ['splash', 'kinetic', 'abstractify', 'canvas', 'chromatic dialogue'],
+        'description': 'Interactive paint splashing - click to splash paint on canvas, colors flow and merge'
     },
     'Us_vs_Them': {
         'keywords': ['battle', 'war', 'combat', 'versus', 'conflict', 'defense',
@@ -79,9 +74,15 @@ THEMES = {
         'description': 'UI/UX focused games with interactive interfaces and dashboards'
     },
     'Zazen': {
-        'keywords': ['zen', 'meditat', 'calm', 'serene', 'tranquil', 'peace',
-                    'mindful', 'contemplat', 'walk', 'harmony', 'stillness', 'serenity'],
-        'description': 'Meditation, mindfulness, and zen contemplative experiences'
+        'keywords': ['zen', 'candle', 'vigil', 'keeper of the flame', 'altar', 'ritual',
+                    'enlightenment', 'ascension', 'meditation', 'contemplat'],
+        'description': 'Ritual activities - lighting candles, moving objects to attain enlightenment'
+    },
+    'Hyper_Drive': {
+        'keywords': ['void drifter', 'hyperspace', 'journey', 'drift', 'neon rain zen walk',
+                    'infrared journey', 'neural void voyager', 'rift walker', 'tunnel',
+                    'perspective', 'moving', 'voyage'],
+        'description': 'First-person motion through space or tunnels - feeling of being inside a moving vehicle'
     }
 }
 
