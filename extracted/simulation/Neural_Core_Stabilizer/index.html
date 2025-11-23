@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neural Core Stabilizer</title>
+    <style>
+        :root {
+            --bg-color: #02121c;
+            --core-cyan: #00f7ff;
+            --node-gold: #ffaa00;
+            --trace-dim: #0b3d4d;
+            --text-color: #aaddff;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Courier New', Courier, monospace;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* UI Overlay */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .hud-panel {
+            background: rgba(2, 18, 28, 0.8);
+            border: 1px solid var(--trace-dim);
+            padding: 15px;
+            border-radius: 4px;
+            backdrop-filter: blur(4px);
+            pointer-events: auto;
+            box-shadow: 0 0 15px rgba(0, 247, 255, 0.1);
+        }
+
+        h1 {
+            margin: 0 0 10px 0;
+            font-size: 1.2rem;
+            color: var(--core-cyan);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px var(--core-cyan);
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+
+        .bar-container {
+            width: 100%;
+            height: 10px;
+            background: #000;
+            border: 1px solid var(--trace-dim);
+            margin-top: 5px;
+            position: relative;
+        }
+
+        .bar-fill {
+            height: 100%;
+            background: var(--core-cyan);
+            width: 100%;
+            transition: width 0.2s, background-color 0.2s;
+            box-shadow: 0 0 10px var(--core-cyan);
+        }
+
+        .bar-fill.critical {
+            background: #ff0044;
+            box-shadow: 0 0 10px #ff0044;
+        }
+
+        #game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 40px;
+            border: 2px solid var(--core-cyan);
+            display: none;
+            pointer-events: auto;
+            z-index: 20;
+        }
+
+        button {
+            background: transparent;
+            border: 1px solid var(--core-cyan);
+            color: var(--core-cyan);
+            padding: 10px 20px;
+            font-family: inherit;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: var(--core-cyan);
+            color: #000;
+            box-shadow: 0 0 20px var(--core-cyan);
+        }
+
+        /* Canvas Layer */
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        /* The Central Core (CSS representation) */
+        #core-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 160px;
+            height: 160px;
+            z-index: 5;
+            pointer-events: none; /* Let clicks pass to canvas if needed, but visually distinct */
+        }
+
+        .core-sphere {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, rgba(0, 247, 255, 0.8), rgba(0, 247, 255, 0.1) 60%, transparent 80%);
+            box-shadow: 0 0 60px rgba(0, 247, 255, 0.4), inset 0 0 20px rgba(0, 247, 255, 0.8);
+            position: relative;
+            animation: pulse 4s infinite ease-in-out;
+        }
+
+        /* Wireframe mesh effect on the sphere */
+        .core-mesh {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background-image: 
+                linear-gradient(rgba(0, 247, 255, 0.3) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 247, 255, 0.3) 1px, transparent 1px);
+            background-size: 20px 20px;
+            opacity: 0.5;
+            transform: perspective(200px) rotateX(20deg);
+            animation: spinMesh 10s linear infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 60px rgba(0, 247, 255, 0.4); }
+            50% { transform: scale(1.05); box-shadow: 0 0 90px rgba(0, 247, 255, 0.6); }
+            100% { transform: scale(1); box-shadow: 0 0 60px rgba(0, 247, 255, 0.4); }
+        }
+
+        @keyframes spinMesh {
+            0% { background-position: 0 0; }
+            100% { background-position: 40px 40px; }
+        }
+
+        /* Floating instructions */
+        .hint {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            text-align: center;
+            color: rgba(170, 221, 255, 0.6);
+            font-size: 0.8rem;
+            pointer-events: none;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- UI Layer -->
+    <div id="ui-layer">
+        <div class="hud-panel" style="width: 300px;">
+            <h1>Neural Core v.9</h1>
+            <div class="stat-row">
+                <span>System Integrity</span>
+                <span id="integrity-val">100%</span>
+            </div>
+            <div class="bar-container">
+                <div id="integrity-bar" class="bar-fill"></div>
+            </div>
+            
+            <div class="stat-row" style="margin-top: 15px;">
+                <span>Data Throughput</span>
+                <span id="score-val">0 TB/s</span>
+            </div>
+        </div>
+        
+        <div class="hint">CLICK GOLD NODES TO CONNECT • MAINTAIN INTEGRITY</div>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="game-over">
+        <h1 style="color: #ff0044; text-shadow: 0 0 20px #ff0044;">SYSTEM CRITICAL</h1>
+        <p>The Neural Core has destabilized.</p>
+        <p>Final Throughput: <span id="final-score">0</span> TB/s</p>
+        <button onclick="resetGame()">REBOOT SYSTEM</button>
+    </div>
+
+    <!-- The Visual Core -->
+    <div id="core-container">
+        <div class="core-sphere">
+            <div class="core-mesh"></div>
+        </div>
+    </div>
+
+    <!-- Canvas for drawing lines and nodes -->
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Game State
+        let width, height;
+        let centerX, centerY;
+        let nodes = [];
+        let particles = [];
+        let backgroundCircuits = [];
+        let score = 0;
+        let integrity = 100;
+        let isGameOver = false;
+        let lastTime = 0;
+        let spawnTimer = 0;
+        let difficultyMultiplier = 1;
+
+        // Configuration
+        const CORE_RADIUS = 80;
+        const NODE_RADIUS = 15;
+        const SPAWN_RATE = 1000; // ms
+        const DECAY_RATE = 5; // integrity loss per second
+
+        // Resize handling
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+            centerX = width / 2;
+            centerY = height / 2;
+            generateBackgroundCircuits();
+        }
+        window.addEventListener('resize', resize);
+
+        // Classes
+        class Node {
+            constructor() {
+                // Spawn at a random angle, slightly off-screen or near edge
+                const angle = Math.random() * Math.PI * 2;
+                const dist = Math.max(width, height) / 2 + 50;
+                this.x = centerX + Math.cos(angle) * dist;
+                this.y = centerY + Math.sin(angle) * dist;
+                
+                // Target is random point near core but not inside
+                const targetDist = CORE_RADIUS + 50 + Math.random() * 100;
+                this.tx = centerX + Math.cos(angle) * targetDist;
+                this.ty = centerY + Math.sin(angle) * targetDist;
+
+                this.vx = (this.tx - this.x) * 0.005; // Drift speed
+                this.vy = (this.ty - this.y) * 0.005;
+                
+                this.connected = false;
+                this.life = 100; // Disappears if not connected
+                this.type = Math.random() > 0.8 ? 'bonus' : 'standard';
+            }
+
+            update(dt) {
+                if (this.connected) {
+                    // Orbit slightly
+                    const angle = Math.atan2(this.y - centerY, this.x - centerX) + 0.001 * dt;
+                    const dist = Math.sqrt(Math.pow(this.x - centerX, 2) + Math.pow(this.y - centerY, 2));
+                    this.x = centerX + Math.cos(angle) * dist;
+                    this.y = centerY + Math.sin(angle) * dist;
+                } else {
+                    this.x += this.vx * dt * 0.06;
+                    this.y += this.vy * dt * 0.06;
+                    
+                    // If it reaches target and isn't connected, it starts fading or drifting away
+                    if (Math.abs(this.x - this.tx) < 10 && Math.abs(this.y - this.ty) < 10) {
+                        this.life -= dt * 0.05;
+                    }
+                }
+            }
+
+            draw(ctx) {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, NODE_RADIUS, 0, Math.PI * 2);
+                
+                // Style based on type
+                if (this.type === 'bonus') {
+                    ctx.strokeStyle = '#fff';
+                    ctx.fillStyle = '#ff0044';
+                    ctx.lineWidth = 2;
+                } else {
+                    ctx.strokeStyle = '#ffaa00'; // Gold
+                    ctx.fillStyle = '#02121c';
+                    ctx.lineWidth = 2;
+                }
+                
+                ctx.fill();
+                ctx.stroke();
+
+                // Inner detail (circuit gear look)
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, NODE_RADIUS * 0.6, 0, Math.PI * 2);
+                ctx.strokeStyle = this.type === 'bonus' ? '#fff' : '#ffaa00';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+                
+                // Little spokes
+                for(let i=0; i<4; i++) {
+                    let a = (Math.PI/2) * i;
+                    ctx.beginPath();
+                    ctx.moveTo(this.x + Math.cos(a)*NODE_RADIUS*0.6, this.y + Math.sin(a)*NODE_RADIUS*0.6);
+                    ctx.lineTo(this.x + Math.cos(a)*NODE_RADIUS, this.y + Math.sin(a)*NODE_RADIUS);
+                    ctx.stroke();
+                }
+            }
+        }
+
+        class Particle {
+            constructor(startNode) {
+                this.x = startNode.x;
+                this.y = startNode.y;
+                this.tx = centerX;
+                this.ty = centerY;
+                this.progress = 0;
+                this.speed = 0.02 + Math.random() * 0.02;
+                this.color = startNode.type === 'bonus' ? '#ff0044' : '#00f7ff';
+            }
+
+            update() {
+                this.progress += this.speed;
+                this.x = this.x + (this.tx - this.x) * this.speed;
+                this.y = this.y + (this.ty - this.y) * this.speed;
+            }
+
+            draw(ctx) {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 3, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = this.color;
+            }
+        }
+
+        // Background Decoration
+        function generateBackgroundCircuits() {
+            backgroundCircuits = [];
+            for(let i=0; i<20; i++) {
+                let path = [];
+                let x = Math.random() * width;
+                let y = Math.random() * height;
+                path.push({x, y});
+                
+                // Create jagged lines
+                for(let j=0; j<3; j++) {
+                    if(Math.random() > 0.5) x += (Math.random() - 0.5) * 200;
+                    else y += (Math.random() - 0.5) * 200;
+                    path.push({x, y});
+                }
+                backgroundCircuits.push(path);
+            }
+        }
+
+        // Input Handling
+        canvas.addEventListener('mousedown', (e) => {
+            if (isGameOver) return;
+            const rect = canvas.getBoundingClientRect();
+            const mx = e.clientX - rect.left;
+            const my = e.clientY - rect.top;
+
+            // Check collision with nodes
+            for (let i = nodes.length - 1; i >= 0; i--) {
+                const node = nodes[i];
+                const d = Math.sqrt(Math.pow(mx - node.x, 2) + Math.pow(my - node.y, 2));
+                
+                if (d < NODE_RADIUS + 10 && !node.connected) {
+                    // Connect!
+                    node.connected = true;
+                    
+                    // Add integrity
+                    integrity = Math.min(100, integrity + (node.type === 'bonus' ? 15 : 5));
+                    
+                    // Score
+                    score += (node.type === 'bonus' ? 50 : 10);
+                    
+                    // Spawn data packet
+                    particles.push(new Particle(node));
+                    
+                    // Visual feedback
+                    createRipple(node.x, node.y);
+                }
+            }
+        });
+
+        function createRipple(x, y) {
+            // Simple visual effect, handled in draw loop implicitly via particles or just logic
+            // For simplicity, we'll just flash the node in the draw loop logic
+        }
+
+        // Game Loop
+        function loop(timestamp) {
+            const dt = timestamp - lastTime;
+            lastTime = timestamp;
+
+            if (!isGameOver) {
+                update(dt);
+            }
+            draw();
+
+            requestAnimationFrame(loop);
+        }
+
+        function update(dt) {
+            // Spawn Logic
+            spawnTimer += dt;
+            if (spawnTimer > SPAWN_RATE / difficultyMultiplier) {
+                nodes.push(new Node());
+                spawnTimer = 0;
+                // Increase difficulty slowly
+                difficultyMultiplier += 0.001;
+            }
+
+            // Integrity Decay
+            integrity -= (DECAY_RATE * dt / 1000) * difficultyMultiplier;
+            if (integrity <= 0) {
+                integrity = 0;
+                gameOver();
+            }
+
+            // Update Entities
+            nodes.forEach(n => n.update(dt));
+            particles.forEach((p, i) => {
+                p.update();
+                if (p.progress >= 1 || Math.abs(p.x - centerX) < CORE_RADIUS/2) {
+                    particles.splice(i, 1);
+                }
+            });
+
+            // Cleanup dead nodes
+            nodes = nodes.filter(n => n.life > 0);
+
+            // Update UI
+            document.getElementById('integrity-val').innerText = Math.floor(integrity) + '%';
+            const bar = document.getElementById('integrity-bar');
+            bar.style.width = integrity + '%';
+            if (integrity < 30) bar.classList.add('critical');
+            else bar.classList.remove('critical');
+
+            document.getElementById('score-val').innerText = score + ' TB/s';
+        }
+
+        function draw() {
+            // Clear
+            ctx.clearRect(0, 0, width, height);
+
+            // Draw Background Circuits
+            ctx.strokeStyle = '#0b3d4d';
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+            backgroundCircuits.forEach(path => {
+                ctx.beginPath();
+                ctx.moveTo(path[0].x, path[0].y);
+                for(let i=1; i<path.length; i++) {
+                    ctx.lineTo(path[i].x, path[i].y);
+                }
+                ctx.stroke();
+                
+                // Occasional circle at end of trace
+                ctx.fillStyle = '#0b3d4d';
+                ctx.beginPath();
+                ctx.arc(path[path.length-1].x, path[path.length-1].y, 4, 0, Math.PI*2);
+                ctx.fill();
+            });
+
+            // Draw Connections from Core to Connected Nodes
+            nodes.forEach(node => {
+                if (node.connected) {
+                    ctx.beginPath();
+                    ctx.moveTo(centerX, centerY);
+                    ctx.lineTo(node.x, node.y);
+                    ctx.strokeStyle = 'rgba(0, 247, 255, 0.3)';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+            });
+
+            // Draw Nodes
+            nodes.forEach(node => node.draw(ctx));
+
+            // Draw Particles (Data Packets)
+            particles.forEach(p => p.draw(ctx));
+        }
+
+        function gameOver() {
+            isGameOver = true;
+            document.getElementById('game-over').style.display = 'block';
+            document.getElementById('final-score').innerText = score;
+            document.querySelector('.core-sphere').style.animation = 'none';
+            document.querySelector('.core-sphere').style.filter = 'grayscale(100%)';
+        }
+
+        window.resetGame = function() {
+            nodes = [];
+            particles = [];
+            score = 0;
+            integrity = 100;
+            difficultyMultiplier = 1;
+            isGameOver = false;
+            document.getElementById('game-over').style.display = 'none';
+            document.querySelector('.core-sphere').style.animation = 'pulse 4s infinite ease-in-out';
+            document.querySelector('.core-sphere').style.filter = 'none';
+            lastTime = performance.now();
+        };
+
+        // Init
+        resize();
+        generateBackgroundCircuits();
+        requestAnimationFrame(loop);
+
+    </script>
+</body>
+</html>

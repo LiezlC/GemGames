@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Dream Decoder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --c-bg: #fdfbf7;
+            --c-text: #1a202c;
+            --c-machine-base: #4a5568;
+            --c-machine-top: #63b3ed;
+            --c-accent-1: #ed8936; /* Orange */
+            --c-accent-2: #ecc94b; /* Yellow */
+            --c-accent-3: #4fd1c5; /* Teal */
+            --c-pipe: #2d3748;
+        }
+
+        body {
+            background-color: var(--c-bg);
+            color: var(--c-text);
+            font-family: 'Courier New', Courier, monospace;
+            overflow: hidden;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Isometric Scene Container */
+        .scene-container {
+            flex-grow: 1;
+            position: relative;
+            perspective: 1000px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .iso-plane {
+            position: relative;
+            width: 600px;
+            height: 600px;
+            transform: rotateX(60deg) rotateZ(-45deg);
+            transform-style: preserve-3d;
+            transition: transform 0.5s ease;
+        }
+
+        /* 3D Cube Builder */
+        .cube {
+            position: absolute;
+            transform-style: preserve-3d;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .cube:hover {
+            transform: translateZ(10px);
+        }
+
+        .face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 2px solid rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.5rem;
+            backface-visibility: hidden;
+        }
+
+        .face--top { transform: rotateX(0deg) translateZ(var(--h)); background: var(--bg-top); }
+        .face--front { transform: rotateX(-90deg) translateZ(calc(var(--w) / 2)); height: var(--h); width: 100%; top: 50%; background: var(--bg-side); filter: brightness(0.8); }
+        .face--right { transform: rotateY(90deg) translateZ(calc(var(--w) / 2)); height: var(--h); width: 100%; top: 50%; background: var(--bg-side); filter: brightness(0.6); }
+        
+        /* Specific Objects */
+        /* Main Platform */
+        .platform {
+            width: 400px;
+            height: 250px;
+            left: 100px;
+            top: 175px;
+            --w: 400px; /* width for positioning faces */
+            --h: 40px;  /* height/thickness */
+            --bg-top: #718096;
+            --bg-side: #4a5568;
+            z-index: 1;
+        }
+
+        /* The Pool (Screen) */
+        .pool {
+            width: 360px;
+            height: 210px;
+            left: 120px;
+            top: 195px;
+            transform: translateZ(41px);
+            background: #bee3f8;
+            box-shadow: inset 0 0 20px #4299e1;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.9;
+        }
+        
+        .pool-content {
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                45deg,
+                #63b3ed,
+                #63b3ed 10px,
+                #4299e1 10px,
+                #4299e1 20px
+            );
+            animation: flow 2s linear infinite;
+        }
+
+        @keyframes flow {
+            0% { background-position: 0 0; }
+            100% { background-position: 50px 50px; }
+        }
+
+        /* Modules */
+        .module {
+            width: 60px;
+            height: 60px;
+            --w: 60px;
+            --h: 60px;
+            z-index: 10;
+        }
+
+        .mod-orange {
+            left: 40px;
+            top: 100px;
+            --bg-top: var(--c-accent-1);
+            --bg-side: #dd6b20;
+        }
+
+        .mod-yellow {
+            left: 300px;
+            top: 50px;
+            --bg-top: var(--c-accent-2);
+            --bg-side: #d69e2e;
+        }
+
+        .mod-teal {
+            left: 450px;
+            top: 250px;
+            --bg-top: var(--c-accent-3);
+            --bg-side: #319795;
+        }
+
+        .mod-grey {
+            left: 50px;
+            top: 350px;
+            --bg-top: #cbd5e0;
+            --bg-side: #a0aec0;
+        }
+
+        /* Pipes (SVG Overlay) */
+        .pipes-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+            transform: translateZ(2px);
+        }
+
+        path {
+            fill: none;
+            stroke: var(--c-pipe);
+            stroke-width: 8;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            transition: stroke 0.3s;
+        }
+        
+        path.active {
+            stroke: #63b3ed;
+            filter: drop-shadow(0 0 5px #63b3ed);
+        }
+
+        /* UI Overlay */
+        .ui-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 2rem;
+        }
+
+        .header {
+            pointer-events: auto;
+        }
+
+        .controls {
+            pointer-events: auto;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 1rem;
+            border: 2px solid #000;
+            border-radius: 8px;
+            max-width: 300px;
+            box-shadow: 5px 5px 0px #000;
+        }
+
+        .dream-canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.1;
+            transition: opacity 0.5s;
+        }
+
+        .active-state .dream-canvas-container {
+            opacity: 0.4;
+        }
+
+        .status-light {
+            width: 10px;
+            height: 10px;
+            background: #ccc;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+            box-shadow: inset 0 0 2px #000;
+        }
+        .status-light.on {
+            background: #48bb78;
+            box-shadow: 0 0 5px #48bb78;
+        }
+
+        /* Floating Particles */
+        .particle {
+            position: absolute;
+            background: var(--c-accent-1);
+            border-radius: 50%;
+            opacity: 0.6;
+            pointer-events: none;
+            animation: floatUp 4s infinite ease-in-out;
+        }
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(1); opacity: 0.6; }
+            100% { transform: translateY(-100px) scale(0); opacity: 0; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Background Generative Art -->
+    <div class="dream-canvas-container" id="bgCanvasContainer">
+        <canvas id="dreamCanvas"></canvas>
+    </div>
+
+    <!-- UI Overlay -->
+    <div class="ui-overlay">
+        <div class="header">
+            <h1 class="text-4xl font-black uppercase tracking-tighter mb-1">Decoding AI Dreams</h1>
+            <p class="text-sm font-bold text-gray-600">Consciousness through Computation</p>
+        </div>
+
+        <div class="controls">
+            <h3 class="font-bold mb-2 border-b-2 border-black pb-1">SYSTEM STATUS</h3>
+            <div class="space-y-2 text-sm font-mono">
+                <div class="flex justify-between items-center">
+                    <span>LOGIC CORE (Orange)</span>
+                    <div id="led-orange" class="status-light"></div>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span>EMOTION SYNTH (Yellow)</span>
+                    <div id="led-yellow" class="status-light"></div>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span>MEMORY BANK (Teal)</span>
+                    <div id="led-teal" class="status-light"></div>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span>DREAM OUTPUT</span>
+                    <span id="output-val">STANDBY</span>
+                </div>
+            </div>
+            <div class="mt-4 text-xs text-gray-500">
+                > Click modules on the machine to activate subsystems.
+            </div>
+        </div>
+    </div>
+
+    <!-- Isometric Scene -->
+    <div class="scene-container">
+        <div class="iso-plane">
+            
+            <!-- Connecting Pipes (SVG) -->
+            <svg class="pipes-layer" viewBox="0 0 600 600">
+                <!-- Orange to Pool -->
+                <path id="pipe-orange" d="M 70 130 L 70 250 L 120 250" />
+                <!-- Yellow to Pool -->
+                <path id="pipe-yellow" d="M 330 80 L 330 200 L 300 200" />
+                <!-- Teal to Pool -->
+                <path id="pipe-teal" d="M 480 280 L 480 300 L 400 300" />
+                <!-- Grey to Pool -->
+                <path id="pipe-grey" d="M 80 380 L 150 380 L 150 300" />
+            </svg>
+
+            <!-- Main Platform -->
+            <div class="cube platform">
+                <div class="face face--top"></div>
+                <div class="face face--front"></div>
+                <div class="face face--right"></div>
+            </div>
+
+            <!-- The Pool Screen -->
+            <div class="pool">
+                <div class="pool-content" id="pool-display"></div>
+            </div>
+
+            <!-- Module 1: Logic (Orange) -->
+            <div class="cube module mod-orange" onclick="toggleModule('orange')">
+                <div class="face face--top">Logic</div>
+                <div class="face face--front"></div>
+                <div class="face face--right"></div>
+            </div>
+
+            <!-- Module 2: Emotion (Yellow) -->
+            <div class="cube module mod-yellow" onclick="toggleModule('yellow')">
+                <div class="face face--top">Feel</div>
+                <div class="face face--front"></div>
+                <div class="face face--right"></div>
+            </div>
+
+            <!-- Module 3: Memory (Teal) -->
+            <div class="cube module mod-teal" onclick="toggleModule('teal')">
+                <div class="face face--top">Mem</div>
+                <div class="face face--front"></div>
+                <div class="face face--right"></div>
+            </div>
+
+            <!-- Module 4: Subconscious (Grey) -->
+            <div class="cube module mod-grey" onclick="toggleModule('grey')">
+                <div class="face face--top">Sub</div>
+                <div class="face face--front"></div>
+                <div class="face face--right"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // State
+        const state = {
+            orange: false, // Logic
+            yellow: false, // Emotion
+            teal: false,   // Memory
+            grey: false    // Subconscious
+        };
+
+        // DOM Elements
+        const poolDisplay = document.getElementById('pool-display');
+        const outputVal = document.getElementById('output-val');
+        const canvas = document.getElementById('dreamCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Resize Canvas
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Toggle Function
+        function toggleModule(color) {
+            state[color] = !state[color];
+            
+            // Update Visuals
+            const led = document.getElementById(`led-${color}`);
+            const pipe = document.getElementById(`pipe-${color}`);
+            const mod = document.querySelector(`.mod-${color}`);
+
+            if (state[color]) {
+                if(led) led.classList.add('on');
+                if(pipe) pipe.classList.add('active');
+                mod.style.transform = "translateZ(20px)"; // Pop up
+                spawnParticles(mod);
+            } else {
+                if(led) led.classList.remove('on');
+                if(pipe) pipe.classList.remove('active');
+                mod.style.transform = "translateZ(0px)"; // Reset
+            }
+
+            updateSystem();
+        }
+
+        function spawnParticles(element) {
+            // Simple visual flair
+            for(let i=0; i<5; i++) {
+                const p = document.createElement('div');
+                p.classList.add('particle');
+                // Random position near the element (rough approximation for demo)
+                // Since element is in 3D space, we just append to body at mouse pos or center for simplicity
+                // For this demo, we'll just make the pool pulse
+            }
+            poolDisplay.style.filter = `hue-rotate(${Math.random() * 360}deg)`;
+        }
+
+        function updateSystem() {
+            // Determine Output Text
+            const activeCount = Object.values(state).filter(Boolean).length;
+            
+            if (activeCount === 0) {
+                outputVal.innerText = "STANDBY";
+                poolDisplay.style.animationDuration = "2s";
+                document.body.classList.remove('active-state');
+            } else {
+                outputVal.innerText = "DECODING...";
+                poolDisplay.style.animationDuration = `${2.5 - (activeCount * 0.5)}s`; // Faster with more inputs
+                document.body.classList.add('active-state');
+                
+                setTimeout(() => {
+                    const modes = [];
+                    if(state.orange) modes.push("GEOMETRIC");
+                    if(state.yellow) modes.push("ORGANIC");
+                    if(state.teal) modes.push("RECURSIVE");
+                    if(state.grey) modes.push("CHAOTIC");
+                    outputVal.innerText = modes.join(" + ");
+                }, 500);
+            }
+        }
+
+        // --- Generative Art Engine ---
+        let time = 0;
+        const particles = [];
+
+        class Particle {
+            constructor() {
+                this.reset();
+            }
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.vx = (Math.random() - 0.5) * 2;
+                this.vy = (Math.random() - 0.5) * 2;
+                this.size = Math.random() * 3;
+                this.color = `rgba(100, 100, 100, 0.2)`;
+            }
+            update() {
+                // Logic (Orange) makes things rigid/grid-like
+                if (state.orange) {
+                    this.x += this.vx;
+                    this.y += this.vy;
+                    if (this.x % 50 < 2) this.vx *= -1; // Grid bounce
+                    if (this.y % 50 < 2) this.vy *= -1;
+                } 
+                // Emotion (Yellow) makes things swirl
+                else if (state.yellow) {
+                    this.x += Math.sin(time * 0.01 + this.y * 0.01) * 2;
+                    this.y += Math.cos(time * 0.01 + this.x * 0.01) * 2;
+                }
+                // Default drift
+                else {
+                    this.x += this.vx * 0.5;
+                    this.y += this.vy * 0.5;
+                }
+
+                // Memory (Teal) creates trails
+                if (!state.teal) {
+                    // Wrap around
+                    if (this.x < 0) this.x = canvas.width;
+                    if (this.x > canvas.width) this.x = 0;
+                    if (this.y < 0) this.y = canvas.height;
+                    if (this.y > canvas.height) this.y = 0;
+                } else {
+                    // Echo effect handled in draw loop by not clearing rect fully
+                }
+
+                // Subconscious (Grey) adds noise/jitter
+                if (state.grey) {
+                    this.x += (Math.random() - 0.5) * 5;
+                    this.y += (Math.random() - 0.5) * 5;
+                }
+            }
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                
+                if (state.orange) ctx.fillStyle = "#ed8936";
+                else if (state.yellow) ctx.fillStyle = "#ecc94b";
+                else if (state.teal) ctx.fillStyle = "#4fd1c5";
+                else if (state.grey) ctx.fillStyle = "#4a5568";
+                else ctx.fillStyle = "rgba(200,200,200,0.5)";
+                
+                ctx.fill();
+            }
+        }
+
+        // Init Particles
+        for(let i=0; i<100; i++) {
+            particles.push(new Particle());
+        }
+
+        function animate() {
+            // Trail effect logic
+            if (state.teal) {
+                ctx.fillStyle = 'rgba(253, 251, 247, 0.1)'; // Leave trails
+            } else {
+                ctx.fillStyle = 'rgba(253, 251, 247, 1)'; // Clear screen
+            }
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw connections if Logic is on
+            if (state.orange) {
+                ctx.strokeStyle = 'rgba(237, 137, 54, 0.2)';
+                ctx.beginPath();
+                for(let i=0; i<particles.length; i++) {
+                    for(let j=i; j<particles.length; j++) {
+                        const dx = particles[i].x - particles[j].x;
+                        const dy = particles[i].y - particles[j].y;
+                        const dist = Math.sqrt(dx*dx + dy*dy);
+                        if(dist < 100) {
+                            ctx.moveTo(particles[i].x, particles[i].y);
+                            ctx.lineTo(particles[j].x, particles[j].y);
+                        }
+                    }
+                }
+                ctx.stroke();
+            }
+
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+
+            time++;
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+
+    </script>
+</body>
+</html>

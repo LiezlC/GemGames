@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entropy Stabilizer: The Dual Core</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --primary-gold: #fbbf24;
+            --primary-pink: #f472b6;
+            --mech-grey: #475569;
+            --mech-dark: #1e293b;
+            --glass-glow: rgba(100, 200, 255, 0.6);
+            --shatter-color: rgba(255, 100, 100, 0.8);
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: radial-gradient(circle at 30% 50%, #2d1b2e 0%, #0f172a 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: white;
+            user-select: none;
+            touch-action: none;
+        }
+
+        /* UI Layer */
+        #ui-layer {
+            position: absolute;
+            top: 20px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        h1 {
+            margin: 0;
+            font-weight: 300;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            font-size: 1.5rem;
+            text-shadow: 0 0 10px rgba(255,255,255,0.3);
+        }
+
+        #status {
+            font-size: 0.9rem;
+            color: #94a3b8;
+            margin-top: 5px;
+        }
+
+        #progress-container {
+            width: 300px;
+            height: 6px;
+            background: rgba(255,255,255,0.1);
+            margin: 15px auto;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        #progress-bar {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-pink), var(--primary-gold));
+            transition: width 0.3s ease;
+        }
+
+        /* Game Container */
+        #game-stage {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            perspective: 1000px;
+        }
+
+        /* Hands */
+        .hand-container {
+            width: 300px;
+            height: 400px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.1s;
+        }
+
+        .hand-left {
+            left: 5%;
+        }
+
+        .hand-right {
+            right: 5%;
+        }
+
+        /* Robot Hand CSS Construction */
+        .robot-palm {
+            width: 120px;
+            height: 140px;
+            border-radius: 20px;
+            position: absolute;
+            z-index: 2;
+        }
+
+        .left-palm {
+            background: linear-gradient(135deg, var(--primary-pink), #e879f9);
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.2), 0 0 15px rgba(244, 114, 182, 0.4);
+            border: 2px solid var(--primary-gold);
+        }
+
+        .right-palm {
+            background: linear-gradient(135deg, var(--mech-grey), var(--mech-dark));
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5), 0 0 15px rgba(100, 116, 139, 0.4);
+            border: 2px solid #94a3b8;
+        }
+
+        .finger {
+            position: absolute;
+            width: 24px;
+            height: 90px;
+            border-radius: 12px;
+            transform-origin: bottom center;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        /* Left Hand Fingers (Gold/Pink) */
+        .left-finger {
+            background: var(--primary-gold);
+            bottom: 130px;
+            border: 1px solid #b45309;
+        }
+        .lf1 { left: 10px; transform: rotate(-20deg); height: 70px; }
+        .lf2 { left: 40px; transform: rotate(-5deg); height: 90px; }
+        .lf3 { left: 70px; transform: rotate(10deg); height: 85px; }
+        .lf4 { left: 95px; transform: rotate(25deg); height: 65px; bottom: 120px; }
+        .l-thumb {
+            width: 30px; height: 70px;
+            background: var(--primary-gold);
+            right: -20px; bottom: 20px;
+            transform: rotate(60deg);
+            border-radius: 15px;
+            position: absolute;
+        }
+
+        /* Right Hand Fingers (Grey/Mech) */
+        .right-finger {
+            background: #cbd5e1;
+            bottom: 130px;
+            border: 1px solid #334155;
+        }
+        /* Inverted layout for right hand */
+        .rf1 { right: 10px; transform: rotate(20deg); height: 70px; }
+        .rf2 { right: 40px; transform: rotate(5deg); height: 90px; }
+        .rf3 { right: 70px; transform: rotate(-10deg); height: 85px; }
+        .rf4 { right: 95px; transform: rotate(-25deg); height: 65px; bottom: 120px; }
+        .r-thumb {
+            width: 30px; height: 70px;
+            background: #cbd5e1;
+            left: -20px; bottom: 20px;
+            transform: rotate(-60deg);
+            border-radius: 15px;
+            position: absolute;
+            border: 1px solid #334155;
+        }
+
+        /* Wrist */
+        .wrist {
+            width: 100px;
+            height: 80px;
+            position: absolute;
+            bottom: -60px;
+            left: 10px;
+            z-index: 1;
+        }
+        .left-wrist { background: linear-gradient(to bottom, var(--primary-gold), #b45309); border-radius: 0 0 20px 20px; }
+        .right-wrist { background: linear-gradient(to bottom, #64748b, #1e293b); border-radius: 0 0 20px 20px; }
+
+        /* The Spheres */
+        .sphere-zone {
+            position: absolute;
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+
+        /* Left Target Zone */
+        .target-zone {
+            border: 2px dashed rgba(244, 114, 182, 0.3);
+            box-shadow: 0 0 30px rgba(244, 114, 182, 0.1);
+            animation: pulse-target 3s infinite;
+        }
+
+        @keyframes pulse-target {
+            0% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 0.5; }
+        }
+
+        /* The Shards (Interactive Elements) */
+        .shard {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            cursor: grab;
+            transition: box-shadow 0.2s;
+            box-shadow: 0 0 10px rgba(100, 200, 255, 0.3);
+            z-index: 20;
+        }
+        .shard:active {
+            cursor: grabbing;
+            background: rgba(255, 255, 255, 0.4);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+        }
+        .shard.locked {
+            pointer-events: none;
+            transition: all 0.5s ease;
+            background: rgba(255, 255, 255, 0.15);
+            border: none;
+            box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.2);
+        }
+
+        /* Completed Sphere */
+        #core-sphere {
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.9), rgba(100,200,255,0.4), rgba(50,50,100,0.8));
+            box-shadow: 0 0 50px rgba(100, 200, 255, 0.8);
+            position: absolute;
+            transition: all 1s ease;
+            opacity: 0;
+        }
+
+        /* Interference Particles */
+        .interference {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: #ef4444;
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        /* Victory Modal */
+        #victory-modal {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 1s;
+            z-index: 200;
+        }
+        #victory-modal.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        button {
+            padding: 12px 24px;
+            background: var(--primary-pink);
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            border-radius: 30px;
+            cursor: pointer;
+            margin-top: 20px;
+            box-shadow: 0 0 20px rgba(244, 114, 182, 0.5);
+            transition: transform 0.2s;
+        }
+        button:hover {
+            transform: scale(1.1);
+        }
+
+        /* Background Abstract Shapes */
+        .bg-shape {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.4;
+            z-index: -1;
+        }
+        .bg-1 { width: 600px; height: 600px; background: #4c1d95; top: -200px; left: -100px; }
+        .bg-2 { width: 500px; height: 500px; background: #be185d; bottom: -100px; right: -100px; }
+
+    </style>
+</head>
+<body>
+
+    <div class="bg-shape bg-1"></div>
+    <div class="bg-shape bg-2"></div>
+
+    <div id="ui-layer">
+        <h1>Chrono-Sphere Synthesizer</h1>
+        <div id="status">Drag shards from Chaos (Right) to Order (Left)</div>
+        <div id="progress-container">
+            <div id="progress-bar"></div>
+        </div>
+    </div>
+
+    <div id="game-stage">
+        <!-- Left Hand (Order) -->
+        <div class="hand-container hand-left" id="left-hand">
+            <div class="wrist left-wrist"></div>
+            <div class="robot-palm left-palm"></div>
+            <div class="l-thumb"></div>
+            <div class="finger left-finger lf1"></div>
+            <div class="finger left-finger lf2"></div>
+            <div class="finger left-finger lf3"></div>
+            <div class="finger left-finger lf4"></div>
+            
+            <div class="sphere-zone target-zone" id="target-zone">
+                <div id="core-sphere"></div>
+            </div>
+        </div>
+
+        <!-- Right Hand (Chaos) -->
+        <div class="hand-container hand-right" id="right-hand">
+            <div class="wrist right-wrist"></div>
+            <div class="robot-palm right-palm"></div>
+            <div class="r-thumb"></div>
+            <div class="finger right-finger rf1"></div>
+            <div class="finger right-finger rf2"></div>
+            <div class="finger right-finger rf3"></div>
+            <div class="finger right-finger rf4"></div>
+            
+            <div class="sphere-zone" id="source-zone">
+                <!-- Shards will be generated here -->
+            </div>
+        </div>
+    </div>
+
+    <div id="victory-modal">
+        <h1 style="font-size: 3rem; color: #fff;">SYNTHESIS COMPLETE</h1>
+        <p>Order has been restored.</p>
+        <button onclick="resetGame()">Synthesize Again</button>
+    </div>
+
+    <script>
+        const stage = document.getElementById('game-stage');
+        const sourceZone = document.getElementById('source-zone');
+        const targetZone = document.getElementById('target-zone');
+        const progressBar = document.getElementById('progress-bar');
+        const coreSphere = document.getElementById('core-sphere');
+        const victoryModal = document.getElementById('victory-modal');
+        const rightHand = document.getElementById('right-hand');
+        const leftHand = document.getElementById('left-hand');
+
+        let shards = [];
+        const totalShards = 12;
+        let lockedShards = 0;
+        let isDragging = false;
+        let draggedShard = null;
+        let dragOffsetX = 0;
+        let dragOffsetY = 0;
+
+        // Initialize Game
+        function initGame() {
+            shards.forEach(s => s.element.remove());
+            shards = [];
+            lockedShards = 0;
+            progressBar.style.width = '0%';
+            coreSphere.style.width = '0';
+            coreSphere.style.height = '0';
+            coreSphere.style.opacity = '0';
+            victoryModal.classList.remove('show');
+            
+            // Reset hands
+            rightHand.style.transform = 'translateY(0)';
+            leftHand.style.transform = 'translateY(0)';
+
+            createShards();
+            animate();
+        }
+
+        function createShards() {
+            const rect = sourceZone.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+
+            for (let i = 0; i < totalShards; i++) {
+                const shard = document.createElement('div');
+                shard.classList.add('shard');
+                
+                // Random shard shapes using clip-path
+                const shapeType = Math.floor(Math.random() * 3);
+                let w = 30 + Math.random() * 30;
+                let h = 30 + Math.random() * 30;
+                
+                if (shapeType === 0) {
+                    shard.style.clipPath = 'polygon(50% 0%, 0% 100%, 100% 100%)'; // Triangle
+                } else if (shapeType === 1) {
+                    shard.style.clipPath = 'polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%)'; // Trapezoid
+                } else {
+                    shard.style.clipPath = 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)'; // Diamond
+                }
+
+                shard.style.width = `${w}px`;
+                shard.style.height = `${h}px`;
+                
+                // Random initial position around the right hand
+                const angle = Math.random() * Math.PI * 2;
+                const radius = Math.random() * 40;
+                const startX = centerX + Math.cos(angle) * radius - w/2;
+                const startY = centerY + Math.sin(angle) * radius - h/2;
+
+                shard.style.left = `${startX}px`;
+                shard.style.top = `${startY}px`;
+                
+                // Add random drift velocity
+                const vx = (Math.random() - 0.5) * 0.5;
+                const vy = (Math.random() - 0.5) * 0.5;
+
+                document.body.appendChild(shard);
+
+                const shardObj = {
+                    element: shard,
+                    x: startX,
+                    y: startY,
+                    vx: vx,
+                    vy: vy,
+                    width: w,
+                    height: h,
+                    locked: false,
+                    rotation: Math.random() * 360,
+                    rotSpeed: (Math.random() - 0.5) * 2
+                };
+
+                shard.addEventListener('mousedown', (e) => startDrag(e, shardObj));
+                shard.addEventListener('touchstart', (e) => startDrag(e, shardObj), {passive: false});
+
+                shards.push(shardObj);
+            }
+        }
+
+        function startDrag(e, shardObj) {
+            if (shardObj.locked) return;
+            e.preventDefault();
+            isDragging = true;
+            draggedShard = shardObj;
+            
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            
+            dragOffsetX = clientX - shardObj.x;
+            dragOffsetY = clientY - shardObj.y;
+            
+            shardObj.element.style.zIndex = 100;
+        }
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging || !draggedShard) return;
+            const clientX = e.clientX;
+            const clientY = e.clientY;
+            moveShard(clientX, clientY);
+        });
+
+        document.addEventListener('touchmove', (e) => {
+            if (!isDragging || !draggedShard) return;
+            e.preventDefault();
+            const clientX = e.touches[0].clientX;
+            const clientY = e.touches[0].clientY;
+            moveShard(clientX, clientY);
+        }, {passive: false});
+
+        function moveShard(cx, cy) {
+            draggedShard.x = cx - dragOffsetX;
+            draggedShard.y = cy - dragOffsetY;
+            draggedShard.vx = 0;
+            draggedShard.vy = 0;
+            updateShardVisual(draggedShard);
+        }
+
+        document.addEventListener('mouseup', endDrag);
+        document.addEventListener('touchend', endDrag);
+
+        function endDrag() {
+            if (!isDragging) return;
+            
+            // Check if dropped in target zone
+            const targetRect = targetZone.getBoundingClientRect();
+            const tx = targetRect.left + targetRect.width/2;
+            const ty = targetRect.top + targetRect.height/2;
+            
+            const sx = draggedShard.x + draggedShard.width/2;
+            const sy = draggedShard.y + draggedShard.height/2;
+            
+            const dist = Math.hypot(tx - sx, ty - sy);
+            
+            if (dist < 80) {
+                lockShard(draggedShard, tx, ty);
+            } else {
+                // Slight throw physics
+                draggedShard.vx = (Math.random() - 0.5) * 2;
+                draggedShard.vy = (Math.random() - 0.5) * 2;
+            }
+
+            draggedShard.element.style.zIndex = 20;
+            isDragging = false;
+            draggedShard = null;
+        }
+
+        function lockShard(shard, tx, ty) {
+            shard.locked = true;
+            shard.element.classList.add('locked');
+            
+            // Snap to center but with random offset to form a sphere mosaic
+            const angle = Math.random() * Math.PI * 2;
+            const radius = Math.random() * 40; // Inside the sphere
+            
+            shard.x = tx + Math.cos(angle) * radius - shard.width/2;
+            shard.y = ty + Math.sin(angle) * radius - shard.height/2;
+            shard.element.style.transform = `translate(${shard.x}px, ${shard.y}px) rotate(${shard.rotation}deg) scale(0.8)`;
+            shard.element.style.opacity = '0.5'; // Fade slightly to show they are merging
+
+            lockedShards++;
+            updateProgress();
+        }
+
+        function updateProgress() {
+            const pct = (lockedShards / totalShards) * 100;
+            progressBar.style.width = `${pct}%`;
+            
+            // Grow the core sphere
+            const size = (lockedShards / totalShards) * 130;
+            coreSphere.style.width = `${size}px`;
+            coreSphere.style.height = `${size}px`;
+            coreSphere.style.opacity = lockedShards / totalShards;
+
+            if (lockedShards === totalShards) {
+                setTimeout(victory, 500);
+            }
+        }
+
+        function victory() {
+            // Hide shards
+            shards.forEach(s => {
+                s.element.style.opacity = '0';
+                s.element.style.transition = 'opacity 0.5s';
+            });
+            
+            // Pulse the sphere
+            coreSphere.style.boxShadow = "0 0 100px rgba(255, 255, 255, 1)";
+            coreSphere.style.background = "radial-gradient(circle at 30% 30%, #fff, #f472b6, #fbbf24)";
+            
+            victoryModal.classList.add('show');
+        }
+
+        function resetGame() {
+            initGame();
+        }
+
+        function updateShardVisual(s) {
+            if (s.locked) return;
+            s.element.style.transform = `translate(${s.x}px, ${s.y}px) rotate(${s.rotation}deg)`;
+        }
+
+        function animate() {
+            // Float animation for hands
+            const time = Date.now() * 0.001;
+            leftHand.style.transform = `translateY(${Math.sin(time) * 10}px)`;
+            rightHand.style.transform = `translateY(${Math.cos(time) * 10}px)`;
+
+            // Animate shards
+            shards.forEach(s => {
+                if (!s.locked && s !== draggedShard) {
+                    s.x += s.vx;
+                    s.y += s.vy;
+                    s.rotation += s.rotSpeed;
+
+                    // Boundary check (keep roughly in screen)
+                    if (s.x < 0 || s.x > window.innerWidth) s.vx *= -1;
+                    if (s.y < 0 || s.y > window.innerHeight) s.vy *= -1;
+                    
+                    // Slight gravity towards chaos hand (right) if far away
+                    const rRect = rightHand.getBoundingClientRect();
+                    const rx = rRect.left + rRect.width/2;
+                    const ry = rRect.top + rRect.height/2;
+                    const dx = rx - s.x;
+                    const dy = ry - s.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    
+                    // If very close to chaos hand, orbit it
+                    if (dist < 150) {
+                        s.vx += dx * 0.0005;
+                        s.vy += dy * 0.0005;
+                    }
+
+                    updateShardVisual(s);
+                }
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        // Start
+        initGame();
+
+    </script>
+</body>
+</html>

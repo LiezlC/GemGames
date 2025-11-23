@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Reconstruction Protocol</title>
+    <style>
+        :root {
+            --neon-blue: #00f3ff;
+            --neon-red: #ff003c;
+            --dark-bg: #050505;
+            --chip-bg: #1a1a1a;
+            --text-color: #e0e0e0;
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: var(--dark-bg);
+            color: var(--text-color);
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            user-select: none;
+        }
+
+        /* Background Atmosphere */
+        .fog {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 50% 30%, rgba(255, 0, 60, 0.15), transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* UI Overlay */
+        .ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            text-shadow: 0 0 10px var(--neon-blue);
+        }
+
+        .stats-panel {
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid var(--neon-blue);
+            padding: 15px;
+            border-radius: 5px;
+            pointer-events: auto;
+            min-width: 200px;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        .controls {
+            pointer-events: auto;
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+
+        .btn {
+            background: rgba(0, 20, 40, 0.9);
+            border: 1px solid var(--neon-blue);
+            color: var(--neon-blue);
+            padding: 10px 20px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+        }
+
+        .btn:hover {
+            background: var(--neon-blue);
+            color: #000;
+            box-shadow: 0 0 15px var(--neon-blue);
+        }
+
+        .btn:disabled {
+            border-color: #555;
+            color: #555;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .log-panel {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 300px;
+            height: 150px;
+            background: rgba(0, 0, 0, 0.8);
+            border-left: 2px solid var(--neon-red);
+            padding: 10px;
+            font-size: 0.8rem;
+            overflow-y: auto;
+            pointer-events: auto;
+            display: flex;
+            flex-direction: column-reverse; /* Newest at bottom visually, but we'll prepend */
+        }
+
+        .log-entry {
+            margin-bottom: 4px;
+            opacity: 0.8;
+        }
+
+        .log-entry.success { color: var(--neon-blue); }
+        .log-entry.warn { color: var(--neon-red); }
+
+        /* 3D Scene */
+        .scene-container {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 1000px;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        .world-plane {
+            position: relative;
+            width: 600px;
+            height: 600px;
+            transform-style: preserve-3d;
+            transform: rotateX(45deg) rotateZ(0deg);
+            transition: transform 0.5s ease;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            grid-template-rows: repeat(5, 1fr);
+            gap: 10px;
+            width: 100%;
+            height: 100%;
+        }
+
+        .tile {
+            position: relative;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2.5rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 0 0 rgba(0,0,0,0);
+        }
+
+        .tile:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateZ(10px);
+        }
+
+        .tile.ruin {
+            filter: grayscale(100%) contrast(120%);
+            color: #888;
+        }
+
+        .tile.fixed {
+            filter: none;
+            border-color: #4f4;
+            box-shadow: 0 0 10px rgba(68, 255, 68, 0.2);
+        }
+
+        /* The AI Chip */
+        .ai-core {
+            position: relative;
+            background: #000;
+            border: 2px solid var(--neon-blue);
+            box-shadow: 0 0 30px var(--neon-blue), inset 0 0 20px var(--neon-blue);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 5;
+            animation: pulse 2s infinite;
+            cursor: pointer;
+        }
+
+        .ai-core::before {
+            content: '';
+            position: absolute;
+            top: 5px; left: 5px; right: 5px; bottom: 5px;
+            border: 1px dashed rgba(0, 243, 255, 0.5);
+        }
+
+        .ai-text {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 0 0 10px var(--neon-blue);
+        }
+
+        .ai-sub {
+            font-size: 0.5rem;
+            color: var(--neon-blue);
+            margin-top: 2px;
+        }
+
+        /* Circuit lines decoration on AI tile */
+        .circuit-line {
+            position: absolute;
+            background: var(--neon-blue);
+            opacity: 0.5;
+        }
+        .cl-1 { top: -10px; left: 50%; width: 2px; height: 10px; }
+        .cl-2 { bottom: -10px; left: 50%; width: 2px; height: 10px; }
+        .cl-3 { left: -10px; top: 50%; width: 10px; height: 2px; }
+        .cl-4 { right: -10px; top: 50%; width: 10px; height: 2px; }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 20px var(--neon-blue); }
+            50% { box-shadow: 0 0 40px var(--neon-blue), 0 0 10px #fff; }
+            100% { box-shadow: 0 0 20px var(--neon-blue); }
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(0) opacity(1); }
+            100% { transform: translateY(-50px) opacity(0); }
+        }
+
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            color: var(--neon-blue);
+            font-size: 1rem;
+            animation: floatUp 1s forwards;
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            width: 100%;
+            height: 5px;
+            background: #333;
+            margin-top: 10px;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            background: var(--neon-blue);
+            width: 0%;
+            transition: width 0.5s;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="fog"></div>
+
+    <div class="ui-layer">
+        <div class="header">
+            <div>
+                <h1 style="margin:0; font-size: 1.5rem;">AI RECONSTRUCTION <span style="font-size:0.8em; opacity:0.7">v1.0</span></h1>
+                <div style="font-size: 0.8rem; color: #888;">SECTOR: RUINED_EARTH // STATUS: CRITICAL</div>
+            </div>
+            <div class="stats-panel">
+                <div class="stat-row">
+                    <span>COMPUTE POWER (Energy):</span>
+                    <span id="energy-display" style="color: var(--neon-blue)">0</span>
+                </div>
+                <div class="stat-row">
+                    <span>RECONSTRUCTION:</span>
+                    <span id="progress-text">0%</span>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-bar" id="progress-bar"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="log-panel" id="log-panel">
+            <div class="log-entry">> System initialized.</div>
+            <div class="log-entry warn">> Critical damage detected.</div>
+            <div class="log-entry">> Awaiting manual override...</div>
+        </div>
+
+        <div class="controls">
+            <button class="btn" id="btn-scan" onclick="upgrade('scan')">
+                Enhance Sensors<br><span style="font-size:0.7em; opacity:0.7">Cost: 50 | +1 Auto/sec</span>
+            </button>
+            <button class="btn" id="btn-drone" onclick="upgrade('drone')">
+                Deploy Drone<br><span style="font-size:0.7em; opacity:0.7">Cost: 100 | Auto-Repair</span>
+            </button>
+            <button class="btn" id="btn-reset" onclick="resetGame()" style="border-color: var(--neon-red); color: var(--neon-red)">
+                Reboot System
+            </button>
+        </div>
+    </div>
+
+    <div class="scene-container">
+        <div class="world-plane" id="world-plane">
+            <div class="grid" id="grid">
+                <!-- Grid Generated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game State
+        const state = {
+            energy: 0,
+            totalTiles: 25, // 5x5 grid
+            repairedTiles: 0,
+            clickPower: 1,
+            autoGen: 0,
+            drones: 0,
+            costs: {
+                repair: 10,
+                scan: 50,
+                drone: 100
+            },
+            tiles: []
+        };
+
+        // DOM Elements
+        const gridEl = document.getElementById('grid');
+        const energyEl = document.getElementById('energy-display');
+        const progressText = document.getElementById('progress-text');
+        const progressBar = document.getElementById('progress-bar');
+        const logPanel = document.getElementById('log-panel');
+        const btnScan = document.getElementById('btn-scan');
+        const btnDrone = document.getElementById('btn-drone');
+
+        // Assets (Emojis)
+        const RUINS = ['🏚️', '🧱', '🌫️', '🏚️'];
+        const FIXED = ['🏡', '🏢', '🌳', '🏭', '🏥'];
+
+        function init() {
+            renderGrid();
+            gameLoop();
+            log("AI Core Online. Click Core to generate Compute Power.", "success");
+            log("Click Ruins to Repair (Cost: 10).");
+        }
+
+        function renderGrid() {
+            gridEl.innerHTML = '';
+            state.tiles = [];
+            state.repairedTiles = 0;
+
+            // Create 5x5 Grid
+            for (let i = 0; i < 25; i++) {
+                const tile = document.createElement('div');
+                
+                // Center is AI Core (Index 12 in 0-24)
+                if (i === 12) {
+                    tile.className = 'ai-core';
+                    tile.innerHTML = `
+                        <div class="ai-text">AI</div>
+                        <div class="ai-sub">CORE</div>
+                        <div class="circuit-line cl-1"></div>
+                        <div class="circuit-line cl-2"></div>
+                        <div class="circuit-line cl-3"></div>
+                        <div class="circuit-line cl-4"></div>
+                    `;
+                    tile.onclick = () => clickCore(tile);
+                    state.tiles.push({ type: 'core', el: tile });
+                } else {
+                    tile.className = 'tile ruin';
+                    const content = RUINS[Math.floor(Math.random() * RUINS.length)];
+                    tile.textContent = content;
+                    tile.onclick = () => repairTile(i);
+                    state.tiles.push({ type: 'ruin', el: tile, index: i });
+                }
+                gridEl.appendChild(tile);
+            }
+            updateUI();
+        }
+
+        function clickCore(el) {
+            state.energy += state.clickPower;
+            spawnParticle(el, "+1");
+            updateUI();
+            
+            // Visual feedback
+            el.style.transform = "scale(0.95)";
+            setTimeout(() => el.style.transform = "scale(1)", 100);
+        }
+
+        function repairTile(index) {
+            const tileData = state.tiles[index];
+            if (tileData.type !== 'ruin') return;
+
+            if (state.energy >= state.costs.repair) {
+                state.energy -= state.costs.repair;
+                
+                // Transform tile
+                tileData.type = 'fixed';
+                state.repairedTiles++;
+                
+                const el = tileData.el;
+                el.className = 'tile fixed';
+                el.style.transform = "rotateY(180deg)"; // Flip effect
+                
+                // Wait for flip to change content
+                setTimeout(() => {
+                    el.style.transform = "rotateY(0deg) translateZ(5px)";
+                    el.textContent = FIXED[Math.floor(Math.random() * FIXED.length)];
+                    spawnParticle(el, "REPAIRED");
+                    log(`Sector ${index} restored.`, "success");
+                }, 150);
+
+                updateUI();
+                checkWin();
+            } else {
+                log("Insufficient Compute Power.", "warn");
+                shake(tileData.el);
+            }
+        }
+
+        function upgrade(type) {
+            if (type === 'scan') {
+                if (state.energy >= state.costs.scan) {
+                    state.energy -= state.costs.scan;
+                    state.autoGen += 1;
+                    state.costs.scan = Math.floor(state.costs.scan * 1.5);
+                    log("Sensors upgraded. Passive generation increased.", "success");
+                }
+            } else if (type === 'drone') {
+                if (state.energy >= state.costs.drone) {
+                    state.energy -= state.costs.drone;
+                    state.drones += 1;
+                    state.costs.drone = Math.floor(state.costs.drone * 1.8);
+                    log("Drone deployed. Auto-repair initiated.", "success");
+                }
+            }
+            updateUI();
+        }
+
+        function gameLoop() {
+            setInterval(() => {
+                // Passive Generation
+                if (state.autoGen > 0) {
+                    state.energy += state.autoGen;
+                    updateUI();
+                }
+
+                // Drone Logic (Auto Repair)
+                if (state.drones > 0 && state.energy >= state.costs.repair) {
+                    // Find a random ruin
+                    const ruins = state.tiles.filter(t => t.type === 'ruin');
+                    if (ruins.length > 0) {
+                        // Chance to repair based on drone count
+                        if (Math.random() < (0.1 * state.drones)) {
+                            const target = ruins[Math.floor(Math.random() * ruins.length)];
+                            repairTile(target.index);
+                        }
+                    }
+                }
+            }, 1000);
+        }
+
+        function updateUI() {
+            energyEl.innerText = Math.floor(state.energy);
+            
+            // Progress
+            // Total ruins = 24 (25 - 1 core)
+            const percent = Math.floor((state.repairedTiles / 24) * 100);
+            progressText.innerText = percent + "%";
+            progressBar.style.width = percent + "%";
+
+            // Button States
+            btnScan.innerHTML = `Enhance Sensors<br><span style="font-size:0.7em; opacity:0.7">Cost: ${state.costs.scan} | +1 Auto/sec</span>`;
+            btnDrone.innerHTML = `Deploy Drone<br><span style="font-size:0.7em; opacity:0.7">Cost: ${state.costs.drone} | Auto-Repair</span>`;
+
+            btnScan.disabled = state.energy < state.costs.scan;
+            btnDrone.disabled = state.energy < state.costs.drone;
+        }
+
+        function checkWin() {
+            if (state.repairedTiles === 24) {
+                log("SECTOR RECONSTRUCTION COMPLETE.", "success");
+                document.querySelector('.header h1').style.color = "#4f4";
+                spawnConfetti();
+            }
+        }
+
+        function spawnParticle(parent, text) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            p.innerText = text;
+            p.style.left = '50%';
+            p.style.top = '50%';
+            p.style.transform = 'translate(-50%, -50%)';
+            parent.appendChild(p);
+            setTimeout(() => p.remove(), 1000);
+        }
+
+        function log(msg, type = "") {
+            const div = document.createElement('div');
+            div.className = `log-entry ${type}`;
+            div.innerText = `> ${msg}`;
+            logPanel.insertBefore(div, logPanel.firstChild);
+        }
+
+        function shake(el) {
+            el.style.transform = "translateX(5px)";
+            setTimeout(() => el.style.transform = "translateX(-5px)", 50);
+            setTimeout(() => el.style.transform = "translateX(5px)", 100);
+            setTimeout(() => el.style.transform = "translateX(0)", 150);
+        }
+
+        function resetGame() {
+            state.energy = 0;
+            state.repairedTiles = 0;
+            state.autoGen = 0;
+            state.drones = 0;
+            state.costs = { repair: 10, scan: 50, drone: 100 };
+            renderGrid();
+            log("System Rebooted.", "warn");
+        }
+
+        // Mouse movement for subtle 3D parallax
+        document.addEventListener('mousemove', (e) => {
+            const x = (window.innerWidth / 2 - e.clientX) / 50;
+            const y = (window.innerHeight / 2 - e.clientY) / 50;
+            const plane = document.getElementById('world-plane');
+            // Base rotation is rotateX(45deg)
+            plane.style.transform = `rotateX(${45 + y}deg) rotateY(${x}deg)`;
+        });
+
+        // Start
+        init();
+
+    </script>
+</body>
+</html>

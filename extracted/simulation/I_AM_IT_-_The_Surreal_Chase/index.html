@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>I AM IT - The Surreal Chase</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700;900&display=swap');
+
+        :root {
+            --layer-1: #2e1a47;
+            --layer-2: #5a2a8c;
+            --layer-3: #8c3db5;
+            --layer-4: #cd4ff0;
+            --layer-5: #ff8c00;
+            --glow: #00ffcc;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #1a0b2e;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Montserrat', sans-serif;
+            cursor: none; /* Hide default cursor, we use the creature */
+        }
+
+        /* The Tunnel Effect */
+        .tunnel-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 1000px;
+        }
+
+        .layer {
+            position: absolute;
+            border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5), 0 10px 20px rgba(0,0,0,0.3);
+            transition: all 0.1s ease-out;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Iridescent/Metallic textures via gradients */
+        .l1 { width: 110vw; height: 110vh; background: linear-gradient(135deg, #3b1e54, #5a2a8c); z-index: 1; animation: breathe 6s infinite alternate; }
+        .l2 { width: 90vw; height: 90vh; background: linear-gradient(45deg, #5a2a8c, #2b1055); z-index: 2; animation: breathe 5s infinite alternate-reverse; }
+        .l3 { width: 75vw; height: 75vh; background: linear-gradient(180deg, #8c3db5, #4b0082); z-index: 3; animation: breathe 7s infinite alternate; }
+        .l4 { width: 60vw; height: 60vh; background: linear-gradient(90deg, #cd4ff0, #ff00cc); z-index: 4; animation: breathe 4s infinite alternate-reverse; }
+        .l5 { width: 45vw; height: 45vh; background: linear-gradient(135deg, #ff8c00, #ffcc00); z-index: 5; box-shadow: inset 0 0 50px #000; }
+        
+        /* The Inner Stage */
+        .stage {
+            position: absolute;
+            width: 35vw;
+            height: 35vh;
+            background: #000;
+            z-index: 10;
+            border-radius: 20px;
+            box-shadow: 0 0 50px #ff8c00;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .stage-bg {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(120deg, #00ffcc, #ff00cc, #ffcc00);
+            opacity: 0.3;
+            filter: blur(20px);
+        }
+
+        /* Text Elements */
+        .text-container {
+            position: relative;
+            z-index: 12;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            pointer-events: none;
+        }
+
+        .text-iam {
+            font-size: 4vw;
+            color: white;
+            text-shadow: 0 0 10px rgba(255,255,255,0.8);
+        }
+
+        .badge-it {
+            background: #1a0000;
+            border: 2px solid #ff3333;
+            padding: 10px 20px;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 4vw;
+            font-weight: 900;
+            box-shadow: 0 0 20px #ff0000;
+            position: relative;
+            transition: transform 0.2s;
+        }
+
+        /* The Creature (User Cursor) */
+        #creature {
+            position: fixed;
+            z-index: 100;
+            pointer-events: none;
+            width: 80px;
+            height: 80px;
+            transform: translate(-50%, -50%);
+            transition: width 0.2s, height 0.2s;
+        }
+
+        /* SVG Styling for Creature */
+        .creature-body { fill: #555; filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5)); }
+        .creature-hair { fill: #444; }
+        .creature-eye { fill: white; }
+        .creature-pupil { fill: black; }
+        
+        /* Animations */
+        @keyframes breathe {
+            0% { transform: scale(1) rotate(0deg); border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; }
+            100% { transform: scale(1.02) rotate(2deg); border-radius: 50% 50% 50% 50% / 50% 50% 50% 50%; }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .badge-float {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        /* Game UI */
+        .score-board {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            color: white;
+            z-index: 200;
+            font-family: monospace;
+            background: rgba(0,0,0,0.5);
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .message {
+            position: fixed;
+            bottom: 20px;
+            width: 100%;
+            text-align: center;
+            color: rgba(255,255,255,0.6);
+            z-index: 200;
+            font-size: 14px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="score-board">
+        IDENTITY: <span id="identity-score">UNKNOWN</span><br>
+        TAGS: <span id="tag-score">0</span>
+    </div>
+
+    <div class="tunnel-container" id="tunnel">
+        <div class="layer l1"></div>
+        <div class="layer l2"></div>
+        <div class="layer l3"></div>
+        <div class="layer l4"></div>
+        <div class="layer l5">
+            <div class="stage">
+                <div class="stage-bg"></div>
+                <div class="text-container">
+                    <div class="text-iam">I am</div>
+                    <div class="badge-it badge-float" id="target-badge">IT</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- The Creature (SVG) -->
+    <div id="creature">
+        <svg viewBox="0 0 100 100" width="100%" height="100%">
+            <!-- Legs -->
+            <rect x="30" y="70" width="10" height="30" rx="5" class="creature-body" />
+            <rect x="60" y="70" width="10" height="30" rx="5" class="creature-body" />
+            <!-- Body -->
+            <path d="M20,50 Q20,80 50,80 T80,50 T50,20 T20,50" fill="#666" class="creature-body" />
+            <!-- Neck -->
+            <rect x="40" y="20" width="20" height="30" fill="#666" />
+            <!-- Head -->
+            <circle cx="50" cy="25" r="20" fill="#777" />
+            <!-- Hair -->
+            <path d="M30,25 Q50,5 70,25 L70,40 Q50,45 30,40 Z" class="creature-hair" />
+            <!-- Face -->
+            <circle cx="43" cy="28" r="4" class="creature-eye" />
+            <circle cx="57" cy="28" r="4" class="creature-eye" />
+            <circle cx="43" cy="28" r="1.5" class="creature-pupil" />
+            <circle cx="57" cy="28" r="1.5" class="creature-pupil" />
+            <path d="M45,38 Q50,40 55,38" stroke="#333" stroke-width="2" fill="none" />
+        </svg>
+    </div>
+
+    <div class="message">Move your mouse to control the creature. Chase the "IT" to steal its identity.</div>
+
+    <script>
+        const creature = document.getElementById('creature');
+        const tunnel = document.getElementById('tunnel');
+        const layers = document.querySelectorAll('.layer');
+        const badge = document.getElementById('target-badge');
+        const identityDisplay = document.getElementById('identity-score');
+        const tagScoreDisplay = document.getElementById('tag-score');
+        const iamText = document.querySelector('.text-iam');
+
+        let mouseX = window.innerWidth / 2;
+        let mouseY = window.innerHeight / 2;
+        let creatureX = mouseX;
+        let creatureY = mouseY;
+        
+        let score = 0;
+        
+        // Game State
+        const identities = ["IT", "THE ONE", "LOST", "FOUND", "ART", "CODE", "ALIVE", "DREAMING", "AWAKE", "INFINITE"];
+        let currentIdentityIndex = 0;
+
+        // Mouse Movement Tracking
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+
+            // Parallax Effect
+            const centerX = window.innerWidth / 2;
+            const centerY = window.innerHeight / 2;
+            
+            layers.forEach((layer, index) => {
+                const speed = (index + 1) * 5;
+                const x = (mouseX - centerX) / speed;
+                const y = (mouseY - centerY) / speed;
+                layer.style.transform = `translate(${x}px, ${y}px)`;
+            });
+        });
+
+        // Smooth Creature Movement (Lerp)
+        function animate() {
+            // Linear interpolation for smooth follow
+            creatureX += (mouseX - creatureX) * 0.1;
+            creatureY += (mouseY - creatureY) * 0.1;
+
+            creature.style.left = `${creatureX}px`;
+            creature.style.top = `${creatureY}px`;
+
+            // Check Collision with Badge
+            checkCollision();
+
+            requestAnimationFrame(animate);
+        }
+
+        function checkCollision() {
+            const badgeRect = badge.getBoundingClientRect();
+            const creatureRect = creature.getBoundingClientRect();
+
+            // Simple AABB collision
+            if (
+                creatureRect.left < badgeRect.right &&
+                creatureRect.right > badgeRect.left &&
+                creatureRect.top < badgeRect.bottom &&
+                creatureRect.bottom > badgeRect.top
+            ) {
+                handleTag();
+            }
+        }
+
+        function handleTag() {
+            // Visual Feedback
+            score++;
+            tagScoreDisplay.innerText = score;
+            
+            // Change Identity
+            currentIdentityIndex = (currentIdentityIndex + 1) % identities.length;
+            const newId = identities[currentIdentityIndex];
+            badge.innerText = newId;
+            identityDisplay.innerText = newId;
+
+            // Randomize Badge Position (Move it away)
+            // Since the badge is inside the stage which is small, we animate the stage or text instead?
+            // Let's make the badge jump and change color
+            
+            const randomColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
+            badge.style.borderColor = randomColor;
+            badge.style.boxShadow = `0 0 20px ${randomColor}`;
+            
+            // Animate creature reaction
+            creature.style.transform = "translate(-50%, -50%) scale(1.5)";
+            setTimeout(() => {
+                creature.style.transform = "translate(-50%, -50%) scale(1)";
+            }, 200);
+
+            // Trigger Tunnel Color Shift
+            document.body.style.backgroundColor = `hsl(${Math.random() * 360}, 30%, 10%)`;
+            
+            // Move the badge slightly to simulate "running away" within the constraints of the DOM
+            const randomX = (Math.random() - 0.5) * 100;
+            const randomY = (Math.random() - 0.5) * 50;
+            badge.style.transform = `translate(${randomX}px, ${randomY}px)`;
+        }
+
+        // Initialize
+        animate();
+
+    </script>
+</body>
+</html>

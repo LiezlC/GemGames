@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Nexus Interface</title>
+    <style>
+        :root {
+            --neon-cyan: #00f3ff;
+            --neon-pink: #ff00ff;
+            --neon-purple: #bc13fe;
+            --bg-dark: #050510;
+            --glass: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-dark);
+            color: white;
+            font-family: 'Courier New', Courier, monospace;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        #canvas-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none; /* Let clicks pass through to 3D scene */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .hud-panel {
+            background: rgba(0, 10, 30, 0.7);
+            border: 1px solid var(--neon-cyan);
+            padding: 15px;
+            border-radius: 5px;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
+            max-width: 300px;
+            pointer-events: auto;
+        }
+
+        h1 {
+            margin: 0 0 10px 0;
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--neon-cyan);
+            text-shadow: 0 0 10px var(--neon-cyan);
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #333;
+            margin-top: 5px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--neon-cyan), var(--neon-purple));
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        #scene-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            perspective: 1000px;
+            z-index: 5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        #world {
+            position: relative;
+            width: 600px;
+            height: 600px;
+            transform-style: preserve-3d;
+            transform: rotateX(60deg) rotateZ(45deg);
+            transition: transform 0.1s ease-out;
+        }
+
+        /* The Central Core Pillar */
+        .core-pillar {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.8);
+            transform: translate(-50%, -50%) translateZ(0px);
+            box-shadow: 0 0 50px 20px var(--neon-purple);
+            border-radius: 50%;
+            animation: pulseCore 2s infinite ease-in-out;
+        }
+
+        .core-beam {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 4px;
+            height: 800px;
+            background: linear-gradient(to top, transparent, var(--neon-pink), white);
+            transform: translate(-50%, -50%) rotateX(-90deg) translateY(-400px);
+            opacity: 0.8;
+            box-shadow: 0 0 20px var(--neon-pink);
+        }
+
+        /* Floating Platforms */
+        .platform {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            background: rgba(0, 20, 40, 0.6);
+            border: 1px solid var(--neon-cyan);
+            transform-style: preserve-3d;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .platform:hover {
+            background: rgba(0, 243, 255, 0.2);
+            box-shadow: 0 0 25px rgba(0, 243, 255, 0.4);
+            transform: translateZ(20px);
+        }
+
+        .platform-glow {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: radial-gradient(circle, var(--neon-cyan) 0%, transparent 70%);
+            opacity: 0.5;
+            transition: opacity 0.3s;
+        }
+
+        .platform.active {
+            border-color: var(--neon-pink);
+            box-shadow: 0 0 30px var(--neon-pink);
+        }
+
+        .platform.active .platform-glow {
+            background: radial-gradient(circle, var(--neon-pink) 0%, transparent 70%);
+            opacity: 1;
+            animation: spin 2s linear infinite;
+        }
+
+        /* Holographic Rings (CSS Shapes) */
+        .holo-ring {
+            position: absolute;
+            border-radius: 50%;
+            border: 2px solid rgba(188, 19, 254, 0.3);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+
+        .ring-1 { width: 300px; height: 300px; animation: spinReverse 20s linear infinite; border-color: rgba(0, 243, 255, 0.2); }
+        .ring-2 { width: 500px; height: 500px; animation: spin 30s linear infinite; border-width: 1px; }
+        .ring-3 { width: 700px; height: 700px; animation: spinReverse 40s linear infinite; border-color: rgba(255, 0, 255, 0.1); border-style: dashed;}
+
+        /* Animations */
+        @keyframes spin { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }
+        @keyframes spinReverse { 0% { transform: translate(-50%, -50%) rotate(360deg); } 100% { transform: translate(-50%, -50%) rotate(0deg); } }
+        @keyframes pulseCore { 0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; } 50% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; } }
+        
+        .message-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.9);
+            border: 2px solid var(--neon-cyan);
+            padding: 40px;
+            text-align: center;
+            z-index: 100;
+            display: none;
+            box-shadow: 0 0 50px var(--neon-cyan);
+        }
+        
+        .btn {
+            background: transparent;
+            border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            padding: 10px 20px;
+            font-family: inherit;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: 0.3s;
+        }
+        .btn:hover {
+            background: var(--neon-cyan);
+            color: black;
+            box-shadow: 0 0 20px var(--neon-cyan);
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Background Particle System -->
+    <canvas id="canvas-layer"></canvas>
+
+    <!-- 3D Scene -->
+    <div id="scene-container">
+        <div id="world">
+            <!-- Decorative Rings -->
+            <div class="holo-ring ring-1"></div>
+            <div class="holo-ring ring-2"></div>
+            <div class="holo-ring ring-3"></div>
+
+            <!-- Central Core -->
+            <div class="core-pillar"></div>
+            <div class="core-beam"></div>
+
+            <!-- Platforms will be injected here by JS -->
+        </div>
+    </div>
+
+    <!-- UI HUD -->
+    <div id="ui-layer">
+        <div class="hud-panel">
+            <h1>Quantum Nexus</h1>
+            <div class="stat-row">
+                <span>System Entropy</span>
+                <span id="entropy-val">84%</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" id="entropy-bar" style="width: 84%; background: red;"></div></div>
+            
+            <br>
+            
+            <div class="stat-row">
+                <span>Coherence</span>
+                <span id="coherence-val">12%</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" id="coherence-bar" style="width: 12%"></div></div>
+            
+            <p style="font-size: 0.8rem; color: #aaa; margin-top: 15px;">
+                MISSION: Stabilize the floating nodes. Click nodes to synchronize their frequency with the core.
+            </p>
+        </div>
+
+        <div class="hud-panel" style="align-self: flex-end;">
+            <div class="stat-row"><span>Nodes Active</span> <span id="active-nodes">0/8</span></div>
+            <div class="stat-row"><span>Core Temp</span> <span>4,200 K</span></div>
+        </div>
+    </div>
+
+    <!-- Win Message -->
+    <div class="message-overlay" id="win-screen">
+        <h1 style="font-size: 2rem; color: var(--neon-pink);">SYSTEM STABILIZED</h1>
+        <p>Quantum coherence achieved. The grid is secure.</p>
+        <button class="btn" onclick="resetGame()">Reboot System</button>
+    </div>
+
+    <script>
+        // --- 1. Canvas Background (The "Space Grid" & Particles) ---
+        const canvas = document.getElementById('canvas-layer');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        let particles = [];
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        class Particle {
+            constructor() {
+                this.reset();
+            }
+            reset() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.z = Math.random() * 2; // depth
+                this.vx = (Math.random() - 0.5) * 0.5;
+                this.vy = (Math.random() - 0.5) * 0.5;
+                this.size = Math.random() * 2;
+                this.color = Math.random() > 0.5 ? '#00f3ff' : '#bc13fe';
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                if (this.x < 0 || this.x > width || this.y < 0 || this.y > height) this.reset();
+            }
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.globalAlpha = 0.5 * this.z;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // Create Grid Lines
+        function drawGrid() {
+            ctx.strokeStyle = 'rgba(0, 243, 255, 0.1)';
+            ctx.lineWidth = 1;
+            const spacing = 50;
+            const time = Date.now() * 0.0005;
+            
+            // Perspective Grid Effect
+            for (let i = 0; i < height; i += spacing) {
+                ctx.beginPath();
+                ctx.moveTo(0, i + (Math.sin(time + i) * 10));
+                ctx.lineTo(width, i + (Math.cos(time + i) * 10));
+                ctx.stroke();
+            }
+        }
+
+        for(let i=0; i<100; i++) particles.push(new Particle());
+
+        function animateCanvas() {
+            ctx.clearRect(0, 0, width, height);
+            drawGrid();
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+            requestAnimationFrame(animateCanvas);
+        }
+        animateCanvas();
+
+
+        // --- 2. 3D Scene Logic (The "Game") ---
+        const world = document.getElementById('world');
+        const platforms = [];
+        const totalNodes = 8;
+        let activeNodes = 0;
+        let isWon = false;
+
+        function createPlatforms() {
+            // Clear existing
+            const existing = document.querySelectorAll('.platform');
+            existing.forEach(e => e.remove());
+            platforms.length = 0;
+            activeNodes = 0;
+            updateHUD();
+
+            // Create new nodes in a spiral/random pattern
+            for (let i = 0; i < totalNodes; i++) {
+                const el = document.createElement('div');
+                el.className = 'platform';
+                
+                // Random polar coordinates converted to Cartesian for the "floor"
+                const angle = (i / totalNodes) * Math.PI * 2;
+                const radius = 150 + Math.random() * 150;
+                const x = Math.cos(angle) * radius;
+                const y = Math.sin(angle) * radius;
+                const z = (Math.random() - 0.5) * 100; // Height variation
+
+                // Position
+                el.style.transform = `translate3d(${x}px, ${y}px, ${z}px)`;
+                
+                // Inner Glow
+                const glow = document.createElement('div');
+                glow.className = 'platform-glow';
+                el.appendChild(glow);
+
+                // Interaction
+                el.onclick = () => activateNode(el, i);
+
+                world.appendChild(el);
+                platforms.push({ el, active: false, x, y, z });
+            }
+        }
+
+        function activateNode(el, index) {
+            if (isWon) return;
+            const node = platforms[index];
+            
+            if (!node.active) {
+                node.active = true;
+                el.classList.add('active');
+                activeNodes++;
+                
+                // Sound effect visual (screen flash)
+                document.body.style.boxShadow = `inset 0 0 50px var(--neon-cyan)`;
+                setTimeout(() => document.body.style.boxShadow = 'none', 100);
+
+                checkWin();
+            } else {
+                // Toggle off? Maybe not, let's make it purely additive for simplicity
+                // Or maybe clicking again overloads it (bad)? Let's stick to activation.
+            }
+            updateHUD();
+        }
+
+        function updateHUD() {
+            const coherence = (activeNodes / totalNodes) * 100;
+            const entropy = 100 - coherence;
+
+            document.getElementById('coherence-val').innerText = Math.round(coherence) + '%';
+            document.getElementById('coherence-bar').style.width = coherence + '%';
+            
+            document.getElementById('entropy-val').innerText = Math.round(entropy) + '%';
+            const entBar = document.getElementById('entropy-bar');
+            entBar.style.width = entropy + '%';
+            entBar.style.background = entropy > 50 ? 'red' : 'var(--neon-cyan)';
+
+            document.getElementById('active-nodes').innerText = `${activeNodes}/${totalNodes}`;
+        }
+
+        function checkWin() {
+            if (activeNodes === totalNodes) {
+                isWon = true;
+                document.getElementById('win-screen').style.display = 'block';
+                
+                // Win Animation: Spin everything fast
+                world.style.animation = 'spin 5s linear infinite';
+                document.querySelector('.core-pillar').style.boxShadow = '0 0 100px 50px white';
+            }
+        }
+
+        function resetGame() {
+            isWon = false;
+            document.getElementById('win-screen').style.display = 'none';
+            world.style.animation = 'none';
+            document.querySelector('.core-pillar').style.boxShadow = '0 0 50px 20px var(--neon-purple)';
+            createPlatforms();
+        }
+
+        // --- 3. Mouse Interaction (Parallax) ---
+        document.addEventListener('mousemove', (e) => {
+            if (isWon) return;
+            
+            const cx = window.innerWidth / 2;
+            const cy = window.innerHeight / 2;
+            
+            const dx = (e.clientX - cx) / cx;
+            const dy = (e.clientY - cy) / cy;
+
+            // Rotate the world based on mouse position
+            // Base rotation is rotateX(60deg) rotateZ(45deg)
+            world.style.transform = `rotateX(${60 - dy * 10}deg) rotateZ(${45 + dx * 10}deg)`;
+        });
+
+        // Initialize
+        createPlatforms();
+
+    </script>
+</body>
+</html>

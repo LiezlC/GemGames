@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bio-Digital Interface</title>
+    <style>
+        :root {
+            --neon-cyan: #00f3ff;
+            --neon-pink: #ff00ff;
+            --neon-yellow: #ffe600;
+            --neon-green: #00ff66;
+            --bg-dark: #050510;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-dark);
+            background-image: 
+                radial-gradient(circle at 50% 30%, #1a1a40 0%, var(--bg-dark) 70%);
+            color: white;
+            font-family: 'Courier New', Courier, monospace;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Canvas for the "Hand" particle network */
+        #networkCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* The Glowing Heart */
+        .heart-container {
+            position: relative;
+            z-index: 10;
+            width: 150px;
+            height: 150px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .heart-container:active {
+            transform: scale(0.95);
+        }
+
+        .heart-svg {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 0 15px var(--neon-pink));
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .heart-path {
+            fill: none;
+            stroke: url(#heartGradient);
+            stroke-width: 3;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: rgba(255, 0, 255, 0.1);
+        }
+
+        /* ECG Line Container */
+        .ecg-container {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 100px;
+            transform: translateY(-50%);
+            z-index: 5;
+            pointer-events: none;
+            opacity: 0.6;
+        }
+
+        /* UI Dashboard */
+        .dashboard {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 20;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid var(--neon-cyan);
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(5px);
+            display: flex;
+            gap: 20px;
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.2);
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        label {
+            font-size: 12px;
+            color: var(--neon-cyan);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100px;
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 15px;
+            height: 15px;
+            background: var(--neon-cyan);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--neon-cyan);
+        }
+
+        .status-text {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 20;
+            color: var(--neon-green);
+            font-size: 14px;
+            text-shadow: 0 0 5px var(--neon-green);
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @keyframes pulse-anim {
+            0% { transform: scale(1); filter: drop-shadow(0 0 15px var(--neon-pink)); }
+            50% { transform: scale(1.1); filter: drop-shadow(0 0 25px var(--neon-pink)); }
+            100% { transform: scale(1); filter: drop-shadow(0 0 15px var(--neon-pink)); }
+        }
+
+        .pulsing {
+            animation: pulse-anim 0.8s infinite;
+        }
+
+        /* Instructions overlay */
+        .overlay-msg {
+            position: absolute;
+            top: 40%;
+            width: 100%;
+            text-align: center;
+            color: white;
+            opacity: 0.7;
+            pointer-events: none;
+            font-size: 0.9rem;
+            z-index: 2;
+            text-shadow: 0 0 10px rgba(255,255,255,0.5);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Canvas for the particle hand/network -->
+    <canvas id="networkCanvas"></canvas>
+
+    <div class="status-text">
+        SYSTEM STATUS: ONLINE<br>
+        BIO-LINK: STABLE<br>
+        <span id="bpmDisplay">BPM: 72</span>
+    </div>
+
+    <!-- The Glowing Heart -->
+    <div class="heart-container" id="heartContainer">
+        <svg class="heart-svg pulsing" viewBox="0 0 100 100">
+            <defs>
+                <linearGradient id="heartGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:var(--neon-cyan);stop-opacity:1" />
+                    <stop offset="50%" style="stop-color:white;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:var(--neon-pink);stop-opacity:1" />
+                </linearGradient>
+            </defs>
+            <!-- Wireframe Heart Shape -->
+            <path class="heart-path" d="M50 85 C 20 70 0 50 0 30 C 0 10 20 0 40 10 C 45 12 50 20 50 20 C 50 20 55 12 60 10 C 80 0 100 10 100 30 C 100 50 80 70 50 85 Z" />
+            <!-- Inner grid lines to look techy -->
+            <path d="M20 30 Q 50 40 80 30" stroke="rgba(255,255,255,0.5)" stroke-width="0.5" fill="none"/>
+            <path d="M30 50 Q 50 60 70 50" stroke="rgba(255,255,255,0.5)" stroke-width="0.5" fill="none"/>
+            <path d="M50 20 L 50 85" stroke="rgba(255,255,255,0.5)" stroke-width="0.5" fill="none" stroke-dasharray="2 2"/>
+        </svg>
+    </div>
+
+    <!-- ECG Line Overlay -->
+    <div class="ecg-container">
+        <canvas id="ecgCanvas"></canvas>
+    </div>
+
+    <div class="overlay-msg">Move mouse to guide the energy field. Click heart to sync.</div>
+
+    <!-- Controls -->
+    <div class="dashboard">
+        <div class="control-group">
+            <label>Coherence</label>
+            <input type="range" id="coherenceRange" min="10" max="200" value="100">
+        </div>
+        <div class="control-group">
+            <label>Pulse Rate</label>
+            <input type="range" id="pulseRange" min="0.5" max="3" step="0.1" value="1">
+        </div>
+        <div class="control-group">
+            <label>Energy</label>
+            <input type="range" id="energyRange" min="1" max="10" value="3">
+        </div>
+    </div>
+
+    <script>
+        /**
+         * CONCEPT:
+         * We recreate the "Hand holding Heart" image as a dynamic particle system.
+         * The particles (The Hand) swarm upwards from the bottom, attracted to the mouse but anchored below.
+         * The Heart is a central element that pulses.
+         * An ECG line visualizes the "life" of the system.
+         */
+
+        const canvas = document.getElementById('networkCanvas');
+        const ctx = canvas.getContext('2d');
+        const ecgCanvas = document.getElementById('ecgCanvas');
+        const ecgCtx = ecgCanvas.getContext('2d');
+        
+        let width, height;
+        let particles = [];
+        
+        // Settings
+        const config = {
+            particleCount: 150,
+            connectionDistance: 100,
+            mouseRadius: 200,
+            baseSpeed: 0.5,
+            colors: ['#00f3ff', '#ff00ff', '#ffe600', '#00ff66']
+        };
+
+        // UI Elements
+        const coherenceSlider = document.getElementById('coherenceRange');
+        const pulseSlider = document.getElementById('pulseRange');
+        const energySlider = document.getElementById('energyRange');
+        const heartSvg = document.querySelector('.heart-svg');
+        const bpmDisplay = document.getElementById('bpmDisplay');
+
+        // Mouse State
+        let mouse = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            ecgCanvas.width = window.innerWidth;
+            ecgCanvas.height = 100;
+            initParticles();
+        }
+
+        class Particle {
+            constructor() {
+                this.reset();
+                // Start at random positions initially so it doesn't explode from one point
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+            }
+
+            reset() {
+                // Spawn primarily at the bottom (The Hand base)
+                this.x = Math.random() * width;
+                this.y = height + Math.random() * 50; 
+                
+                // Velocity
+                this.vx = (Math.random() - 0.5) * config.baseSpeed;
+                this.vy = -(Math.random() * config.baseSpeed * 2 + 0.5); // Move upwards
+                
+                this.color = config.colors[Math.floor(Math.random() * config.colors.length)];
+                this.size = Math.random() * 3 + 1;
+                this.life = Math.random() * 100 + 100;
+            }
+
+            update() {
+                // Move
+                this.x += this.vx * (energySlider.value / 2);
+                this.y += this.vy * (energySlider.value / 2);
+                this.life--;
+
+                // Mouse Interaction (The Hand reaching for the heart/mouse)
+                let dx = mouse.x - this.x;
+                let dy = mouse.y - this.y;
+                let distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < config.mouseRadius) {
+                    // Attraction force
+                    let forceDirectionX = dx / distance;
+                    let forceDirectionY = dy / distance;
+                    let force = (config.mouseRadius - distance) / config.mouseRadius;
+                    
+                    // Gentle attraction to form a shape around the mouse/heart
+                    this.vx += forceDirectionX * force * 0.05;
+                    this.vy += forceDirectionY * force * 0.05;
+                }
+
+                // Friction
+                this.vx *= 0.98;
+                this.vy *= 0.98;
+
+                // Reset if out of bounds or dead
+                if (this.y < 0 || this.life <= 0 || this.x < 0 || this.x > width) {
+                    this.reset();
+                    // Bias reset towards center bottom to look like a wrist/arm
+                    this.x = (width / 2) + (Math.random() - 0.5) * 400;
+                }
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+            }
+        }
+
+        function initParticles() {
+            particles = [];
+            for (let i = 0; i < config.particleCount; i++) {
+                particles.push(new Particle());
+            }
+        }
+
+        function drawConnections() {
+            let maxDist = parseInt(coherenceSlider.value);
+            
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    let dx = particles[i].x - particles[j].x;
+                    let dy = particles[i].y - particles[j].y;
+                    let dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < maxDist) {
+                        ctx.beginPath();
+                        ctx.strokeStyle = `rgba(0, 243, 255, ${1 - dist/maxDist})`;
+                        ctx.lineWidth = 0.5;
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+
+        // --- ECG Logic ---
+        let ecgX = 0;
+        let ecgY = 50;
+        let lastEcgY = 50;
+        let lastTime = 0;
+
+        function drawECG(timestamp) {
+            ecgCtx.shadowBlur = 10;
+            ecgCtx.shadowColor = "var(--neon-pink)";
+            ecgCtx.strokeStyle = "#ff00ff";
+            ecgCtx.lineWidth = 2;
+            
+            // Fade out effect
+            ecgCtx.fillStyle = "rgba(5, 5, 16, 0.1)";
+            ecgCtx.fillRect(0, 0, ecgCanvas.width, ecgCanvas.height);
+
+            // Calculate speed based on slider
+            let speed = 2 * parseFloat(pulseSlider.value);
+            
+            ecgCtx.beginPath();
+            ecgCtx.moveTo(ecgX, lastEcgY);
+
+            // Generate Heartbeat pattern
+            // Simple logic: Flat -> P -> Q -> R (spike) -> S -> T -> Flat
+            // We use a modulo of time to trigger the spike
+            
+            let cycle = (timestamp * parseFloat(pulseSlider.value)) % 2000;
+            let y = 50;
+
+            if (cycle > 1800 && cycle < 1850) y = 45; // P wave
+            else if (cycle > 1880 && cycle < 1900) y = 55; // Q dip
+            else if (cycle > 1900 && cycle < 1940) y = 10; // R spike (UP)
+            else if (cycle > 1940 && cycle < 1960) y = 80; // S dip (DOWN)
+            else if (cycle > 1960 && cycle < 2000) y = 40; // T wave
+            
+            // Add some noise
+            y += (Math.random() - 0.5) * 4;
+
+            ecgX += speed;
+            ecgCtx.lineTo(ecgX, y);
+            ecgCtx.stroke();
+
+            lastEcgY = y;
+
+            if (ecgX > ecgCanvas.width) {
+                ecgX = 0;
+                ecgCtx.clearRect(0, 0, ecgCanvas.width, ecgCanvas.height);
+                ecgCtx.beginPath(); // Reset path
+            }
+        }
+
+        // --- Main Loop ---
+        function animate(timestamp) {
+            ctx.clearRect(0, 0, width, height);
+            
+            // Draw Stars (background static noise)
+            if(Math.random() > 0.9) {
+                ctx.fillStyle = 'white';
+                ctx.fillRect(Math.random()*width, Math.random()*height, 1, 1);
+            }
+
+            // Update & Draw Particles
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+
+            drawConnections();
+            drawECG(timestamp);
+
+            // Update Heart Pulse Speed
+            let duration = 1.5 / parseFloat(pulseSlider.value);
+            heartSvg.style.animationDuration = `${duration}s`;
+            
+            // Update BPM Text
+            let bpm = Math.round(60 * parseFloat(pulseSlider.value));
+            bpmDisplay.innerText = `BPM: ${bpm}`;
+
+            requestAnimationFrame(animate);
+        }
+
+        // --- Event Listeners ---
+        window.addEventListener('resize', resize);
+        window.addEventListener('mousemove', (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+        });
+
+        // Click to "Shock" the heart (add particles)
+        document.getElementById('heartContainer').addEventListener('click', (e) => {
+            // Create explosion of particles from center
+            for(let i=0; i<20; i++) {
+                let p = new Particle();
+                p.x = window.innerWidth/2;
+                p.y = window.innerHeight/2 - 50; // Near heart
+                p.vx = (Math.random() - 0.5) * 10;
+                p.vy = (Math.random() - 0.5) * 10;
+                p.color = '#ffffff';
+                particles.push(p);
+            }
+            
+            // Remove excess particles if too many
+            if(particles.length > 300) {
+                particles.splice(0, 20);
+            }
+            
+            // Visual feedback
+            heartSvg.style.filter = "drop-shadow(0 0 50px white)";
+            setTimeout(() => {
+                heartSvg.style.filter = "";
+            }, 100);
+        });
+
+        // Initialize
+        resize();
+        animate(0);
+
+    </script>
+</body>
+</html>

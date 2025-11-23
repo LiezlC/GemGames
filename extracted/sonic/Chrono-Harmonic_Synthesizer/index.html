@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chrono-Harmonic Synthesizer</title>
+    <style>
+        :root {
+            --primary-glow: #ffffff;
+            --secondary-glow: #ffaa00;
+            --bg-dark: #1a0500;
+            --bg-light: #ff4500;
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: radial-gradient(circle at 50% 30%, #ff8800, #550000, #1a0500);
+            font-family: 'Courier New', Courier, monospace;
+            color: white;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            perspective: 1000px;
+        }
+
+        /* UI Overlay */
+        #ui-layer {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 20px;
+            border: 1px solid var(--secondary-glow);
+            border-radius: 8px;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 0 20px rgba(255, 170, 0, 0.2);
+        }
+
+        h1 {
+            font-size: 1.2rem;
+            margin: 0 0 15px 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--secondary-glow);
+            text-shadow: 0 0 10px var(--secondary-glow);
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.8rem;
+            margin-bottom: 5px;
+            color: #ddd;
+        }
+
+        input[type="range"] {
+            width: 200px;
+            accent-color: var(--secondary-glow);
+        }
+
+        button {
+            background: transparent;
+            border: 1px solid var(--secondary-glow);
+            color: var(--secondary-glow);
+            padding: 8px 16px;
+            cursor: pointer;
+            font-family: inherit;
+            text-transform: uppercase;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: var(--secondary-glow);
+            color: #000;
+            box-shadow: 0 0 15px var(--secondary-glow);
+        }
+
+        /* The 3D Clock Base */
+        #clock-base {
+            position: relative;
+            width: 600px;
+            height: 600px;
+            transform-style: preserve-3d;
+            transform: rotateX(60deg) rotateZ(0deg);
+            transition: transform 0.1s;
+        }
+
+        .ring {
+            position: absolute;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 0 15px rgba(255, 170, 0, 0.5);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .outer-ring {
+            width: 580px;
+            height: 580px;
+            border: 4px double rgba(255, 255, 255, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: spin-slow 60s linear infinite;
+        }
+
+        .numeral {
+            position: absolute;
+            font-size: 2rem;
+            font-weight: bold;
+            color: rgba(255, 255, 255, 0.9);
+            text-shadow: 0 0 10px white;
+            transform-origin: center;
+        }
+
+        /* Gears */
+        .gear {
+            position: absolute;
+            fill: #333;
+            stroke: #ffaa00;
+            stroke-width: 1;
+            opacity: 0.8;
+        }
+
+        .gear-center {
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation: spin 10s linear infinite;
+        }
+
+        .gear-orbit {
+            top: 20%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation: spin-reverse 5s linear infinite;
+        }
+
+        .gear-orbit-2 {
+            top: 80%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation: spin-reverse 7s linear infinite;
+        }
+
+        /* The Waveform Canvas */
+        #wave-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Let clicks pass through to background if needed */
+            z-index: 50;
+            mix-blend-mode: screen;
+        }
+
+        @keyframes spin { 100% { transform: translate(-50%, -50%) rotate(360deg); } }
+        @keyframes spin-reverse { 100% { transform: translate(-50%, -50%) rotate(-360deg); } }
+        @keyframes spin-slow { 100% { transform: translate(-50%, -50%) rotate(360deg); } }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            #clock-base { width: 300px; height: 300px; }
+            .outer-ring { width: 290px; height: 290px; }
+            .numeral { font-size: 1rem; }
+            #ui-layer { bottom: 20px; top: auto; width: calc(100% - 80px); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- UI Controls -->
+    <div id="ui-layer">
+        <h1>Temporal Synthesizer</h1>
+        <div class="control-group">
+            <label>Wave Amplitude (Flux)</label>
+            <input type="range" id="amp" min="0" max="200" value="80">
+        </div>
+        <div class="control-group">
+            <label>Frequency (Resonance)</label>
+            <input type="range" id="freq" min="1" max="50" value="10">
+        </div>
+        <div class="control-group">
+            <label>Time Dilation (Speed)</label>
+            <input type="range" id="speed" min="0" max="10" step="0.1" value="2">
+        </div>
+        <button id="toggle-audio">Activate Audio Core</button>
+    </div>
+
+    <!-- 3D Clock Mechanical Layer -->
+    <div id="clock-base">
+        <!-- Outer Ring with Numerals -->
+        <div class="ring outer-ring" id="numeral-ring">
+            <!-- JS will populate numerals -->
+        </div>
+
+        <!-- Inner Decorative Rings -->
+        <div class="ring" style="width: 400px; height: 400px; border-style: dashed; opacity: 0.5;"></div>
+        <div class="ring" style="width: 200px; height: 200px; border: 1px solid #ffaa00;"></div>
+
+        <!-- Gears (SVG) -->
+        <!-- Center Gear -->
+        <svg class="gear gear-center" width="120" height="120" viewBox="0 0 100 100">
+            <path d="M50 0 L60 10 L70 0 L80 15 L95 10 L90 25 L100 35 L90 45 L100 55 L90 65 L100 75 L85 80 L80 95 L70 85 L60 95 L50 85 L40 95 L30 85 L20 95 L15 80 L0 75 L10 65 L0 55 L10 45 L0 35 L10 25 L5 10 L20 15 L30 0 L40 10 Z" fill="#222" stroke="#ffaa00" />
+            <circle cx="50" cy="50" r="15" fill="#444" />
+        </svg>
+
+        <!-- Orbiting Gear 1 -->
+        <svg class="gear gear-orbit" width="60" height="60" viewBox="0 0 100 100">
+            <path d="M50 10 L60 0 L70 10 L80 0 L90 15 L80 25 L95 35 L80 45 L95 55 L80 65 L90 75 L80 90 L70 80 L60 90 L50 80 L40 90 L30 80 L20 90 L10 75 L20 65 L5 55 L20 45 L5 35 L20 25 L10 15 L20 0 L30 10 L40 0 Z" fill="#222" stroke="#fff" />
+            <circle cx="50" cy="50" r="10" fill="#ffaa00" />
+        </svg>
+
+        <!-- Orbiting Gear 2 -->
+        <svg class="gear gear-orbit-2" width="80" height="80" viewBox="0 0 100 100">
+            <path d="M50 0 L60 10 L70 0 L80 15 L95 10 L90 25 L100 35 L90 45 L100 55 L90 65 L100 75 L85 80 L80 95 L70 85 L60 95 L50 85 L40 95 L30 85 L20 95 L15 80 L0 75 L10 65 L0 55 L10 45 L0 35 L10 25 L5 10 L20 15 L30 0 L40 10 Z" fill="#111" stroke="#ff4500" />
+        </svg>
+    </div>
+
+    <!-- Data Visualization Layer -->
+    <canvas id="wave-canvas"></canvas>
+
+    <script>
+        // --- Configuration ---
+        const canvas = document.getElementById('wave-canvas');
+        const ctx = canvas.getContext('2d');
+        const clockBase = document.getElementById('clock-base');
+        const numeralRing = document.getElementById('numeral-ring');
+        
+        // Controls
+        const ampSlider = document.getElementById('amp');
+        const freqSlider = document.getElementById('freq');
+        const speedSlider = document.getElementById('speed');
+        const audioBtn = document.getElementById('toggle-audio');
+
+        // State
+        let width, height;
+        let time = 0;
+        let audioCtx = null;
+        let oscillator = null;
+        let gainNode = null;
+        let isAudioActive = false;
+
+        // --- Initialization ---
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Create Roman Numerals
+        const numerals = ['XII', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI'];
+        const radius = 260; // Distance from center
+        numerals.forEach((num, index) => {
+            const el = document.createElement('div');
+            el.className = 'numeral';
+            el.innerText = num;
+            // Calculate position
+            const angle = (index * 30 - 90) * (Math.PI / 180);
+            const x = Math.cos(angle) * radius;
+            const y = Math.sin(angle) * radius;
+            
+            // We need to counter-rotate the text so it stands up? 
+            // Actually, in the image they lie flat. Let's keep them flat but rotated to face center.
+            el.style.transform = `translate(${x}px, ${y}px) rotate(${index * 30}deg)`;
+            numeralRing.appendChild(el);
+        });
+
+        // --- Audio System ---
+        function initAudio() {
+            if (audioCtx) return;
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            audioCtx = new AudioContext();
+            
+            oscillator = audioCtx.createOscillator();
+            gainNode = audioCtx.createGain();
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.value = 100; // Start low
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            oscillator.start();
+            gainNode.gain.value = 0; // Start silent
+            isAudioActive = true;
+            audioBtn.innerText = "Deactivate Audio";
+            audioBtn.style.background = "#ffaa00";
+            audioBtn.style.color = "#000";
+        }
+
+        function toggleAudio() {
+            if (!audioCtx) {
+                initAudio();
+                // Ramp up volume
+                gainNode.gain.setTargetAtTime(0.1, audioCtx.currentTime, 0.1);
+            } else {
+                if (gainNode.gain.value > 0) {
+                    gainNode.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
+                    audioBtn.innerText = "Activate Audio Core";
+                    audioBtn.style.background = "transparent";
+                    audioBtn.style.color = "#ffaa00";
+                } else {
+                    gainNode.gain.setTargetAtTime(0.1, audioCtx.currentTime, 0.1);
+                    audioBtn.innerText = "Deactivate Audio";
+                    audioBtn.style.background = "#ffaa00";
+                    audioBtn.style.color = "#000";
+                }
+            }
+        }
+
+        audioBtn.addEventListener('click', toggleAudio);
+
+        // --- Animation Loop ---
+
+        function draw() {
+            // Clear canvas
+            ctx.clearRect(0, 0, width, height);
+            
+            const amplitude = parseInt(ampSlider.value);
+            const frequency = parseInt(freqSlider.value);
+            const speed = parseFloat(speedSlider.value);
+
+            time += 0.01 * speed;
+
+            // Update Audio if active
+            if (audioCtx && gainNode.gain.value > 0) {
+                // Modulate pitch based on wave height/speed
+                const baseFreq = 100 + (amplitude * 2) + (frequency * 10);
+                // Add a slight LFO effect
+                const lfo = Math.sin(time * 2) * 20;
+                oscillator.frequency.setTargetAtTime(baseFreq + lfo, audioCtx.currentTime, 0.1);
+            }
+
+            // Visual Style
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = "white";
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.8)";
+            ctx.lineWidth = 2;
+
+            // Draw multiple "strings" of data
+            // We want them to look like they are rising from the clock
+            // The clock is tilted, so we need to simulate perspective manually for the waves
+            // or just draw them in 2D space overlaying the bottom half.
+            
+            const numLines = 20;
+            const centerX = width / 2;
+            const centerY = height / 2 + 100; // Lower down to match clock center roughly
+
+            for (let i = 0; i < numLines; i++) {
+                ctx.beginPath();
+                
+                // Create a spread of lines
+                const xOffset = (i - numLines/2) * (width / numLines * 0.8);
+                
+                // Gradient for the line color
+                const gradient = ctx.createLinearGradient(0, height, 0, 0);
+                gradient.addColorStop(0, "rgba(255, 170, 0, 0)");
+                gradient.addColorStop(0.5, "rgba(255, 255, 255, 0.8)");
+                gradient.addColorStop(1, "rgba(255, 170, 0, 0)");
+                ctx.strokeStyle = gradient;
+
+                for (let y = 0; y < height; y += 10) {
+                    // Calculate wave physics
+                    // We map Y (screen height) to a "Z" depth conceptually
+                    
+                    // The wave moves horizontally based on time and y-position
+                    const waveX = Math.sin(y * 0.01 * (frequency/10) + time + i) * amplitude;
+                    
+                    // Envelope: Make waves smaller at edges of screen, bigger in middle
+                    const envelope = Math.sin((y / height) * Math.PI); 
+                    
+                    const finalX = centerX + xOffset + (waveX * envelope);
+                    const finalY = y;
+
+                    if (y === 0) {
+                        ctx.moveTo(finalX, finalY);
+                    } else {
+                        ctx.lineTo(finalX, finalY);
+                    }
+                }
+                ctx.stroke();
+            }
+
+            // Draw "Particles" (The dots in the image)
+            ctx.fillStyle = "white";
+            for (let j = 0; j < 50; j++) {
+                const pTime = time * 0.5 + j;
+                const py = (pTime * 100) % height;
+                const px = centerX + Math.sin(pTime) * (width/3);
+                
+                // Only draw if near the waves
+                const waveX = Math.sin(py * 0.01 * (frequency/10) + time) * amplitude;
+                
+                ctx.beginPath();
+                ctx.arc(px + waveX, py, Math.random() * 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            requestAnimationFrame(draw);
+        }
+
+        // Start
+        draw();
+
+        // Interactive Tilt
+        // Allow user to slightly tilt the clock with mouse
+        document.addEventListener('mousemove', (e) => {
+            const x = (e.clientX / width - 0.5) * 20; // -10 to 10 deg
+            const y = (e.clientY / height - 0.5) * 20; 
+            
+            // Base rotation is X=60deg. We add the mouse influence.
+            clockBase.style.transform = `rotateX(${60 - y}deg) rotateY(${x}deg)`;
+        });
+
+    </script>
+</body>
+</html>

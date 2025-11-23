@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Driftwood Workshop OS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+
+        body {
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            font-family: 'VT323', monospace;
+            overflow: hidden;
+            height: 100vh;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* CRT Effect */
+        .crt::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 2;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+        }
+
+        .foil-ceiling {
+            background: repeating-linear-gradient(
+                45deg,
+                #5a5a5a,
+                #7a7a7a 10px,
+                #5a5a5a 20px
+            );
+            box-shadow: inset 0 0 100px #000;
+            opacity: 0.8;
+        }
+
+        .wood-texture {
+            background: #4a3b2a;
+            background-image: linear-gradient(90deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.1) 50%, transparent 50%), linear-gradient(rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.1) 50%, transparent 50%);
+            background-size: 20px 20px;
+        }
+
+        .monitor-screen {
+            background-color: #000;
+            border: 4px solid #333;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .monitor-text {
+            color: #0f0;
+            font-size: 12px;
+            white-space: pre;
+            animation: scrollUp 10s linear infinite;
+        }
+
+        @keyframes scrollUp {
+            0% { transform: translateY(100%); }
+            100% { transform: translateY(-100%); }
+        }
+
+        .wobble {
+            animation: wobble 2s infinite;
+        }
+
+        @keyframes wobble {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(1deg); }
+            75% { transform: rotate(-1deg); }
+        }
+
+        .hanging-item {
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .hanging-item:hover {
+            transform: scale(1.2) rotate(5deg);
+        }
+        .hanging-item:active {
+            transform: scale(0.9);
+        }
+
+        .fix-btn {
+            position: absolute;
+            background: rgba(255, 0, 0, 0.6);
+            border: 2px solid red;
+            color: white;
+            padding: 5px;
+            border-radius: 50%;
+            cursor: pointer;
+            animation: pulse 1s infinite;
+            font-size: 12px;
+            z-index: 10;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 0, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0); }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: #111; }
+        ::-webkit-scrollbar-thumb { background: #444; }
+    </style>
+</head>
+<body class="crt">
+
+    <!-- Header / HUD -->
+    <div class="bg-gray-900 border-b-2 border-gray-700 p-4 flex justify-between items-center z-10 relative shadow-lg">
+        <div>
+            <h1 class="text-2xl text-amber-500 tracking-widest">WORKSHOP_OS <span class="text-xs text-gray-500">v2.4.1</span></h1>
+            <div class="flex gap-4 text-sm mt-1">
+                <span id="temp-display">TEMP: 24°C</span>
+                <span id="humid-display">HUMID: 65%</span>
+                <span class="text-red-400" id="integrity-display">STRUCTURAL INTEGRITY: 45%</span>
+            </div>
+        </div>
+        <div class="text-right">
+            <div class="text-xs text-gray-400">OBJECTS CATALOGED</div>
+            <div class="text-xl text-green-400"><span id="score">0</span>/8</div>
+        </div>
+    </div>
+
+    <!-- Main Game Area -->
+    <div class="flex-grow relative overflow-hidden bg-gray-800 flex justify-center items-end perspective-1000">
+        
+        <!-- Background Wall -->
+        <div class="absolute inset-0 bg-gray-300 opacity-10 pointer-events-none"></div>
+
+        <!-- Ceiling Area (The Foil & Branches) -->
+        <div class="absolute top-0 left-0 w-full h-3/5 z-0">
+            <!-- Foil Insulation -->
+            <div class="absolute inset-0 foil-ceiling clip-polygon"></div>
+            
+            <!-- SVG Branches -->
+            <svg class="absolute inset-0 w-full h-full pointer-events-none" preserveAspectRatio="none">
+                <!-- Main Branch -->
+                <path d="M0,50 Q300,200 600,100 T1200,150" stroke="#5D4037" stroke-width="25" fill="none" stroke-linecap="round" />
+                <path d="M0,50 Q300,200 600,100 T1200,150" stroke="#8D6E63" stroke-width="20" fill="none" stroke-linecap="round" />
+                
+                <!-- Secondary Branch -->
+                <path d="M400,0 Q450,300 200,400" stroke="#5D4037" stroke-width="18" fill="none" stroke-linecap="round" />
+                
+                <!-- Cross Branch -->
+                <path d="M800,0 Q750,250 1000,300" stroke="#5D4037" stroke-width="15" fill="none" stroke-linecap="round" />
+                
+                <!-- Hanging Vines/Wires -->
+                <path d="M300,150 C300,300 350,300 350,450" stroke="#222" stroke-width="3" fill="none" stroke-dasharray="5,5" />
+                <path d="M900,120 C900,300 850,300 850,500" stroke="#222" stroke-width="3" fill="none" />
+            </svg>
+
+            <!-- Interactive "Fix" Points (Generated by JS) -->
+            <div id="fix-points-container" class="absolute inset-0"></div>
+            
+            <!-- Hanging Items -->
+            <div class="absolute top-1/3 left-1/4 hanging-item text-4xl" onclick="collectItem(this, 'Cowboy Hat')">🤠</div>
+            <div class="absolute top-1/2 left-1/3 hanging-item text-4xl" onclick="collectItem(this, 'Fedora')">🎩</div>
+            <div class="absolute top-1/4 right-1/4 hanging-item text-4xl" onclick="collectItem(this, 'Lantern')">🏮</div>
+            <div class="absolute top-1/2 right-1/3 hanging-item text-4xl" onclick="collectItem(this, 'Headphones')">🎧</div>
+        </div>
+
+        <!-- The Desk Area -->
+        <div class="relative w-full max-w-5xl h-2/5 flex items-end justify-center z-10">
+            
+            <!-- Left Shelf/Clutter -->
+            <div class="w-1/6 h-full flex flex-col justify-end mr-2">
+                <div class="bg-gray-700 h-4/5 w-full rounded-t-lg relative p-2 border-r-4 border-gray-900 flex flex-col gap-2 items-center">
+                    <!-- Red Bucket -->
+                    <div class="w-12 h-14 bg-red-600 rounded-b-lg shadow-lg hanging-item border-t-4 border-red-800" onclick="collectItem(this, 'Red Bucket')"></div>
+                    <!-- Bottles -->
+                    <div class="w-6 h-10 bg-amber-700 rounded-sm hanging-item" onclick="collectItem(this, 'Jar of Honey')"></div>
+                    <div class="w-8 h-12 bg-gray-500 rounded-sm hanging-item" onclick="collectItem(this, 'Spray Can')"></div>
+                </div>
+            </div>
+
+            <!-- Main Desk -->
+            <div class="w-3/5 h-3/4 bg-[#3e2723] relative shadow-2xl border-t-8 border-[#281a16] flex items-end justify-center p-4 gap-4">
+                
+                <!-- Laptop -->
+                <div class="relative w-1/3 h-32 flex flex-col items-center group cursor-pointer" onclick="interactScreen('laptop')">
+                    <div class="w-full h-24 bg-gray-800 border-4 border-gray-600 rounded-t-md monitor-screen p-1">
+                        <div class="monitor-text opacity-50 group-hover:opacity-100">
+                            > SYSTEM BOOT...<br>> CHECKING CEILING...<br>> WARNING: UNSTABLE<br>> DRIFTWOOD.EXE
+                        </div>
+                    </div>
+                    <div class="w-full h-2 bg-gray-700"></div> <!-- Hinge -->
+                    <div class="w-[110%] h-6 bg-gray-900 rounded-b-md transform skew-x-6 border-b-4 border-black"></div> <!-- Keyboard base -->
+                </div>
+
+                <!-- Large Monitor -->
+                <div class="relative w-1/2 h-48 flex flex-col items-center group cursor-pointer" onclick="interactScreen('main')">
+                    <div class="w-full h-40 bg-black border-8 border-gray-800 rounded-lg monitor-screen relative">
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <div id="main-screen-content" class="text-green-500 font-bold text-center animate-pulse">
+                                STANDBY
+                            </div>
+                        </div>
+                    </div>
+                    <div class="w-4 h-8 bg-gray-700"></div> <!-- Stand neck -->
+                    <div class="w-24 h-2 bg-gray-800 rounded-full"></div> <!-- Stand base -->
+                </div>
+
+            </div>
+
+            <!-- Right Drawer Unit -->
+            <div class="w-1/6 h-2/3 bg-[#5D4037] border-l-4 border-black flex flex-col ml-2 shadow-lg">
+                <div class="h-1/3 border-b-2 border-black bg-[#4E342E] relative hanging-item" onclick="collectItem(this, 'Drawer Key')">
+                    <div class="absolute top-1/2 left-1/2 w-3 h-3 bg-yellow-600 rounded-full transform -translate-x-1/2 -translate-y-1/2 shadow-sm"></div>
+                </div>
+                <div class="h-1/3 border-b-2 border-black bg-[#4E342E] relative">
+                    <div class="absolute top-1/2 left-1/2 w-3 h-3 bg-yellow-600 rounded-full transform -translate-x-1/2 -translate-y-1/2 shadow-sm"></div>
+                </div>
+                <div class="h-1/3 bg-[#4E342E] relative">
+                    <div class="absolute top-1/2 left-1/2 w-3 h-3 bg-yellow-600 rounded-full transform -translate-x-1/2 -translate-y-1/2 shadow-sm"></div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Notification Toast -->
+        <div id="toast" class="absolute top-20 left-1/2 transform -translate-x-1/2 bg-green-900 border border-green-500 text-green-100 px-6 py-2 rounded shadow-xl opacity-0 transition-opacity duration-500 pointer-events-none">
+            Item Found!
+        </div>
+
+    </div>
+
+    <!-- Modal / Overlay for Game Over or Win -->
+    <div id="overlay" class="absolute inset-0 bg-black bg-opacity-90 z-50 hidden flex flex-col items-center justify-center text-center">
+        <h2 class="text-4xl text-red-500 mb-4" id="overlay-title">CRITICAL FAILURE</h2>
+        <p class="text-xl mb-8" id="overlay-msg">The driftwood ceiling has collapsed.</p>
+        <button onclick="resetGame()" class="bg-green-700 hover:bg-green-600 text-white px-6 py-3 rounded font-bold text-xl border-2 border-green-400 shadow-[0_0_15px_rgba(0,255,0,0.5)]">
+            REBOOT SYSTEM
+        </button>
+    </div>
+
+    <script>
+        // Game State
+        let integrity = 45;
+        let itemsFound = 0;
+        let maxItems = 8;
+        let gameActive = true;
+        let temp = 24;
+        
+        // DOM Elements
+        const integrityDisplay = document.getElementById('integrity-display');
+        const scoreDisplay = document.getElementById('score');
+        const toast = document.getElementById('toast');
+        const overlay = document.getElementById('overlay');
+        const fixContainer = document.getElementById('fix-points-container');
+        const mainScreenContent = document.getElementById('main-screen-content');
+
+        // Audio Context (Simulated with visuals mostly, but placeholder for structure)
+        // We'll stick to visual feedback as per constraints to ensure no external assets fail.
+
+        function updateStats() {
+            if (!gameActive) return;
+
+            // Decay integrity
+            integrity -= 0.05; 
+            
+            // Fluctuate Temp
+            if(Math.random() > 0.9) temp += (Math.random() - 0.5);
+            
+            // Update DOM
+            document.getElementById('temp-display').innerText = `TEMP: ${temp.toFixed(1)}°C`;
+            
+            integrityDisplay.innerText = `STRUCTURAL INTEGRITY: ${Math.floor(integrity)}%`;
+            
+            // Visual Alarm
+            if (integrity < 30) {
+                integrityDisplay.classList.add('animate-pulse');
+                integrityDisplay.style.color = 'red';
+                document.body.style.boxShadow = 'inset 0 0 50px rgba(255,0,0,0.2)';
+            } else {
+                integrityDisplay.classList.remove('animate-pulse');
+                integrityDisplay.style.color = integrity > 70 ? '#4ade80' : '#f87171';
+                document.body.style.boxShadow = 'none';
+            }
+
+            // Lose Condition
+            if (integrity <= 0) {
+                endGame(false);
+            }
+
+            requestAnimationFrame(updateStats);
+        }
+
+        // Generate Fix Points
+        function spawnFixPoint() {
+            if (!gameActive) return;
+            
+            const btn = document.createElement('div');
+            btn.className = 'fix-btn';
+            btn.innerText = '⚠️ FIX';
+            
+            // Random Position within the ceiling area
+            const top = Math.random() * 50 + 5; // 5% to 55%
+            const left = Math.random() * 90 + 5; // 5% to 95%
+            
+            btn.style.top = top + '%';
+            btn.style.left = left + '%';
+            
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                repair(btn);
+            };
+            
+            fixContainer.appendChild(btn);
+            
+            // Remove after 3 seconds if not clicked
+            setTimeout(() => {
+                if (btn.parentNode) btn.remove();
+            }, 3000);
+
+            // Schedule next spawn
+            setTimeout(spawnFixPoint, Math.random() * 2000 + 1000);
+        }
+
+        function repair(element) {
+            integrity = Math.min(100, integrity + 15);
+            element.remove();
+            showToast("Structure Reinforced +15%");
+            triggerScreenGlitch();
+        }
+
+        function collectItem(element, name) {
+            if (element.getAttribute('data-collected') === 'true') return;
+            
+            element.style.opacity = '0.3';
+            element.style.pointerEvents = 'none';
+            element.setAttribute('data-collected', 'true');
+            
+            itemsFound++;
+            scoreDisplay.innerText = itemsFound;
+            
+            showToast(`Cataloged: ${name}`);
+            
+            if (itemsFound === maxItems) {
+                endGame(true);
+            }
+        }
+
+        function showToast(msg) {
+            toast.innerText = msg;
+            toast.style.opacity = '1';
+            setTimeout(() => {
+                toast.style.opacity = '0';
+            }, 2000);
+        }
+
+        function interactScreen(type) {
+            if (type === 'laptop') {
+                showToast("Running Diagnostics...");
+                integrity += 5; // Small boost
+            } else {
+                const messages = ["NO SIGNAL", "CAMERA 1", "CAMERA 2", "SYSTEM OK"];
+                const msg = messages[Math.floor(Math.random() * messages.length)];
+                mainScreenContent.innerText = msg;
+            }
+        }
+
+        function triggerScreenGlitch() {
+            mainScreenContent.innerText = "RECALIBRATING...";
+            setTimeout(() => {
+                mainScreenContent.innerText = "SYSTEM STABLE";
+            }, 500);
+        }
+
+        function endGame(win) {
+            gameActive = false;
+            overlay.classList.remove('hidden');
+            overlay.classList.add('flex');
+            
+            const title = document.getElementById('overlay-title');
+            const msg = document.getElementById('overlay-msg');
+            
+            if (win) {
+                title.innerText = "WORKSHOP SECURE";
+                title.className = "text-4xl text-green-500 mb-4";
+                msg.innerText = "All items cataloged. Structural integrity stable.";
+            } else {
+                title.innerText = "CRITICAL FAILURE";
+                title.className = "text-4xl text-red-500 mb-4";
+                msg.innerText = "The ceiling collapsed. Too much entropy.";
+            }
+        }
+
+        function resetGame() {
+            integrity = 50;
+            itemsFound = 0;
+            scoreDisplay.innerText = '0';
+            gameActive = true;
+            overlay.classList.add('hidden');
+            overlay.classList.remove('flex');
+            
+            // Reset items
+            document.querySelectorAll('.hanging-item').forEach(el => {
+                el.style.opacity = '1';
+                el.style.pointerEvents = 'auto';
+                el.removeAttribute('data-collected');
+            });
+            
+            fixContainer.innerHTML = '';
+            
+            updateStats();
+            spawnFixPoint();
+        }
+
+        // Start
+        updateStats();
+        spawnFixPoint();
+
+    </script>
+</body>
+</html>

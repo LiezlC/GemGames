@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon City Overgrowth</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --neon-pink: #ff2a6d;
+            --neon-cyan: #05d9e8;
+            --neon-purple: #d23be7;
+            --dark-bg: #01012b;
+            --grid-line: rgba(5, 217, 232, 0.2);
+        }
+
+        body {
+            background-color: var(--dark-bg);
+            color: white;
+            font-family: 'Courier New', Courier, monospace;
+            overflow: hidden;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Background Animation */
+        .bg-grid {
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            top: -50%;
+            left: -50%;
+            background-image: 
+                linear-gradient(var(--grid-line) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+            background-size: 40px 40px;
+            transform: perspective(500px) rotateX(60deg);
+            animation: grid-move 20s linear infinite;
+            z-index: -1;
+            opacity: 0.3;
+        }
+
+        @keyframes grid-move {
+            0% { transform: perspective(500px) rotateX(60deg) translateY(0); }
+            100% { transform: perspective(500px) rotateX(60deg) translateY(40px); }
+        }
+
+        /* Game Container */
+        #game-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 1000px;
+            overflow: hidden;
+        }
+
+        #city-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            gap: 8px;
+            width: 600px;
+            height: 600px;
+            transform: rotateX(45deg) rotateZ(-45deg);
+            transform-style: preserve-3d;
+            transition: transform 0.5s ease;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid var(--neon-purple);
+            box-shadow: 0 0 20px var(--neon-purple);
+        }
+
+        .tile {
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            cursor: pointer;
+            transition: background 0.2s;
+            transform-style: preserve-3d;
+        }
+
+        .tile:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: var(--neon-cyan);
+        }
+
+        /* Structures */
+        .structure {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%) translateZ(20px) rotateX(-90deg); /* Stand up */
+            transform-origin: bottom center;
+            pointer-events: none;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+        }
+
+        /* Building: Skyscraper */
+        .b-tower {
+            width: 40px;
+            height: 80px;
+            background: linear-gradient(180deg, #1a1a40 0%, #000 100%);
+            border: 1px solid var(--neon-cyan);
+            box-shadow: 0 0 10px var(--neon-cyan);
+            position: relative;
+        }
+        .b-tower::after {
+            content: '';
+            position: absolute;
+            top: 10%;
+            left: 20%;
+            width: 60%;
+            height: 80%;
+            background-image: linear-gradient(var(--neon-cyan) 1px, transparent 1px);
+            background-size: 10px 10px;
+            opacity: 0.5;
+        }
+
+        /* Building: Hab Block */
+        .b-hab {
+            width: 50px;
+            height: 40px;
+            background: #222;
+            border: 1px solid #fff;
+            border-top: 2px solid var(--neon-pink);
+            box-shadow: 0 0 5px var(--neon-pink);
+        }
+
+        /* Plant: Neon Fern */
+        .p-fern {
+            width: 40px;
+            height: 40px;
+            filter: drop-shadow(0 0 5px var(--neon-pink));
+        }
+        .p-fern svg {
+            fill: var(--neon-pink);
+            animation: pulse 2s infinite;
+        }
+
+        /* Plant: Data Tree */
+        .p-tree {
+            width: 50px;
+            height: 60px;
+            filter: drop-shadow(0 0 8px var(--neon-cyan));
+        }
+        .p-tree svg {
+            fill: var(--neon-cyan);
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.8; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.1); }
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        /* UI Overlay */
+        .ui-panel {
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid var(--neon-cyan);
+            backdrop-filter: blur(5px);
+            box-shadow: 0 0 15px rgba(5, 217, 232, 0.3);
+        }
+
+        .tool-btn {
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+        .tool-btn:hover {
+            border-color: white;
+            transform: translateY(-2px);
+        }
+        .tool-btn.active {
+            background: rgba(5, 217, 232, 0.2);
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 10px var(--neon-cyan);
+        }
+
+        .resource-pill {
+            background: rgba(0,0,0,0.6);
+            border: 1px solid #333;
+            padding: 4px 12px;
+            border-radius: 999px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Particles */
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            animation: rise 1s forwards;
+            font-weight: bold;
+            text-shadow: 0 0 5px currentColor;
+            z-index: 100;
+        }
+        @keyframes rise {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-50px) scale(1.5); opacity: 0; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="bg-grid"></div>
+
+    <!-- Top HUD -->
+    <div class="absolute top-0 left-0 w-full p-4 flex justify-between items-start z-10 pointer-events-none">
+        <div class="pointer-events-auto">
+            <h1 class="text-3xl font-bold tracking-tighter" style="text-shadow: 0 0 10px var(--neon-pink);">
+                NEON<span style="color:var(--neon-cyan)">GARDEN</span>
+            </h1>
+            <p class="text-xs text-gray-400">Balance Nature & Tech</p>
+        </div>
+        
+        <div class="flex gap-4 pointer-events-auto">
+            <div class="resource-pill border-pink-500 text-pink-400">
+                <span>🌸 BIO-ENERGY:</span>
+                <span id="res-bio" class="font-bold text-white text-xl">100</span>
+            </div>
+            <div class="resource-pill border-cyan-500 text-cyan-400">
+                <span>⚡ CYBER-POWER:</span>
+                <span id="res-tech" class="font-bold text-white text-xl">50</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Game View -->
+    <div id="game-container">
+        <div id="city-grid">
+            <!-- Tiles generated by JS -->
+        </div>
+    </div>
+
+    <!-- Bottom Controls -->
+    <div class="absolute bottom-0 w-full p-6 flex justify-center z-10">
+        <div class="ui-panel rounded-xl p-4 flex gap-4 items-center">
+            
+            <div class="flex flex-col items-center gap-1">
+                <span class="text-xs text-gray-400 uppercase tracking-widest">Nature</span>
+                <div class="flex gap-2">
+                    <button onclick="selectTool('fern')" id="btn-fern" class="tool-btn w-16 h-16 rounded bg-gray-900 flex flex-col items-center justify-center relative group">
+                        <svg viewBox="0 0 24 24" class="w-8 h-8 fill-pink-500 drop-shadow-lg"><path d="M12 2C12 2 14 6 14 10C14 14 12 22 12 22C12 22 10 14 10 10C10 6 12 2 12 2ZM12 22C12 22 16 18 18 14C20 10 18 6 18 6C18 6 16 8 16 11C16 14 12 22 12 22ZM12 22C12 22 8 18 6 14C4 10 6 6 6 6C6 6 8 8 8 11C8 14 12 22 12 22Z"/></svg>
+                        <span class="text-[10px] mt-1 text-pink-300">Fern</span>
+                        <div class="absolute -top-8 bg-black text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition">Cost: 10⚡ Gen: 2🌸</div>
+                    </button>
+
+                    <button onclick="selectTool('tree')" id="btn-tree" class="tool-btn w-16 h-16 rounded bg-gray-900 flex flex-col items-center justify-center relative group">
+                        <svg viewBox="0 0 24 24" class="w-8 h-8 fill-cyan-300 drop-shadow-lg"><path d="M12 2L15 8H9L12 2ZM12 22V16M8 16H16V18H8V16ZM5 12H19V14H5V12ZM10 10H14V12H10V10Z"/></svg>
+                        <span class="text-[10px] mt-1 text-cyan-200">Data Tree</span>
+                        <div class="absolute -top-8 bg-black text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition">Cost: 30⚡ Gen: 5🌸</div>
+                    </button>
+                </div>
+            </div>
+
+            <div class="w-px h-12 bg-gray-700 mx-2"></div>
+
+            <div class="flex flex-col items-center gap-1">
+                <span class="text-xs text-gray-400 uppercase tracking-widest">Tech</span>
+                <div class="flex gap-2">
+                    <button onclick="selectTool('hab')" id="btn-hab" class="tool-btn w-16 h-16 rounded bg-gray-900 flex flex-col items-center justify-center relative group">
+                        <div class="w-6 h-4 border border-white bg-gray-700 border-t-pink-500"></div>
+                        <span class="text-[10px] mt-1 text-gray-300">Hab</span>
+                        <div class="absolute -top-8 bg-black text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition">Cost: 15🌸 Gen: 3⚡</div>
+                    </button>
+
+                    <button onclick="selectTool('tower')" id="btn-tower" class="tool-btn w-16 h-16 rounded bg-gray-900 flex flex-col items-center justify-center relative group">
+                        <div class="w-4 h-8 border border-cyan-400 bg-black shadow-[0_0_5px_cyan]"></div>
+                        <span class="text-[10px] mt-1 text-gray-300">Tower</span>
+                        <div class="absolute -top-8 bg-black text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition">Cost: 50🌸 Gen: 8⚡</div>
+                    </button>
+                </div>
+            </div>
+
+            <div class="w-px h-12 bg-gray-700 mx-2"></div>
+
+            <button onclick="selectTool('demolish')" id="btn-demolish" class="tool-btn w-12 h-12 rounded bg-red-900/50 border border-red-500 flex items-center justify-center text-red-500 hover:bg-red-900">
+                ✕
+            </button>
+
+        </div>
+    </div>
+
+    <script>
+        // Game State
+        const state = {
+            bio: 150,
+            tech: 150,
+            gridSize: 8,
+            grid: [],
+            selectedTool: null,
+            tickRate: 1000 // 1 second
+        };
+
+        // Item Definitions
+        const items = {
+            fern: { 
+                type: 'nature', costType: 'tech', cost: 10, genType: 'bio', gen: 2, 
+                html: `<div class="structure p-fern"><svg viewBox="0 0 24 24"><path d="M12 2C12 2 14 6 14 10C14 14 12 22 12 22C12 22 10 14 10 10C10 6 12 2 12 2ZM12 22C12 22 16 18 18 14C20 10 18 6 18 6C18 6 16 8 16 11C16 14 12 22 12 22ZM12 22C12 22 8 18 6 14C4 10 6 6 6 6C6 6 8 8 8 11C8 14 12 22 12 22Z"/></svg></div>` 
+            },
+            tree: { 
+                type: 'nature', costType: 'tech', cost: 30, genType: 'bio', gen: 5,
+                html: `<div class="structure p-tree"><svg viewBox="0 0 24 24"><path d="M12 2L15 8H9L12 2ZM12 22V16M8 16H16V18H8V16ZM5 12H19V14H5V12ZM10 10H14V12H10V10Z"/></svg></div>`
+            },
+            hab: { 
+                type: 'tech', costType: 'bio', cost: 15, genType: 'tech', gen: 3,
+                html: `<div class="structure b-hab"></div>`
+            },
+            tower: { 
+                type: 'tech', costType: 'bio', cost: 50, genType: 'tech', gen: 8,
+                html: `<div class="structure b-tower"></div>`
+            }
+        };
+
+        // Initialization
+        function init() {
+            const gridEl = document.getElementById('city-grid');
+            
+            // Create Grid
+            for (let i = 0; i < state.gridSize * state.gridSize; i++) {
+                const tile = document.createElement('div');
+                tile.className = 'tile';
+                tile.dataset.index = i;
+                tile.onclick = () => handleTileClick(i);
+                gridEl.appendChild(tile);
+                state.grid.push(null);
+            }
+
+            // Start Loop
+            setInterval(gameLoop, state.tickRate);
+            updateUI();
+            
+            // Pre-populate a few items for visual flair
+            placeItem(10, 'tower', true);
+            placeItem(11, 'fern', true);
+            placeItem(18, 'hab', true);
+            placeItem(19, 'fern', true);
+            placeItem(27, 'tree', true);
+        }
+
+        function selectTool(tool) {
+            state.selectedTool = tool;
+            
+            // Update UI classes
+            document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+            if(tool) {
+                document.getElementById(`btn-${tool}`).classList.add('active');
+            }
+        }
+
+        function handleTileClick(index) {
+            if (!state.selectedTool) return;
+
+            const tile = document.querySelectorAll('.tile')[index];
+
+            if (state.selectedTool === 'demolish') {
+                if (state.grid[index]) {
+                    state.grid[index] = null;
+                    tile.innerHTML = '';
+                    spawnParticle(tile, "Demolished", "#ff0000");
+                }
+                return;
+            }
+
+            // Check if occupied
+            if (state.grid[index]) {
+                spawnParticle(tile, "Occupied!", "red");
+                return;
+            }
+
+            const item = items[state.selectedTool];
+            
+            // Check Cost
+            if (state[item.costType] >= item.cost) {
+                // Deduct Cost
+                state[item.costType] -= item.cost;
+                placeItem(index, state.selectedTool);
+                updateUI();
+                
+                // Visual Feedback
+                const color = item.costType === 'bio' ? '#ff2a6d' : '#05d9e8';
+                spawnParticle(tile, `-${item.cost}`, color);
+            } else {
+                const color = item.costType === 'bio' ? '#ff2a6d' : '#05d9e8';
+                spawnParticle(tile, "Need Resources!", color);
+            }
+        }
+
+        function placeItem(index, type, free = false) {
+            state.grid[index] = type;
+            const tile = document.querySelectorAll('.tile')[index];
+            tile.innerHTML = items[type].html;
+            
+            // Add entrance animation
+            const struct = tile.querySelector('.structure');
+            struct.style.transform = 'translateX(-50%) translateZ(0px) rotateX(-90deg) scale(0)';
+            setTimeout(() => {
+                struct.style.transition = 'transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+                struct.style.transform = 'translateX(-50%) translateZ(20px) rotateX(-90deg) scale(1)';
+            }, 50);
+        }
+
+        function gameLoop() {
+            let bioGen = 0;
+            let techGen = 0;
+
+            state.grid.forEach((itemType, index) => {
+                if (itemType) {
+                    const item = items[itemType];
+                    if (item.genType === 'bio') bioGen += item.gen;
+                    if (item.genType === 'tech') techGen += item.gen;
+
+                    // Random chance to spawn a floating particle above producer
+                    if(Math.random() > 0.7) {
+                        const tile = document.querySelectorAll('.tile')[index];
+                        const color = item.genType === 'bio' ? '#ff2a6d' : '#05d9e8';
+                        spawnParticle(tile, `+${item.gen}`, color, true);
+                    }
+                }
+            });
+
+            state.bio += bioGen;
+            state.tech += techGen;
+            updateUI();
+        }
+
+        function updateUI() {
+            document.getElementById('res-bio').innerText = state.bio;
+            document.getElementById('res-tech').innerText = state.tech;
+
+            // Check button affordability
+            for (const [key, item] of Object.entries(items)) {
+                const btn = document.getElementById(`btn-${key}`);
+                if (state[item.costType] < item.cost) {
+                    btn.style.opacity = '0.5';
+                } else {
+                    btn.style.opacity = '1';
+                }
+            }
+        }
+
+        function spawnParticle(parent, text, color, small = false) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            p.innerText = text;
+            p.style.color = color;
+            p.style.left = '50%';
+            p.style.top = '50%';
+            p.style.transform = 'translate(-50%, -50%)';
+            if (small) {
+                p.style.fontSize = '10px';
+                p.style.textShadow = 'none';
+            }
+            
+            // We need to append to the tile, but the tile is rotated in 3D.
+            // To make text readable, we counter-rotate or just append to a screen-space overlay.
+            // For simplicity in this 3D CSS setup, we append to tile and let it float up in 3D space.
+            // Since the tile is rotated X and Z, we need to adjust the particle transform.
+            
+            // Actually, let's append to the tile but use transform to face camera roughly
+            p.style.transform = 'translate(-50%, -50%) rotateX(-90deg)'; // Face up relative to tile
+            
+            parent.appendChild(p);
+            setTimeout(() => p.remove(), 1000);
+        }
+
+        // Mouse interaction for rotation (simple tilt)
+        const container = document.getElementById('game-container');
+        document.addEventListener('mousemove', (e) => {
+            const x = (window.innerWidth / 2 - e.clientX) / 50;
+            const y = (window.innerHeight / 2 - e.clientY) / 50;
+            const grid = document.getElementById('city-grid');
+            // Base rotation is rotateX(45deg) rotateZ(-45deg)
+            // We add slight variation
+            grid.style.transform = `rotateX(${45 + y}deg) rotateZ(${-45 + x}deg)`;
+        });
+
+        init();
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cosmic Renaissance Composer</title>
+    <style>
+        :root {
+            --space-black: #050508;
+            --nebula-purple: #6a0dad;
+            --gold: #ffd700;
+            --marble: #f0f0f0;
+            --cyan: #00f7ff;
+            --rose: #ff0055;
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: var(--space-black);
+            font-family: 'Courier New', Courier, monospace;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            user-select: none;
+        }
+
+        /* Background Stars */
+        #starfield {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* The Central Core (The "Big Bang" from the image) */
+        .core-container {
+            position: relative;
+            width: 600px;
+            height: 600px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .sun {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #fff 0%, #ffd700 40%, transparent 80%);
+            box-shadow: 0 0 60px 20px rgba(255, 215, 0, 0.4);
+            position: absolute;
+            z-index: 20;
+            animation: pulse 3s infinite ease-in-out;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .sun:active {
+            transform: scale(0.95);
+        }
+
+        .sun-label {
+            position: absolute;
+            color: rgba(255,255,255,0.7);
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            pointer-events: none;
+            text-align: center;
+        }
+
+        /* Orbit Rings */
+        .orbit {
+            position: absolute;
+            border: 1px dashed rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            pointer-events: none;
+            transition: border-color 0.5s;
+        }
+
+        .orbit.active {
+            border-color: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 0 20px rgba(255,255,255,0.05);
+        }
+
+        /* The Elements (Planets/Muses) */
+        .element-wrapper {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .element {
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(4px);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            position: absolute;
+            transform: translate(-50%, -50%); /* Center on the orbit point */
+        }
+
+        .element:hover {
+            transform: translate(-50%, -50%) scale(1.2);
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .element.active {
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 0 30px currentColor;
+            animation: shake 0.5s infinite;
+        }
+
+        /* Specific Styles for Elements based on image analysis */
+        .element[data-type="music"] { color: var(--nebula-purple); } /* The Cloud Note */
+        .element[data-type="sculpture"] { color: var(--marble); text-shadow: 0 0 5px black; } /* The Bust */
+        .element[data-type="flow"] { color: var(--cyan); } /* The Blue Wave */
+        .element[data-type="nature"] { color: var(--rose); } /* The Rose */
+        .element[data-type="gold"] { color: var(--gold); } /* The Gold Abstract */
+
+        /* Start Overlay */
+        #overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            transition: opacity 1s;
+        }
+
+        h1 {
+            font-family: 'Times New Roman', serif;
+            font-size: 3rem;
+            background: linear-gradient(to right, #fff, #ffd700);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        p {
+            color: #aaa;
+            margin-bottom: 30px;
+            max-width: 400px;
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        button.start-btn {
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            background: transparent;
+            color: var(--gold);
+            border: 2px solid var(--gold);
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: 'Courier New', Courier, monospace;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        button.start-btn:hover {
+            background: var(--gold);
+            color: black;
+            box-shadow: 0 0 30px var(--gold);
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes shake {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            25% { transform: translate(-50%, -50%) rotate(5deg); }
+            75% { transform: translate(-50%, -50%) rotate(-5deg); }
+            100% { transform: translate(-50%, -50%) rotate(0deg); }
+        }
+
+        /* Canvas for Rays */
+        #rays-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Audio Setup (Invisible) -->
+    <!-- We use Web Audio API in JS -->
+
+    <div id="overlay">
+        <h1>COSMIC HARMONY</h1>
+        <p>The universe is an orchestra. Click the orbiting artifacts to assemble the symphony of creation.</p>
+        <button class="start-btn" onclick="startExperience()">Ignite The Core</button>
+    </div>
+
+    <canvas id="starfield"></canvas>
+    <canvas id="rays-canvas"></canvas>
+
+    <div class="core-container">
+        <!-- The Central Sun -->
+        <div class="sun" id="sun"></div>
+        <div class="sun-label">THE SOURCE</div>
+
+        <!-- Orbits will be generated by JS -->
+    </div>
+
+    <script>
+        // --- Configuration ---
+        const elements = [
+            { id: 1, icon: '🎵', type: 'music', orbitRadius: 140, speed: 20, note: 261.63, wave: 'sine', label: 'Melody' }, // C4
+            { id: 2, icon: '🗿', type: 'sculpture', orbitRadius: 180, speed: 35, note: 130.81, wave: 'square', label: 'Bass' }, // C3
+            { id: 3, icon: '🌊', type: 'flow', orbitRadius: 220, speed: 25, note: 329.63, wave: 'triangle', label: 'Flow' }, // E4
+            { id: 4, icon: '🌹', type: 'nature', orbitRadius: 260, speed: 45, note: 392.00, wave: 'sine', label: 'Life' }, // G4
+            { id: 5, icon: '🔱', type: 'gold', orbitRadius: 300, speed: 60, note: 523.25, wave: 'sawtooth', label: 'Power' } // C5
+        ];
+
+        let audioCtx;
+        let isRunning = false;
+        const activeNodes = {}; // Store audio nodes
+        const activeElements = new Set(); // Store IDs of active elements
+
+        // --- Initialization ---
+        function startExperience() {
+            const overlay = document.getElementById('overlay');
+            overlay.style.opacity = '0';
+            setTimeout(() => overlay.remove(), 1000);
+
+            // Init Audio Context
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            audioCtx = new AudioContext();
+            
+            // Start Master Compressor/Limiter to prevent clipping
+            const compressor = audioCtx.createDynamicsCompressor();
+            compressor.connect(audioCtx.destination);
+
+            isRunning = true;
+            initOrbits();
+            animate();
+            initStars();
+        }
+
+        // --- DOM Generation ---
+        function initOrbits() {
+            const container = document.querySelector('.core-container');
+
+            elements.forEach(el => {
+                // Create Orbit Ring
+                const orbitRing = document.createElement('div');
+                orbitRing.className = 'orbit';
+                orbitRing.style.width = `${el.orbitRadius * 2}px`;
+                orbitRing.style.height = `${el.orbitRadius * 2}px`;
+                orbitRing.style.top = `calc(50% - ${el.orbitRadius}px)`;
+                orbitRing.style.left = `calc(50% - ${el.orbitRadius}px)`;
+                container.appendChild(orbitRing);
+
+                // Create Wrapper for Rotation
+                const wrapper = document.createElement('div');
+                wrapper.className = 'element-wrapper';
+                wrapper.style.animation = `spin ${el.speed}s linear infinite`;
+                container.appendChild(wrapper);
+
+                // Create Element Icon
+                const item = document.createElement('div');
+                item.className = 'element';
+                item.innerHTML = el.icon;
+                item.dataset.type = el.type;
+                item.dataset.id = el.id;
+                // Position based on radius (wrapper rotates, item sits at radius)
+                item.style.marginTop = `-${el.orbitRadius}px`; 
+                
+                // Interaction
+                item.addEventListener('click', (e) => toggleElement(el, item, orbitRing));
+
+                wrapper.appendChild(item);
+                
+                // Store reference for animation loop
+                el.domElement = item;
+                el.wrapper = wrapper;
+            });
+        }
+
+        // --- Audio Logic ---
+        function toggleElement(data, domNode, orbitRing) {
+            if (activeElements.has(data.id)) {
+                // Deactivate
+                activeElements.delete(data.id);
+                domNode.classList.remove('active');
+                orbitRing.classList.remove('active');
+                stopSound(data.id);
+            } else {
+                // Activate
+                activeElements.add(data.id);
+                domNode.classList.add('active');
+                orbitRing.classList.add('active');
+                playSound(data);
+            }
+        }
+
+        function playSound(data) {
+            if (!audioCtx) return;
+
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            const filter = audioCtx.createBiquadFilter();
+
+            osc.type = data.wave;
+            osc.frequency.value = data.note;
+
+            // Filter for smoother sound
+            filter.type = 'lowpass';
+            filter.frequency.value = 1000;
+
+            // Envelope
+            gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime + 0.5); // Fade in
+
+            // LFO for tremolo effect (makes it sound more "cosmic")
+            const lfo = audioCtx.createOscillator();
+            lfo.type = 'sine';
+            lfo.frequency.value = 2; // 2Hz wobble
+            const lfoGain = audioCtx.createGain();
+            lfoGain.gain.value = 5; // Depth of wobble
+            lfo.connect(lfoGain);
+            lfoGain.connect(osc.frequency);
+            lfo.start();
+
+            osc.connect(filter);
+            filter.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            osc.start();
+
+            activeNodes[data.id] = { osc, gainNode, lfo };
+        }
+
+        function stopSound(id) {
+            if (activeNodes[id]) {
+                const { osc, gainNode, lfo } = activeNodes[id];
+                // Fade out
+                gainNode.gain.setValueAtTime(gainNode.gain.value, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1);
+                
+                setTimeout(() => {
+                    osc.stop();
+                    lfo.stop();
+                    osc.disconnect();
+                }, 1000);
+                
+                delete activeNodes[id];
+            }
+        }
+
+        // --- Visuals (Canvas) ---
+        const canvas = document.getElementById('rays-canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+
+        function resizeCanvas() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+            
+            // Starfield canvas
+            const starCanvas = document.getElementById('starfield');
+            starCanvas.width = width;
+            starCanvas.height = height;
+            initStars();
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Starfield Logic
+        function initStars() {
+            const starCanvas = document.getElementById('starfield');
+            const sCtx = starCanvas.getContext('2d');
+            sCtx.clearRect(0, 0, width, height);
+            sCtx.fillStyle = 'white';
+            for(let i=0; i<200; i++) {
+                const x = Math.random() * width;
+                const y = Math.random() * height;
+                const size = Math.random() * 2;
+                const opacity = Math.random();
+                sCtx.globalAlpha = opacity;
+                sCtx.beginPath();
+                sCtx.arc(x, y, size, 0, Math.PI*2);
+                sCtx.fill();
+            }
+        }
+
+        // Animation Loop
+        function animate() {
+            if (!isRunning) return;
+
+            ctx.clearRect(0, 0, width, height);
+            
+            const centerX = width / 2;
+            const centerY = height / 2;
+
+            // Draw connecting energy beams
+            elements.forEach(el => {
+                if (activeElements.has(el.id)) {
+                    // Calculate position of the rotating element
+                    // We need to get the bounding rect because the CSS transform handles the rotation
+                    const rect = el.domElement.getBoundingClientRect();
+                    const elX = rect.left + rect.width / 2;
+                    const elY = rect.top + rect.height / 2;
+
+                    // Draw Beam
+                    const gradient = ctx.createLinearGradient(centerX, centerY, elX, elY);
+                    gradient.addColorStop(0, 'rgba(255, 215, 0, 0.8)'); // Gold at center
+                    
+                    // Color based on type
+                    let color = 'rgba(255,255,255,0.5)';
+                    if (el.type === 'music') color = 'rgba(106, 13, 173, 0.5)';
+                    if (el.type === 'sculpture') color = 'rgba(240, 240, 240, 0.5)';
+                    if (el.type === 'flow') color = 'rgba(0, 247, 255, 0.5)';
+                    if (el.type === 'nature') color = 'rgba(255, 0, 85, 0.5)';
+                    if (el.type === 'gold') color = 'rgba(255, 215, 0, 0.5)';
+
+                    gradient.addColorStop(1, color);
+
+                    ctx.beginPath();
+                    ctx.moveTo(centerX, centerY);
+                    ctx.lineTo(elX, elY);
+                    ctx.strokeStyle = gradient;
+                    ctx.lineWidth = 2 + Math.random() * 2; // Flickering width
+                    ctx.stroke();
+
+                    // Draw Particles flowing to center
+                    const time = Date.now() / 1000;
+                    const particleCount = 3;
+                    for(let i=0; i<particleCount; i++) {
+                        const t = (time + i/particleCount) % 1;
+                        const px = elX + (centerX - elX) * t;
+                        const py = elY + (centerY - elY) * t;
+                        
+                        ctx.beginPath();
+                        ctx.arc(px, py, 2, 0, Math.PI*2);
+                        ctx.fillStyle = 'white';
+                        ctx.fill();
+                    }
+                }
+            });
+
+            // Central Sun Pulse Effect based on active elements
+            if (activeElements.size > 0) {
+                const sun = document.getElementById('sun');
+                const scale = 1 + (activeElements.size * 0.05) + (Math.sin(Date.now() / 200) * 0.05);
+                sun.style.transform = `scale(${scale})`;
+                
+                // Change sun color based on last activated element
+                // (Simple visual feedback)
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+    </script>
+</body>
+</html>

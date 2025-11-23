@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chrono-Fragment Stabilizer</title>
+    <style>
+        :root {
+            --neon-blue: #00f3ff;
+            --deep-space: #050510;
+            --glass-border: rgba(255, 255, 255, 0.2);
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: var(--deep-space);
+            background-image: radial-gradient(circle at 50% 50%, #1a1a2e 0%, #000000 100%);
+            color: white;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            cursor: crosshair;
+        }
+
+        /* UI Overlay */
+        #ui-layer {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            color: var(--neon-blue);
+            text-shadow: 0 0 10px var(--neon-blue);
+            margin-bottom: 5px;
+        }
+
+        p {
+            font-size: 0.8rem;
+            color: #aaa;
+            background: rgba(0,0,0,0.5);
+            padding: 5px 10px;
+            border-radius: 4px;
+        }
+
+        /* Controls */
+        .controls {
+            position: absolute;
+            bottom: 30px;
+            display: flex;
+            gap: 20px;
+            z-index: 10;
+        }
+
+        button {
+            background: transparent;
+            border: 1px solid var(--neon-blue);
+            color: var(--neon-blue);
+            padding: 10px 20px;
+            font-family: inherit;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 5px var(--neon-blue);
+            pointer-events: auto;
+        }
+
+        button:hover {
+            background: var(--neon-blue);
+            color: black;
+            box-shadow: 0 0 20px var(--neon-blue);
+        }
+
+        /* The Canvas Container */
+        #game-container {
+            position: relative;
+            width: 400px;
+            height: 600px;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        /* Decorative CSS Hourglass Frame (Visual Overlay) */
+        .hourglass-frame {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            height: 500px;
+            pointer-events: none;
+            border-radius: 40px;
+            box-shadow: inset 0 0 50px rgba(0, 243, 255, 0.05);
+            z-index: 5;
+        }
+
+        /* Top and Bottom Plates */
+        .plate {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 280px;
+            height: 20px;
+            background: #111;
+            border: 1px solid #333;
+            border-radius: 50%;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.8);
+        }
+        .plate.top { top: 40px; }
+        .plate.bottom { bottom: 40px; }
+
+        /* Pillars */
+        .pillar {
+            position: absolute;
+            width: 12px;
+            height: 460px;
+            background: linear-gradient(90deg, #000, #333, #000);
+            top: 50px;
+        }
+        .pillar.left { left: 40px; }
+        .pillar.right { right: 40px; }
+
+    </style>
+</head>
+<body>
+
+    <div id="ui-layer">
+        <h1>Chrono-Fragment Stabilizer</h1>
+        <p>Hover to Disrupt Field • Click to Reverse Gravity • Space to Freeze</p>
+    </div>
+
+    <div id="game-container">
+        <!-- The simulation canvas -->
+        <canvas id="simCanvas"></canvas>
+        
+        <!-- Decorative Elements -->
+        <div class="plate top"></div>
+        <div class="plate bottom"></div>
+        <div class="pillar left"></div>
+        <div class="pillar right"></div>
+    </div>
+
+    <div class="controls">
+        <button onclick="resetSim()">Reset Time</button>
+        <button onclick="toggleGravity()">Flip Gravity</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Configuration
+        const WIDTH = 400;
+        const HEIGHT = 600;
+        canvas.width = WIDTH;
+        canvas.height = HEIGHT;
+
+        // Physics Constants
+        let GRAVITY = 0.15;
+        const FRICTION = 0.96;
+        const MOUSE_RADIUS = 80;
+        const MOUSE_FORCE = 0.8;
+        
+        // Hourglass Shape Definition
+        const CENTER_X = WIDTH / 2;
+        const CENTER_Y = HEIGHT / 2;
+        const WAIST_WIDTH = 15;
+        const BULB_WIDTH = 130;
+        const TOP_Y = 60;
+        const BOTTOM_Y = HEIGHT - 60;
+        
+        // State
+        let particles = [];
+        let mouse = { x: -1000, y: -1000, active: false };
+        let isFrozen = false;
+
+        class Particle {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                // Spawn in the top bulb
+                this.x = CENTER_X + (Math.random() - 0.5) * (BULB_WIDTH * 1.5);
+                this.y = TOP_Y + Math.random() * 150;
+                
+                // Ensure spawn is inside the glass
+                const bounds = getBounds(this.y);
+                if (this.x < bounds.min || this.x > bounds.max) {
+                    this.x = CENTER_X;
+                }
+
+                this.vx = (Math.random() - 0.5) * 2;
+                this.vy = (Math.random() - 0.5) * 2;
+                
+                // Visuals: Fragments of images
+                this.size = Math.random() * 4 + 2;
+                // Colors based on the image: Sepia, Greyscale, Cyan accents
+                const type = Math.random();
+                if (type > 0.9) {
+                    this.color = '#00f3ff'; // Cyber blue
+                    this.glow = true;
+                } else if (type > 0.6) {
+                    this.color = `hsl(30, ${Math.random()*30}%, ${Math.random()*40 + 40}%)`; // Sepia/Old photo
+                    this.glow = false;
+                } else {
+                    const shade = Math.random() * 100 + 50;
+                    this.color = `rgb(${shade},${shade},${shade})`; // B&W photo
+                    this.glow = false;
+                }
+            }
+
+            update() {
+                if (isFrozen) return;
+
+                // Apply Gravity
+                this.vy += GRAVITY;
+                
+                // Apply Velocity
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Friction
+                this.vx *= FRICTION;
+                this.vy *= FRICTION;
+
+                // Mouse Interaction (The "Cyber Hand")
+                const dx = this.x - mouse.x;
+                const dy = this.y - mouse.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+
+                if (dist < MOUSE_RADIUS) {
+                    const force = (MOUSE_RADIUS - dist) / MOUSE_RADIUS;
+                    const angle = Math.atan2(dy, dx);
+                    
+                    // Push away gently
+                    this.vx += Math.cos(angle) * force * MOUSE_FORCE;
+                    this.vy += Math.sin(angle) * force * MOUSE_FORCE;
+                    
+                    // Add some random jitter to simulate "digital noise"
+                    this.x += (Math.random() - 0.5) * 2;
+                }
+
+                // Hourglass Wall Collision
+                this.checkWalls();
+
+                // Floor/Ceiling Collision
+                if (this.y > BOTTOM_Y - this.size) {
+                    this.y = BOTTOM_Y - this.size;
+                    this.vy *= -0.5;
+                    this.vx *= 0.9; // Ground friction
+                } else if (this.y < TOP_Y + this.size) {
+                    this.y = TOP_Y + this.size;
+                    this.vy *= -0.5;
+                }
+            }
+
+            checkWalls() {
+                const bounds = getBounds(this.y);
+                
+                // Left Wall
+                if (this.x < bounds.min + this.size) {
+                    this.x = bounds.min + this.size;
+                    this.vx *= -0.6; // Bounce
+                    // Push towards center if stuck in neck
+                    if (Math.abs(this.y - CENTER_Y) < 20) {
+                         this.vx += 0.5; 
+                    }
+                }
+                // Right Wall
+                else if (this.x > bounds.max - this.size) {
+                    this.x = bounds.max - this.size;
+                    this.vx *= -0.6; // Bounce
+                    if (Math.abs(this.y - CENTER_Y) < 20) {
+                         this.vx -= 0.5; 
+                    }
+                }
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                if (this.glow) {
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = this.color;
+                } else {
+                    ctx.shadowBlur = 0;
+                }
+                // Draw as rectangle (fragment)
+                ctx.fillRect(this.x - this.size/2, this.y - this.size/2, this.size, this.size);
+            }
+        }
+
+        // Calculate the width of the hourglass at a specific Y
+        function getBounds(y) {
+            // Distance from vertical center
+            let dy = Math.abs(y - CENTER_Y);
+            // Linear slope for the cone shape
+            // At dy=0 (center), width = WAIST_WIDTH
+            // At dy=250 (top/bottom), width = BULB_WIDTH
+            // Slope equation: width = m * dy + c
+            
+            // We want a curve, so let's use a power function for a smoother glass look
+            // width = (dy / height)^power * max_width + waist
+            
+            let halfWidth = (dy / (HEIGHT/2)) * BULB_WIDTH + WAIST_WIDTH;
+            
+            // Clamp to max width of bulb
+            if (halfWidth > BULB_WIDTH) halfWidth = BULB_WIDTH;
+
+            return {
+                min: CENTER_X - halfWidth,
+                max: CENTER_X + halfWidth
+            };
+        }
+
+        // Initialize
+        function init() {
+            particles = [];
+            for (let i = 0; i < 600; i++) {
+                particles.push(new Particle());
+            }
+        }
+
+        // Interaction Event Listeners
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouse.x = e.clientX - rect.left;
+            mouse.y = e.clientY - rect.top;
+            mouse.active = true;
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            mouse.active = false;
+            mouse.x = -1000;
+        });
+
+        canvas.addEventListener('mousedown', () => {
+            // Reverse gravity momentarily or explode
+            GRAVITY *= -1;
+            setTimeout(() => { GRAVITY *= -1; }, 200);
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                isFrozen = !isFrozen;
+            }
+        });
+
+        // Global Controls
+        window.resetSim = function() {
+            init();
+        };
+
+        window.toggleGravity = function() {
+            GRAVITY = -GRAVITY;
+        };
+
+        // Animation Loop
+        function animate() {
+            ctx.clearRect(0, 0, WIDTH, HEIGHT);
+
+            // Draw Hourglass Shape (Glass Walls)
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            // Left side
+            for (let y = TOP_Y; y <= BOTTOM_Y; y+=5) {
+                const b = getBounds(y);
+                if (y === TOP_Y) ctx.moveTo(b.min, y);
+                else ctx.lineTo(b.min, y);
+            }
+            // Right side
+            for (let y = BOTTOM_Y; y >= TOP_Y; y-=5) {
+                const b = getBounds(y);
+                if (y === BOTTOM_Y) ctx.moveTo(b.max, y);
+                else ctx.lineTo(b.max, y);
+            }
+            ctx.stroke();
+
+            // Draw Particles
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+
+            // Draw "Cyber Hand" connections
+            if (mouse.active) {
+                ctx.strokeStyle = 'rgba(0, 243, 255, 0.3)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                particles.forEach(p => {
+                    const dx = p.x - mouse.x;
+                    const dy = p.y - mouse.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist < MOUSE_RADIUS) {
+                        ctx.moveTo(mouse.x, mouse.y);
+                        ctx.lineTo(p.x, p.y);
+                    }
+                });
+                ctx.stroke();
+
+                // Draw cursor ring
+                ctx.strokeStyle = 'rgba(0, 243, 255, 0.8)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(mouse.x, mouse.y, 10, 0, Math.PI*2);
+                ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.arc(mouse.x, mouse.y, MOUSE_RADIUS, 0, Math.PI*2);
+                ctx.strokeStyle = 'rgba(0, 243, 255, 0.1)';
+                ctx.stroke();
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        init();
+        animate();
+
+    </script>
+</body>
+</html>

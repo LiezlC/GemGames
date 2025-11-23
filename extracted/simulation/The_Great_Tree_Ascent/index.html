@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Great Tree Ascent</title>
+    <style>
+        :root {
+            --sky-top: #FFF9C4; /* Golden hour light */
+            --sky-bottom: #B2DFDB; /* Misty teal */
+            --tree-dark: #5D4037;
+            --tree-light: #8D6E63;
+            --leaf-color: #66BB6A;
+            --leaf-shadow: #388E3C;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(to bottom, var(--sky-top), var(--sky-bottom));
+            height: 100vh;
+            width: 100vw;
+            user-select: none;
+            touch-action: none;
+        }
+
+        /* UI Overlay */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        #score-board {
+            font-size: 24px;
+            font-weight: bold;
+            color: #3E2723;
+            text-shadow: 1px 1px 0px rgba(255,255,255,0.5);
+        }
+
+        #start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(5px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            pointer-events: auto;
+        }
+
+        h1 {
+            color: #3E2723;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        p {
+            color: #5D4037;
+            margin-bottom: 30px;
+            text-align: center;
+            max-width: 300px;
+        }
+
+        button {
+            background: #66BB6A;
+            border: none;
+            padding: 15px 40px;
+            color: white;
+            font-size: 20px;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            transition: transform 0.1s;
+            font-weight: bold;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+            background: #4CAF50;
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        /* Game World */
+        #game-world {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        /* Background Elements */
+        .mountain {
+            position: absolute;
+            bottom: 0;
+            width: 0;
+            height: 0;
+            border-left: 150px solid transparent;
+            border-right: 150px solid transparent;
+            border-bottom: 300px solid rgba(62, 39, 35, 0.2);
+            z-index: 0;
+        }
+        .mountain:nth-child(1) { left: -50px; border-bottom-color: rgba(62, 39, 35, 0.3); transform: scale(1.5); }
+        .mountain:nth-child(2) { right: -100px; border-bottom-color: rgba(62, 39, 35, 0.15); transform: scale(2); }
+        .mountain:nth-child(3) { left: 40%; border-bottom-color: rgba(62, 39, 35, 0.1); transform: scale(0.8); }
+
+        .waterfall {
+            position: absolute;
+            right: 20%;
+            bottom: 100px;
+            width: 20px;
+            height: 300px;
+            background: rgba(255, 255, 255, 0.6);
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+            z-index: 0;
+        }
+
+        /* The Tree */
+        #tree-container {
+            position: absolute;
+            left: 50%;
+            bottom: 0;
+            transform: translateX(-50%);
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+        }
+
+        .trunk-segment {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            background: linear-gradient(90deg, var(--tree-dark), var(--tree-light), var(--tree-dark));
+            border-radius: 10px;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.3);
+        }
+
+        .branch {
+            position: absolute;
+            height: 20px;
+            background: #5D4037;
+            border-radius: 10px;
+            box-shadow: 0 4px 4px rgba(0,0,0,0.2);
+        }
+        
+        /* Foliage decoration on branches */
+        .branch::after {
+            content: '🌿';
+            position: absolute;
+            top: -15px;
+            right: -10px;
+            font-size: 20px;
+            opacity: 0.8;
+        }
+
+        .branch.left::after {
+            left: -10px;
+            right: auto;
+            transform: scaleX(-1);
+        }
+
+        /* Player */
+        #player {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            font-size: 35px;
+            line-height: 40px;
+            text-align: center;
+            z-index: 20;
+            transition: transform 0.1s;
+            filter: drop-shadow(0 5px 5px rgba(0,0,0,0.3));
+        }
+
+        /* Collectibles */
+        .item {
+            position: absolute;
+            font-size: 24px;
+            z-index: 15;
+            animation: float 2s infinite ease-in-out;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        /* Controls hint for mobile */
+        #controls-hint {
+            display: none;
+            width: 100%;
+            justify-content: space-between;
+            padding: 0 40px;
+            box-sizing: border-box;
+        }
+        
+        .control-btn {
+            width: 60px;
+            height: 60px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            color: #3E2723;
+        }
+
+        @media (max-width: 768px) {
+            #controls-hint { display: flex; }
+            p { font-size: 14px; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Background Scenery -->
+    <div class="mountain"></div>
+    <div class="mountain"></div>
+    <div class="mountain"></div>
+    <div class="waterfall"></div>
+
+    <!-- Game World -->
+    <div id="game-world">
+        <div id="tree-container">
+            <!-- Generated via JS -->
+        </div>
+        <div id="player">🧗‍♀️</div>
+    </div>
+
+    <!-- UI Layer -->
+    <div id="ui-layer">
+        <div id="score-board">Height: 0m</div>
+        <div id="controls-hint">
+            <div class="control-btn" id="btn-left">⬅️</div>
+            <div class="control-btn" id="btn-jump">⬆️</div>
+            <div class="control-btn" id="btn-right">➡️</div>
+        </div>
+    </div>
+
+    <!-- Start Screen -->
+    <div id="start-screen">
+        <h1>The Ancient Tree Ascent</h1>
+        <p>Climb the giant tree to discover what lies above the canopy. <br><br>Controls:<br>Desktop: <b>Arrows</b> to move, <b>Space</b> to jump.<br>Mobile: Tap buttons.</p>
+        <button id="start-btn">Start Climbing</button>
+    </div>
+
+    <script>
+        // --- Game Configuration ---
+        const GRAVITY = 0.6;
+        const JUMP_FORCE = -12;
+        const MOVE_SPEED = 5;
+        const WORLD_WIDTH = window.innerWidth;
+        const WORLD_HEIGHT = window.innerHeight;
+        
+        // --- State ---
+        let gameState = {
+            isPlaying: false,
+            score: 0,
+            cameraY: 0,
+            platforms: [],
+            items: [],
+            player: {
+                x: WORLD_WIDTH / 2 - 20,
+                y: WORLD_HEIGHT - 150,
+                vx: 0,
+                vy: 0,
+                width: 40,
+                height: 40,
+                isGrounded: false
+            },
+            keys: {
+                left: false,
+                right: false,
+                jump: false
+            }
+        };
+
+        // --- DOM Elements ---
+        const playerEl = document.getElementById('player');
+        const treeContainer = document.getElementById('tree-container');
+        const scoreEl = document.getElementById('score-board');
+        const startScreen = document.getElementById('start-screen');
+        const startBtn = document.getElementById('start-btn');
+
+        // --- Initialization ---
+        function initGame() {
+            gameState.score = 0;
+            gameState.cameraY = 0;
+            gameState.player.x = WORLD_WIDTH / 2 - 20;
+            gameState.player.y = WORLD_HEIGHT - 200;
+            gameState.player.vx = 0;
+            gameState.player.vy = 0;
+            gameState.platforms = [];
+            gameState.items = [];
+            
+            // Clear existing DOM
+            treeContainer.innerHTML = '';
+            
+            // Create initial trunk visual
+            const trunk = document.createElement('div');
+            trunk.className = 'trunk-segment';
+            trunk.style.height = '100000px'; // Just a very tall visual element
+            trunk.style.bottom = '0';
+            treeContainer.appendChild(trunk);
+
+            // Create starting platform
+            createPlatform(WORLD_WIDTH / 2 - 100, WORLD_HEIGHT - 100, 200);
+            
+            // Generate initial platforms
+            for(let i = 0; i < 10; i++) {
+                generateNextPlatform(WORLD_HEIGHT - 100 - (i * 120));
+            }
+
+            gameState.isPlaying = true;
+            startScreen.style.display = 'none';
+            gameLoop();
+        }
+
+        function createPlatform(x, y, width) {
+            const platform = {
+                x: x,
+                y: y, // relative to world bottom (0 is bottom)
+                width: width,
+                height: 20,
+                id: Math.random().toString(36).substr(2, 9),
+                el: document.createElement('div')
+            };
+            
+            platform.el.className = 'branch';
+            platform.el.style.width = width + 'px';
+            platform.el.style.left = x + 'px';
+            // We set 'bottom' in render loop relative to camera
+            
+            // Add decoration class based on side
+            if (x < WORLD_WIDTH / 2) platform.el.classList.add('left');
+
+            treeContainer.appendChild(platform.el);
+            gameState.platforms.push(platform);
+
+            // Chance to spawn item
+            if (Math.random() > 0.7) {
+                createItem(x + width/2 - 10, y + 30);
+            }
+        }
+
+        function createItem(x, y) {
+            const types = ['🦜', '🦋', '🍃', '🌺'];
+            const type = types[Math.floor(Math.random() * types.length)];
+            const item = {
+                x: x,
+                y: y,
+                type: type,
+                collected: false,
+                el: document.createElement('div')
+            };
+            item.el.className = 'item';
+            item.el.innerText = type;
+            item.el.style.left = x + 'px';
+            treeContainer.appendChild(item.el);
+            gameState.items.push(item);
+        }
+
+        function generateNextPlatform(yHeight) {
+            // Logic to place platforms near the trunk
+            const trunkCenter = WORLD_WIDTH / 2;
+            const minGap = 60;
+            const maxGap = 150;
+            const width = 80 + Math.random() * 60;
+            
+            // Alternate sides or random
+            const isLeft = Math.random() > 0.5;
+            let x;
+            
+            if (isLeft) {
+                // Branch sticking out from left side of trunk
+                // Trunk width is roughly 120
+                x = trunkCenter - 60 - width + 20; // 20px overlap
+            } else {
+                x = trunkCenter + 60 - 20;
+            }
+
+            // Random vertical gap
+            const y = yHeight || (gameState.platforms[gameState.platforms.length - 1].y - (100 + Math.random() * 60));
+            
+            // Ensure we don't go down (y is distance from top in CSS logic, but here we treat y as height from bottom? 
+            // Let's stick to: y = coordinate from TOP of the world (0). 
+            // Actually, for infinite scrolling up, it's easier if Y decreases as we go up.
+            
+            // Let's refine coordinate system:
+            // y = 0 is the start. Negative y is up.
+            // But to keep it simple with CSS bottom:
+            // y = height from ground.
+            
+            // If no yHeight provided, calculate based on last platform
+            let newY;
+            if (yHeight !== undefined) {
+                newY = yHeight;
+            } else {
+                const lastY = gameState.platforms[gameState.platforms.length - 1].y;
+                newY = lastY - (90 + Math.random() * 50); // Moving UP (decreasing Y value in screen space? No, let's use visual Y)
+            }
+            
+            createPlatform(x, newY, width);
+        }
+
+        // --- Physics & Logic ---
+        function update() {
+            const p = gameState.player;
+
+            // Horizontal Movement
+            if (gameState.keys.left) p.vx = -MOVE_SPEED;
+            else if (gameState.keys.right) p.vx = MOVE_SPEED;
+            else p.vx *= 0.8; // Friction
+
+            p.x += p.vx;
+
+            // Boundaries
+            if (p.x < 0) p.x = 0;
+            if (p.x > WORLD_WIDTH - p.width) p.x = WORLD_WIDTH - p.width;
+
+            // Vertical Movement
+            p.vy += GRAVITY;
+            p.y += p.vy;
+
+            // Jump Check
+            if (gameState.keys.jump && p.isGrounded) {
+                p.vy = JUMP_FORCE;
+                p.isGrounded = false;
+            }
+
+            // Collision with Platforms
+            p.isGrounded = false;
+            // Only check collision if falling
+            if (p.vy > 0) {
+                gameState.platforms.forEach(plat => {
+                    // Simple AABB
+                    // Player bottom is p.y + p.height
+                    // Platform top is plat.y
+                    // We need to convert coordinate systems if they differ. 
+                    // Here: p.y is top-left relative to screen? No, let's make p.y absolute world coordinate (0 is top).
+                    
+                    if (
+                        p.y + p.height >= plat.y && 
+                        p.y + p.height <= plat.y + plat.height + p.vy + 2 && // Tunneling prevention
+                        p.x + p.width > plat.x && 
+                        p.x < plat.x + plat.width
+                    ) {
+                        p.y = plat.y - p.height;
+                        p.vy = 0;
+                        p.isGrounded = true;
+                    }
+                });
+            }
+
+            // Collision with Items
+            gameState.items.forEach(item => {
+                if (!item.collected) {
+                    const dx = (p.x + p.width/2) - (item.x + 10);
+                    const dy = (p.y + p.height/2) - (item.y + 10);
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist < 30) {
+                        item.collected = true;
+                        item.el.style.display = 'none';
+                        gameState.score += 50;
+                        createSparkle(item.x, item.y);
+                    }
+                }
+            });
+
+            // Camera Follow
+            // We want the player to be around 60% down the screen
+            const targetCamY = p.y - WORLD_HEIGHT * 0.6;
+            // Smooth follow
+            gameState.cameraY += (targetCamY - gameState.cameraY) * 0.1;
+
+            // Infinite Generation
+            const highestPlat = gameState.platforms[gameState.platforms.length - 1];
+            if (highestPlat.y > gameState.cameraY - 100) {
+                // We need more platforms above (lower Y value)
+                generateNextPlatform();
+            }
+
+            // Cleanup platforms below
+            if (gameState.platforms.length > 20) {
+                const oldPlat = gameState.platforms.shift();
+                oldPlat.el.remove();
+            }
+
+            // Game Over Check (Falling too far below camera)
+            if (p.y > gameState.cameraY + WORLD_HEIGHT + 100) {
+                gameOver();
+            }
+
+            // Score update based on height (inverted Y)
+            const heightScore = Math.floor(Math.abs(p.y - (WORLD_HEIGHT - 200)) / 10);
+            if (heightScore > gameState.score) gameState.score = heightScore;
+            scoreEl.innerText = `Height: ${gameState.score}m`;
+        }
+
+        function createSparkle(x, y) {
+            const sparkle = document.createElement('div');
+            sparkle.innerText = '✨';
+            sparkle.style.position = 'absolute';
+            sparkle.style.left = x + 'px';
+            sparkle.style.top = (y - gameState.cameraY) + 'px'; // Initial render pos
+            sparkle.style.fontSize = '20px';
+            sparkle.style.pointerEvents = 'none';
+            sparkle.style.zIndex = 100;
+            document.body.appendChild(sparkle); // Attach to body to avoid camera transform issues for simple effect
+
+            let op = 1;
+            let dy = 0;
+            const anim = setInterval(() => {
+                op -= 0.05;
+                dy -= 1;
+                sparkle.style.opacity = op;
+                sparkle.style.transform = `translateY(${dy}px)`;
+                if (op <= 0) {
+                    clearInterval(anim);
+                    sparkle.remove();
+                }
+            }, 30);
+        }
+
+        function render() {
+            // Move world container to simulate camera
+            // We translate the container UP by cameraY (since cameraY goes negative as we go up)
+            // Actually, if Y=0 is top, and we go up to Y=-1000.
+            // To show Y=-1000 at center, we need to translate Y by +1000.
+            
+            // Wait, logic check:
+            // p.y starts at WORLD_HEIGHT - 200 (e.g. 800).
+            // We climb up, p.y becomes 700, 600, 0, -100.
+            // cameraY tracks p.y.
+            // We want to shift everything up.
+            // transform translateY = -cameraY
+            
+            const offsetY = -gameState.cameraY;
+            
+            // Update Player Visual
+            playerEl.style.transform = `translate(${gameState.player.x}px, ${gameState.player.y}px)`;
+            
+            // Update Platforms Visual (We don't need to move them individually if we move a container, 
+            // BUT I implemented them as absolute positioned in a container. 
+            // Let's move the container.)
+            treeContainer.style.transform = `translateY(${-offsetY}px) translateX(-50%)`; // Keep X center
+            
+            // Wait, player is outside treeContainer.
+            // Let's apply camera transform to player manually? 
+            // No, easier: Apply transform to a "World" div containing everything.
+            
+            // Refactor: Move player into treeContainer or apply transform to both.
+            // Current CSS: #tree-container is centered. #player is absolute 0,0.
+            // Let's apply the Y translation to the player directly relative to screen?
+            // No, player.y is world coordinate.
+            
+            playerEl.style.top = '0'; // Reset top
+            playerEl.style.left = '0';
+            playerEl.style.transform = `translate(${gameState.player.x}px, ${gameState.player.y - gameState.cameraY}px)`;
+            
+            // Update Platforms
+            gameState.platforms.forEach(p => {
+                p.el.style.top = (p.y - gameState.cameraY) + 'px';
+                // We are manually positioning elements to avoid huge layer repaint or just logic preference
+                // Actually, simple translate on container is better for performance, but let's stick to this for precise control
+            });
+
+            gameState.items.forEach(i => {
+                i.el.style.top = (i.y - gameState.cameraY) + 'px';
+            });
+            
+            // Parallax background
+            const mountains = document.querySelectorAll('.mountain');
+            mountains.forEach((m, index) => {
+                const speed = (index + 1) * 0.2;
+                m.style.transform = `translateY(${gameState.cameraY * speed * 0.1}px) scale(${index === 1 ? 2 : (index === 0 ? 1.5 : 0.8)})`;
+            });
+        }
+
+        function gameLoop() {
+            if (!gameState.isPlaying) return;
+            update();
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function gameOver() {
+            gameState.isPlaying = false;
+            startScreen.style.display = 'flex';
+            startScreen.querySelector('h1').innerText = "You Fell!";
+            startScreen.querySelector('p').innerHTML = `You climbed <b>${gameState.score}m</b>.<br>The view was getting good!`;
+            startBtn.innerText = "Try Again";
+        }
+
+        // --- Input Handling ---
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'ArrowLeft') gameState.keys.left = true;
+            if (e.code === 'ArrowRight') gameState.keys.right = true;
+            if (e.code === 'Space' || e.code === 'ArrowUp') gameState.keys.jump = true;
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.code === 'ArrowLeft') gameState.keys.left = false;
+            if (e.code === 'ArrowRight') gameState.keys.right = false;
+            if (e.code === 'Space' || e.code === 'ArrowUp') gameState.keys.jump = false;
+        });
+
+        // Touch Controls
+        const btnLeft = document.getElementById('btn-left');
+        const btnRight = document.getElementById('btn-right');
+        const btnJump = document.getElementById('btn-jump');
+
+        const addTouch = (elem, key) => {
+            elem.addEventListener('touchstart', (e) => { e.preventDefault(); gameState.keys[key] = true; });
+            elem.addEventListener('touchend', (e) => { e.preventDefault(); gameState.keys[key] = false; });
+        };
+
+        addTouch(btnLeft, 'left');
+        addTouch(btnRight, 'right');
+        addTouch(btnJump, 'jump');
+
+        startBtn.addEventListener('click', initGame);
+
+    </script>
+</body>
+</html>

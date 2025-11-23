@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mystic Spire: Arcane Defense</title>
+    <style>
+        :root {
+            --bg-top: #1a0b2e;
+            --bg-mid: #431c5d;
+            --bg-bot: #11051b;
+            --accent: #ffd700;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: linear-gradient(to bottom, var(--bg-top), var(--bg-mid) 60%, var(--bg-bot));
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: white;
+            user-select: none;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        canvas {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none; /* Let clicks pass through to canvas */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .hud-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+
+        .score-box {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        .health-bar-container {
+            width: 200px;
+            height: 20px;
+            background: rgba(0,0,0,0.5);
+            border: 2px solid #555;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .health-bar {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #ff4b1f, #ff9068);
+            transition: width 0.3s ease;
+        }
+
+        .controls {
+            pointer-events: auto;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .spell-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+            transition: all 0.2s;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+        }
+
+        .spell-btn:hover, .spell-btn.active {
+            background: rgba(255, 215, 0, 0.3);
+            border-color: #ffd700;
+            box-shadow: 0 0 15px #ffd700;
+            transform: translateY(-2px);
+        }
+
+        #start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: auto;
+        }
+
+        h1 {
+            font-size: 4rem;
+            margin: 0;
+            background: -webkit-linear-gradient(#eee, #ffd700);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
+            text-align: center;
+        }
+
+        p {
+            font-size: 1.2rem;
+            color: #ddd;
+            max-width: 600px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .play-btn {
+            padding: 15px 40px;
+            font-size: 1.5rem;
+            background: linear-gradient(45deg, #ffd700, #ff8c00);
+            border: none;
+            border-radius: 50px;
+            color: #1a0b2e;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+            transition: transform 0.2s;
+        }
+
+        .play-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .tutorial {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-top: 20px;
+        }
+
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <canvas id="bg-canvas"></canvas> <!-- For the castle silhouette -->
+    <canvas id="main-canvas"></canvas> <!-- For particles and game logic -->
+    
+    <div id="ui-layer">
+        <div class="hud-top">
+            <div class="score-box">SCORE: <span id="score">0</span></div>
+            <div class="health-bar-container">
+                <div class="health-bar" id="health-bar"></div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button class="spell-btn active" onclick="setSpell('burst')">💥 Kinetic Burst</button>
+            <button class="spell-btn" onclick="setSpell('nova')">✨ Arcane Nova</button>
+            <button class="spell-btn" onclick="setSpell('rain')">🌧️ Star Rain</button>
+        </div>
+    </div>
+
+    <div id="start-screen">
+        <h1>MYSTIC SPIRE</h1>
+        <p>Shadow Wisps are descending upon the Citadel. Channel the arcane energy to create fireworks and banish the darkness.</p>
+        <button class="play-btn" onclick="startGame()">IGNITE</button>
+        <div class="tutorial">Click anywhere to cast spells. Protect the castle at the bottom.</div>
+    </div>
+</div>
+
+<script>
+    // --- Configuration ---
+    const canvas = document.getElementById('main-canvas');
+    const ctx = canvas.getContext('2d');
+    const bgCanvas = document.getElementById('bg-canvas');
+    const bgCtx = bgCanvas.getContext('2d');
+    
+    let width, height;
+    let animationId;
+    let score = 0;
+    let health = 100;
+    let gameRunning = false;
+    let currentSpell = 'burst';
+    
+    // --- Game State ---
+    const particles = [];
+    const enemies = [];
+    const castleNodes = []; // Stores the height map of the castle
+    
+    // --- Resize Handling ---
+    function resize() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = width;
+        canvas.height = height;
+        bgCanvas.width = width;
+        bgCanvas.height = height;
+        generateCastle();
+    }
+    window.addEventListener('resize', resize);
+
+    // --- Audio (Synthesized SFX) ---
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playSound(type) {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        const now = audioCtx.currentTime;
+        
+        if (type === 'shoot') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(400, now);
+            osc.frequency.exponentialRampToValueAtTime(100, now + 0.3);
+            gain.gain.setValueAtTime(0.3, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+            osc.start(now);
+            osc.stop(now + 0.3);
+        } else if (type === 'explode') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(100, now);
+            osc.frequency.exponentialRampToValueAtTime(0.01, now + 0.5);
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+            osc.start(now);
+            osc.stop(now + 0.5);
+        } else if (type === 'hit') {
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(800, now);
+            osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
+            gain.gain.setValueAtTime(0.1, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+            osc.start(now);
+            osc.stop(now + 0.1);
+        }
+    }
+
+    // --- Visual Generation: The Castle ---
+    function generateCastle() {
+        bgCtx.clearRect(0, 0, width, height);
+        bgCtx.fillStyle = '#050208'; // Almost black
+        
+        bgCtx.beginPath();
+        bgCtx.moveTo(0, height);
+        
+        let x = 0;
+        castleNodes.length = 0;
+        
+        // Procedural skyline generation
+        while (x < width) {
+            const step = 20 + Math.random() * 60;
+            const buildingHeight = 50 + Math.random() * 200;
+            const roofHeight = 30 + Math.random() * 80;
+            
+            // Building base
+            bgCtx.lineTo(x, height - buildingHeight);
+            
+            // Roof (Pointy like the image)
+            bgCtx.lineTo(x + step / 2, height - buildingHeight - roofHeight);
+            bgCtx.lineTo(x + step, height - buildingHeight);
+            
+            // Store nodes for collision logic (simple approximation)
+            for(let i=0; i<step; i+=10) {
+                castleNodes.push({x: x+i, y: height - buildingHeight});
+            }
+
+            x += step;
+        }
+        
+        bgCtx.lineTo(width, height);
+        bgCtx.closePath();
+        bgCtx.fill();
+
+        // Add windows
+        bgCtx.fillStyle = '#ffd700';
+        for (let i = 0; i < 30; i++) {
+            const wx = Math.random() * width;
+            const wy = height - (Math.random() * 150 + 20);
+            // Only draw if inside the silhouette (simple check: below a certain threshold)
+            if (bgCtx.isPointInPath(wx, wy)) {
+                bgCtx.fillRect(wx, wy, 4, 6);
+            }
+        }
+    }
+
+    // --- Particle System ---
+    class Particle {
+        constructor(x, y, type) {
+            this.x = x;
+            this.y = y;
+            this.type = type;
+            this.life = 1.0;
+            this.decay = 0.01 + Math.random() * 0.02;
+            
+            const angle = Math.random() * Math.PI * 2;
+            const speed = Math.random() * 5 + 2;
+            
+            this.vx = Math.cos(angle) * speed;
+            this.vy = Math.sin(angle) * speed;
+            
+            // Trail history
+            this.history = [];
+            this.maxHistory = 10;
+
+            // Colors based on image (Green/Yellow/Gold)
+            if (Math.random() > 0.5) {
+                this.color = `hsl(${60 + Math.random() * 40}, 100%, 50%)`; // Yellow/Green
+            } else {
+                this.color = `hsl(${40 + Math.random() * 20}, 100%, 70%)`; // Gold
+            }
+            
+            if (type === 'rain') {
+                this.vy = Math.abs(this.vy) + 2; // Fall down
+                this.vx *= 0.2;
+                this.color = '#00ffff';
+            }
+        }
+
+        update() {
+            this.x += this.vx;
+            this.y += this.vy;
+            
+            // Gravity
+            if (this.type !== 'nova') {
+                this.vy += 0.1;
+            }
+            
+            // Drag
+            this.vx *= 0.96;
+            this.vy *= 0.96;
+            
+            this.life -= this.decay;
+            
+            // Trail logic
+            this.history.push({x: this.x, y: this.y});
+            if (this.history.length > this.maxHistory) {
+                this.history.shift();
+            }
+        }
+
+        draw() {
+            ctx.beginPath();
+            if (this.history.length > 0) {
+                ctx.moveTo(this.history[0].x, this.history[0].y);
+                for (let i = 1; i < this.history.length; i++) {
+                    ctx.lineTo(this.history[i].x, this.history[i].y);
+                }
+            } else {
+                ctx.moveTo(this.x, this.y);
+                ctx.lineTo(this.x + this.vx, this.y + this.vy);
+            }
+            
+            ctx.strokeStyle = this.color;
+            ctx.lineWidth = 2 * this.life;
+            ctx.globalAlpha = this.life;
+            ctx.stroke();
+            ctx.globalAlpha = 1;
+        }
+    }
+
+    // --- Enemy System ---
+    class Enemy {
+        constructor() {
+            this.x = Math.random() * width;
+            this.y = -50;
+            this.speed = 1 + Math.random() * 2 + (score / 500); // Gets harder
+            this.size = 15 + Math.random() * 10;
+            this.angle = 0;
+        }
+
+        update() {
+            this.y += this.speed;
+            this.angle += 0.05;
+            this.x += Math.sin(this.angle) * 1; // Wobbly movement
+        }
+
+        draw() {
+            ctx.save();
+            ctx.translate(this.x, this.y);
+            ctx.rotate(this.angle);
+            
+            // Draw Shadow Wisp
+            ctx.fillStyle = '#111';
+            ctx.shadowColor = '#800080'; // Purple glow
+            ctx.shadowBlur = 20;
+            ctx.beginPath();
+            ctx.rect(-this.size/2, -this.size/2, this.size, this.size);
+            ctx.fill();
+            
+            // Inner eye
+            ctx.fillStyle = '#ff00ff';
+            ctx.shadowBlur = 0;
+            ctx.beginPath();
+            ctx.arc(0, 0, this.size/4, 0, Math.PI*2);
+            ctx.fill();
+            
+            ctx.restore();
+        }
+    }
+
+    // --- Game Logic ---
+    function spawnExplosion(x, y, type) {
+        const count = type === 'nova' ? 60 : 30;
+        for (let i = 0; i < count; i++) {
+            particles.push(new Particle(x, y, type));
+        }
+        playSound('explode');
+        
+        // Check collision with enemies
+        const blastRadius = type === 'nova' ? 150 : 80;
+        
+        for (let i = enemies.length - 1; i >= 0; i--) {
+            const e = enemies[i];
+            const dist = Math.hypot(e.x - x, e.y - y);
+            if (dist < blastRadius) {
+                // Enemy destroyed
+                enemies.splice(i, 1);
+                score += 100;
+                updateUI();
+                playSound('hit');
+                
+                // Spawn sparkle effect at enemy death
+                for(let j=0; j<5; j++) {
+                   particles.push(new Particle(e.x, e.y, 'spark')); 
+                }
+            }
+        }
+    }
+
+    function update() {
+        if (!gameRunning) return;
+
+        // Clear canvas with trail effect
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+        ctx.fillRect(0, 0, width, height);
+        
+        // Additive blending for light effects
+        ctx.globalCompositeOperation = 'lighter';
+
+        // Update Particles
+        for (let i = particles.length - 1; i >= 0; i--) {
+            const p = particles[i];
+            p.update();
+            p.draw();
+            if (p.life <= 0) particles.splice(i, 1);
+        }
+
+        ctx.globalCompositeOperation = 'source-over';
+
+        // Spawn Enemies
+        if (Math.random() < 0.02 + (score/10000)) {
+            enemies.push(new Enemy());
+        }
+
+        // Update Enemies
+        for (let i = enemies.length - 1; i >= 0; i--) {
+            const e = enemies[i];
+            e.update();
+            e.draw();
+            
+            // Check if hit castle
+            if (e.y > height - 100) {
+                // Simple damage logic
+                health -= 10;
+                enemies.splice(i, 1);
+                updateUI();
+                
+                // Screen shake effect
+                gameContainer.style.transform = `translate(${Math.random()*10-5}px, ${Math.random()*10-5}px)`;
+                setTimeout(() => gameContainer.style.transform = 'none', 50);
+                
+                if (health <= 0) gameOver();
+            }
+        }
+
+        animationId = requestAnimationFrame(update);
+    }
+
+    // --- Interaction ---
+    const gameContainer = document.getElementById('game-container');
+    
+    canvas.addEventListener('mousedown', (e) => {
+        if (!gameRunning) return;
+        spawnExplosion(e.clientX, e.clientY, currentSpell);
+        playSound('shoot');
+    });
+
+    // Touch support
+    canvas.addEventListener('touchstart', (e) => {
+        if (!gameRunning) return;
+        e.preventDefault();
+        const touch = e.touches[0];
+        spawnExplosion(touch.clientX, touch.clientY, currentSpell);
+        playSound('shoot');
+    }, {passive: false});
+
+    function setSpell(spell) {
+        currentSpell = spell;
+        document.querySelectorAll('.spell-btn').forEach(btn => btn.classList.remove('active'));
+        event.target.classList.add('active');
+    }
+
+    function updateUI() {
+        document.getElementById('score').innerText = score;
+        document.getElementById('health-bar').style.width = health + '%';
+    }
+
+    function startGame() {
+        document.getElementById('start-screen').style.display = 'none';
+        gameRunning = true;
+        score = 0;
+        health = 100;
+        enemies.length = 0;
+        particles.length = 0;
+        updateUI();
+        resize();
+        update();
+        
+        // Initial celebratory burst
+        spawnExplosion(width/2, height/2, 'nova');
+    }
+
+    function gameOver() {
+        gameRunning = false;
+        cancelAnimationFrame(animationId);
+        const screen = document.getElementById('start-screen');
+        screen.style.display = 'flex';
+        screen.querySelector('h1').innerText = "DEFENSE BREACHED";
+        screen.querySelector('p').innerText = `The shadows have taken the spire. Final Score: ${score}`;
+        screen.querySelector('.play-btn').innerText = "TRY AGAIN";
+    }
+
+    // Initial render
+    resize();
+    
+    // Background ambient particles (fireflies)
+    setInterval(() => {
+        if(gameRunning && Math.random() > 0.7) {
+            const x = Math.random() * width;
+            const y = Math.random() * height * 0.8;
+            ctx.fillStyle = '#aaff00';
+            ctx.globalAlpha = 0.5;
+            ctx.beginPath();
+            ctx.arc(x, y, 1, 0, Math.PI*2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+        }
+    }, 100);
+
+</script>
+</body>
+</html>

@@ -98,40 +98,38 @@
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
             gap: 30px;
-            margin-bottom: 40px;
+            margin-top: 30px;
         }
 
         .theme-card {
             background: rgba(255, 255, 255, 0.1);
             border-radius: 15px;
-            padding: 25px;
+            padding: 30px;
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.2);
             transition: all 0.3s ease;
         }
 
         .theme-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
             border-color: rgba(168, 237, 234, 0.5);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
         }
 
         .theme-header {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            margin-bottom: 15px;
+            gap: 15px;
+            margin-bottom: 20px;
         }
 
-        .theme-icon {
-            font-size: 2em;
-            margin-right: 10px;
+        .theme-emoji {
+            font-size: 3em;
         }
 
         .theme-title {
             font-size: 1.5em;
-            font-weight: bold;
-            flex: 1;
+            font-weight: 600;
         }
 
         .theme-count {
@@ -139,33 +137,26 @@
             padding: 5px 15px;
             border-radius: 20px;
             font-size: 0.9em;
-            font-weight: bold;
+            font-weight: 600;
+            margin-left: auto;
         }
 
-        .theme-description {
-            opacity: 0.9;
-            margin-bottom: 15px;
-            font-size: 0.95em;
-        }
-
-        .games-list {
+        .theme-games {
             max-height: 300px;
             overflow-y: auto;
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 10px;
-            padding: 15px;
+            padding-right: 10px;
         }
 
-        .games-list::-webkit-scrollbar {
+        .theme-games::-webkit-scrollbar {
             width: 8px;
         }
 
-        .games-list::-webkit-scrollbar-track {
+        .theme-games::-webkit-scrollbar-track {
             background: rgba(255, 255, 255, 0.1);
             border-radius: 10px;
         }
 
-        .games-list::-webkit-scrollbar-thumb {
+        .theme-games::-webkit-scrollbar-thumb {
             background: rgba(168, 237, 234, 0.5);
             border-radius: 10px;
         }
@@ -173,282 +164,1270 @@
         .game-link {
             display: block;
             padding: 10px;
-            margin-bottom: 8px;
-            background: rgba(255, 255, 255, 0.05);
+            margin: 5px 0;
+            background: rgba(255, 255, 255, 0.1);
             border-radius: 8px;
             color: white;
             text-decoration: none;
             transition: all 0.2s ease;
-            font-size: 0.95em;
         }
 
         .game-link:hover {
-            background: rgba(168, 237, 234, 0.2);
+            background: rgba(168, 237, 234, 0.3);
             transform: translateX(5px);
-            padding-left: 15px;
         }
 
         footer {
             text-align: center;
-            margin-top: 50px;
+            margin-top: 60px;
             padding: 30px;
             background: rgba(0, 0, 0, 0.2);
             border-radius: 15px;
             backdrop-filter: blur(10px);
         }
 
-        footer a {
-            color: #a8edea;
+        footer p {
+            margin: 10px 0;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 12px 30px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
             text-decoration: none;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
         }
 
-        footer a:hover {
-            text-decoration: underline;
-        }
-
-        @media (max-width: 768px) {
-            h1 {
-                font-size: 2em;
-            }
-
-            .themes-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .stats {
-                flex-direction: column;
-                gap: 10px;
-            }
+        .back-link:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
         }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>🎮 GemGames Thematic Collection</h1>
-            <p class="subtitle">AI-Generated Browser Games Organized by Theme</p>
+            <h1>GemGames Thematic Collection</h1>
+            <p class="subtitle">Browse by Theme & Content</p>
             <div class="stats">
-                <div class="stat">📊 <strong>107</strong> Games</div>
-                <div class="stat">🎨 <strong>14</strong> Themes</div>
-                <div class="stat">🔊 <strong>11</strong> With Audio</div>
-                <div class="stat">🚀 <strong>21</strong> Hyper Drive</div>
+                <div class="stat"><strong>169</strong> Unique Games</div>
+                <div class="stat"><strong>14</strong> Themes</div>
+                <div class="stat"><strong>519</strong> Total Entries</div>
             </div>
         </header>
 
         <div class="view-toggle">
-            <a href="../extracted/index.html">📂 View by Gameplay Type</a>
-            <a href="index.html" class="active">🎨 View by Theme</a>
-            <a href="../extracted/top_games.html">⭐ Top 11 Games</a>
+            <strong>Browse by:</strong>
+            <a href="../extracted/index.html">Gameplay Type</a>
+            <a href="index.html" class="active">Theme</a>
+            <a href="../extracted/top_games.html">Top Rated</a>
         </div>
 
         <div class="themes-grid">
-            <!-- Blurring Boundaries -->
+
             <div class="theme-card">
                 <div class="theme-header">
-                    <span class="theme-icon">🔄</span>
-                    <span class="theme-title">Blurring Boundaries</span>
-                    <span class="theme-count">85 games</span>
+                    <div class="theme-emoji">🤖</div>
+                    <div class="theme-title">Blurring Boundaries</div>
+                    <div class="theme-count">127</div>
                 </div>
-                <p class="theme-description">AI-human convergence, AI consciousness, blurring lines between human and machine</p>
-                <div class="games-list" id="blurring-boundaries-games"></div>
+                <div class="theme-games">
+
+                    <a href="Blurring_Boundaries/AGI_Convergence_Simulator/index.html" class="game-link">AGI_Convergence_Simulator</a>
+
+                    <a href="Blurring_Boundaries/AI_Dream_Decoder/index.html" class="game-link">AI_Dream_Decoder</a>
+
+                    <a href="Blurring_Boundaries/AI_Ethics_The_Dilemma_Engine/index.html" class="game-link">AI_Ethics_The_Dilemma_Engine</a>
+
+                    <a href="Blurring_Boundaries/AI_Futures_Alignment_vs_Convergence/index.html" class="game-link">AI_Futures_Alignment_vs_Convergence</a>
+
+                    <a href="Blurring_Boundaries/AI_Governance_Command_Center/index.html" class="game-link">AI_Governance_Command_Center</a>
+
+                    <a href="Blurring_Boundaries/AI_Lab_Chaos_Simulator/index.html" class="game-link">AI_Lab_Chaos_Simulator</a>
+
+                    <a href="Blurring_Boundaries/AI_Office_Chronicles_The_Game/index.html" class="game-link">AI_Office_Chronicles_The_Game</a>
+
+                    <a href="Blurring_Boundaries/AI_Reconstruction_Protocol/index.html" class="game-link">AI_Reconstruction_Protocol</a>
+
+                    <a href="Blurring_Boundaries/Abstractify_Kinetic_Canvas/index.html" class="game-link">Abstractify_Kinetic_Canvas</a>
+
+                    <a href="Blurring_Boundaries/Art-Dozer_Color_Cleanup/index.html" class="game-link">Art-Dozer_Color_Cleanup</a>
+
+                    <a href="Blurring_Boundaries/Artifact_001_The_Void_Resonator/index.html" class="game-link">Artifact_001_The_Void_Resonator</a>
+
+                    <a href="Blurring_Boundaries/Ascension_Step_Into_The_Light/index.html" class="game-link">Ascension_Step_Into_The_Light</a>
+
+                    <a href="Blurring_Boundaries/Authentic_Human_Simulator/index.html" class="game-link">Authentic_Human_Simulator</a>
+
+                    <a href="Blurring_Boundaries/Beyond_Automation_AI_Lab_Simulator/index.html" class="game-link">Beyond_Automation_AI_Lab_Simulator</a>
+
+                    <a href="Blurring_Boundaries/Bio-Acoustic_Plant_Interface/index.html" class="game-link">Bio-Acoustic_Plant_Interface</a>
+
+                    <a href="Blurring_Boundaries/Bio-Digital_Interface/index.html" class="game-link">Bio-Digital_Interface</a>
+
+                    <a href="Blurring_Boundaries/BitSoil_SageByte_The_Architecture_of_Mending/index.html" class="game-link">BitSoil_SageByte_The_Architecture_of_Mending</a>
+
+                    <a href="Blurring_Boundaries/Canopy_Sentinel/index.html" class="game-link">Canopy_Sentinel</a>
+
+                    <a href="Blurring_Boundaries/Celestial_Dream_Catcher/index.html" class="game-link">Celestial_Dream_Catcher</a>
+
+                    <a href="Blurring_Boundaries/Celestial_Forest_Run/index.html" class="game-link">Celestial_Forest_Run</a>
+
+                    <a href="Blurring_Boundaries/Chromatic_Dialogue_Interactive_Art/index.html" class="game-link">Chromatic_Dialogue_Interactive_Art</a>
+
+                    <a href="Blurring_Boundaries/Chrono-Fragment_Stabilizer/index.html" class="game-link">Chrono-Fragment_Stabilizer</a>
+
+                    <a href="Blurring_Boundaries/Cosmic_Credit_Collector_2019/index.html" class="game-link">Cosmic_Credit_Collector_2019</a>
+
+                    <a href="Blurring_Boundaries/Cosmic_Query_Event_Horizon/index.html" class="game-link">Cosmic_Query_Event_Horizon</a>
+
+                    <a href="Blurring_Boundaries/Cosmic_Renaissance_Composer/index.html" class="game-link">Cosmic_Renaissance_Composer</a>
+
+                    <a href="Blurring_Boundaries/Cosmic_Void_Explorer/index.html" class="game-link">Cosmic_Void_Explorer</a>
+
+                    <a href="Blurring_Boundaries/Cyber-Organic_Resonance_Tuner/index.html" class="game-link">Cyber-Organic_Resonance_Tuner</a>
+
+                    <a href="Blurring_Boundaries/Cyber-Organic_Synthesis_Protocol/index.html" class="game-link">Cyber-Organic_Synthesis_Protocol</a>
+
+                    <a href="Blurring_Boundaries/Cyber-Pastoral_Farm_Interface/index.html" class="game-link">Cyber-Pastoral_Farm_Interface</a>
+
+                    <a href="Blurring_Boundaries/Cyber-Shepherd_OS/index.html" class="game-link">Cyber-Shepherd_OS</a>
+
+                    <a href="Blurring_Boundaries/Cyber-Temple_Data_Harvester/index.html" class="game-link">Cyber-Temple_Data_Harvester</a>
+
+                    <a href="Blurring_Boundaries/Cyber_Serpent_Data_Eater/index.html" class="game-link">Cyber_Serpent_Data_Eater</a>
+
+                    <a href="Blurring_Boundaries/Data_Dragon_ID_KIT/index.html" class="game-link">Data_Dragon_ID_KIT</a>
+
+                    <a href="Blurring_Boundaries/Digital_Entropy_Cube/index.html" class="game-link">Digital_Entropy_Cube</a>
+
+                    <a href="Blurring_Boundaries/Digital_Sentience_The_Synthesizer/index.html" class="game-link">Digital_Sentience_The_Synthesizer</a>
+
+                    <a href="Blurring_Boundaries/Dream_Spire_Pearl_Protector/index.html" class="game-link">Dream_Spire_Pearl_Protector</a>
+
+                    <a href="Blurring_Boundaries/Dreamscape_Forager/index.html" class="game-link">Dreamscape_Forager</a>
+
+                    <a href="Blurring_Boundaries/EagleEye_Synthetic_Chorus_Protocol/index.html" class="game-link">EagleEye_Synthetic_Chorus_Protocol</a>
+
+                    <a href="Blurring_Boundaries/Eco-Link_Cyber_Druid_Interface/index.html" class="game-link">Eco-Link_Cyber_Druid_Interface</a>
+
+                    <a href="Blurring_Boundaries/Eco-Raft_Survivor/index.html" class="game-link">Eco-Raft_Survivor</a>
+
+                    <a href="Blurring_Boundaries/Eco-Retreat_Simulator/index.html" class="game-link">Eco-Retreat_Simulator</a>
+
+                    <a href="Blurring_Boundaries/Emerald_Spire_Core_Control/index.html" class="game-link">Emerald_Spire_Core_Control</a>
+
+                    <a href="Blurring_Boundaries/Emotional_Detox_The_Therapy_Chair/index.html" class="game-link">Emotional_Detox_The_Therapy_Chair</a>
+
+                    <a href="Blurring_Boundaries/Entropy_Stabilizer_The_Dual_Core/index.html" class="game-link">Entropy_Stabilizer_The_Dual_Core</a>
+
+                    <a href="Blurring_Boundaries/Galactic_Globe_The_Roast_Battle/index.html" class="game-link">Galactic_Globe_The_Roast_Battle</a>
+
+                    <a href="Blurring_Boundaries/GrieVoice_AI_Grievance_Systems/index.html" class="game-link">GrieVoice_AI_Grievance_Systems</a>
+
+                    <a href="Blurring_Boundaries/Habitat_734B_Stasis_Control/index.html" class="game-link">Habitat_734B_Stasis_Control</a>
+
+                    <a href="Blurring_Boundaries/Hyperion_Reactor_Control/index.html" class="game-link">Hyperion_Reactor_Control</a>
+
+                    <a href="Blurring_Boundaries/Hyperspace_Serpent/index.html" class="game-link">Hyperspace_Serpent</a>
+
+                    <a href="Blurring_Boundaries/Impasto_Abstract_Art_Generator/index.html" class="game-link">Impasto_Abstract_Art_Generator</a>
+
+                    <a href="Blurring_Boundaries/JWST_Deep_Field_Explorer/index.html" class="game-link">JWST_Deep_Field_Explorer</a>
+
+                    <a href="Blurring_Boundaries/Lumi_The_Serenity_Bot/index.html" class="game-link">Lumi_The_Serenity_Bot</a>
+
+                    <a href="Blurring_Boundaries/Lumina_Light_Memory_Game/index.html" class="game-link">Lumina_Light_Memory_Game</a>
+
+                    <a href="Blurring_Boundaries/Luminous_Strands_Ethereal_Flow/index.html" class="game-link">Luminous_Strands_Ethereal_Flow</a>
+
+                    <a href="Blurring_Boundaries/Mystic_Spire_Arcane_Defense/index.html" class="game-link">Mystic_Spire_Arcane_Defense</a>
+
+                    <a href="Blurring_Boundaries/MÖBIUS_DATA_Self-Referential_Consciousness/index.html" class="game-link">MÖBIUS_DATA_Self-Referential_Consciousness</a>
+
+                    <a href="Blurring_Boundaries/NEURAL_NEXUS_AI_Interface/index.html" class="game-link">NEURAL_NEXUS_AI_Interface</a>
+
+                    <a href="Blurring_Boundaries/NEURAL_SYNC_PROTOCOL/index.html" class="game-link">NEURAL_SYNC_PROTOCOL</a>
+
+                    <a href="Blurring_Boundaries/Neon_City_Overgrowth/index.html" class="game-link">Neon_City_Overgrowth</a>
+
+                    <a href="Blurring_Boundaries/Neon_Neural_Flow/index.html" class="game-link">Neon_Neural_Flow</a>
+
+                    <a href="Blurring_Boundaries/Neon_Rain_Zen_Walk/index.html" class="game-link">Neon_Rain_Zen_Walk</a>
+
+                    <a href="Blurring_Boundaries/Neon_Sync_Overdrive/index.html" class="game-link">Neon_Sync_Overdrive</a>
+
+                    <a href="Blurring_Boundaries/Neon_Wyvern_Protocol/index.html" class="game-link">Neon_Wyvern_Protocol</a>
+
+                    <a href="Blurring_Boundaries/Neural_Convergence_Interface/index.html" class="game-link">Neural_Convergence_Interface</a>
+
+                    <a href="Blurring_Boundaries/Neural_Core_Stabilizer/index.html" class="game-link">Neural_Core_Stabilizer</a>
+
+                    <a href="Blurring_Boundaries/Neural_Harmony_Chaos_to_Clarity/index.html" class="game-link">Neural_Harmony_Chaos_to_Clarity</a>
+
+                    <a href="Blurring_Boundaries/Neural_Root_Access_Data_Harvester/index.html" class="game-link">Neural_Root_Access_Data_Harvester</a>
+
+                    <a href="Blurring_Boundaries/Neural_Sync_Interface/index.html" class="game-link">Neural_Sync_Interface</a>
+
+                    <a href="Blurring_Boundaries/Neural_Sync_Protocol/index.html" class="game-link">Neural_Sync_Protocol</a>
+
+                    <a href="Blurring_Boundaries/Neural_Sync_Protocol/index.html" class="game-link">Neural_Sync_Protocol</a>
+
+                    <a href="Blurring_Boundaries/Neural_Sync_Protocol_2_3/index.html" class="game-link">Neural_Sync_Protocol_2_3</a>
+
+                    <a href="Blurring_Boundaries/Neural_Synthesizer_AI/index.html" class="game-link">Neural_Synthesizer_AI</a>
+
+                    <a href="Blurring_Boundaries/Neural_Void_Voyager/index.html" class="game-link">Neural_Void_Voyager</a>
+
+                    <a href="Blurring_Boundaries/Nile_Riverfront_Builder/index.html" class="game-link">Nile_Riverfront_Builder</a>
+
+                    <a href="Blurring_Boundaries/Noir_Abstract_Studio/index.html" class="game-link">Noir_Abstract_Studio</a>
+
+                    <a href="Blurring_Boundaries/Orbital_Bistro_Edge_of_the_Void/index.html" class="game-link">Orbital_Bistro_Edge_of_the_Void</a>
+
+                    <a href="Blurring_Boundaries/PROTOCOL_12_AIs_-_War_Machine_Interface/index.html" class="game-link">PROTOCOL_12_AIs_-_War_Machine_Interface</a>
+
+                    <a href="Blurring_Boundaries/Project_Ascension/index.html" class="game-link">Project_Ascension</a>
+
+                    <a href="Blurring_Boundaries/Project_CHIMERA_Identity_Stabilizer/index.html" class="game-link">Project_CHIMERA_Identity_Stabilizer</a>
+
+                    <a href="Blurring_Boundaries/Protocol_DRAGON_Server_Guardian/index.html" class="game-link">Protocol_DRAGON_Server_Guardian</a>
+
+                    <a href="Blurring_Boundaries/Quantum_Core_Stabilizer/index.html" class="game-link">Quantum_Core_Stabilizer</a>
+
+                    <a href="Blurring_Boundaries/Quantum_Core_Stabilizer/index.html" class="game-link">Quantum_Core_Stabilizer</a>
+
+                    <a href="Blurring_Boundaries/Quantum_Nexus_Interface/index.html" class="game-link">Quantum_Nexus_Interface</a>
+
+                    <a href="Blurring_Boundaries/Rift_Walker_The_Orange_Void/index.html" class="game-link">Rift_Walker_The_Orange_Void</a>
+
+                    <a href="Blurring_Boundaries/Rise_Remix_The_Ascension/index.html" class="game-link">Rise_Remix_The_Ascension</a>
+
+                    <a href="Blurring_Boundaries/Rise_Remix_The_Ascension_2_3/index.html" class="game-link">Rise_Remix_The_Ascension_2_3</a>
+
+                    <a href="Blurring_Boundaries/SYNTH_MIND_Neural_Interface/index.html" class="game-link">SYNTH_MIND_Neural_Interface</a>
+
+                    <a href="Blurring_Boundaries/Sector_9_Hangar_Control/index.html" class="game-link">Sector_9_Hangar_Control</a>
+
+                    <a href="Blurring_Boundaries/Sentient_Eye_System_Purge/index.html" class="game-link">Sentient_Eye_System_Purge</a>
+
+                    <a href="Blurring_Boundaries/Serpent_s_Cove_Guardian_of_the_Deep/index.html" class="game-link">Serpent_s_Cove_Guardian_of_the_Deep</a>
+
+                    <a href="Blurring_Boundaries/Singularity_Reactor_Control/index.html" class="game-link">Singularity_Reactor_Control</a>
+
+                    <a href="Blurring_Boundaries/Sky_Council_The_Crystal_Table/index.html" class="game-link">Sky_Council_The_Crystal_Table</a>
+
+                    <a href="Blurring_Boundaries/SoulQuery_The_Organic_Database/index.html" class="game-link">SoulQuery_The_Organic_Database</a>
+
+                    <a href="Blurring_Boundaries/Spirit_Sky_Arena/index.html" class="game-link">Spirit_Sky_Arena</a>
+
+                    <a href="Blurring_Boundaries/Strange_Loops_-_Eternal_Learning_Algorithm/index.html" class="game-link">Strange_Loops_-_Eternal_Learning_Algorithm</a>
+
+                    <a href="Blurring_Boundaries/Sunday_Braai_Simulator/index.html" class="game-link">Sunday_Braai_Simulator</a>
+
+                    <a href="Blurring_Boundaries/Sunset_Ranch_Simulator/index.html" class="game-link">Sunset_Ranch_Simulator</a>
+
+                    <a href="Blurring_Boundaries/Symbiosis_Human-AI_Resonance/index.html" class="game-link">Symbiosis_Human-AI_Resonance</a>
+
+                    <a href="Blurring_Boundaries/Synapse_The_Living_Book/index.html" class="game-link">Synapse_The_Living_Book</a>
+
+                    <a href="Blurring_Boundaries/Synth-Farm_2077_Agri-Tech_Simulator/index.html" class="game-link">Synth-Farm_2077_Agri-Tech_Simulator</a>
+
+                    <a href="Blurring_Boundaries/Tactical_Command_Interface/index.html" class="game-link">Tactical_Command_Interface</a>
+
+                    <a href="Blurring_Boundaries/The_AI_Spectrum_Interactive_Explorer/index.html" class="game-link">The_AI_Spectrum_Interactive_Explorer</a>
+
+                    <a href="Blurring_Boundaries/The_AInthropologist_Contentment_Dashboard/index.html" class="game-link">The_AInthropologist_Contentment_Dashboard</a>
+
+                    <a href="Blurring_Boundaries/The_AInthropologist_Field_Report/index.html" class="game-link">The_AInthropologist_Field_Report</a>
+
+                    <a href="Blurring_Boundaries/The_Adventures_of_Elara_-_Interactive_Storybook/index.html" class="game-link">The_Adventures_of_Elara_-_Interactive_Storybook</a>
+
+                    <a href="Blurring_Boundaries/The_Algoriture_Influence_Simulator/index.html" class="game-link">The_Algoriture_Influence_Simulator</a>
+
+                    <a href="Blurring_Boundaries/The_Ascent_to_Sunspire/index.html" class="game-link">The_Ascent_to_Sunspire</a>
+
+                    <a href="Blurring_Boundaries/The_Chrono-Jester_s_Library/index.html" class="game-link">The_Chrono-Jester_s_Library</a>
+
+                    <a href="Blurring_Boundaries/The_Convergence_Interface/index.html" class="game-link">The_Convergence_Interface</a>
+
+                    <a href="Blurring_Boundaries/The_Guardian_of_the_Arch/index.html" class="game-link">The_Guardian_of_the_Arch</a>
+
+                    <a href="Blurring_Boundaries/The_Hustler_Who_Lost_the_Clock/index.html" class="game-link">The_Hustler_Who_Lost_the_Clock</a>
+
+                    <a href="Blurring_Boundaries/The_Midnight_Village_Mystery/index.html" class="game-link">The_Midnight_Village_Mystery</a>
+
+                    <a href="Blurring_Boundaries/The_Primer_Interactive_Experience/index.html" class="game-link">The_Primer_Interactive_Experience</a>
+
+                    <a href="Blurring_Boundaries/The_Rift_Walker/index.html" class="game-link">The_Rift_Walker</a>
+
+                    <a href="Blurring_Boundaries/The_Serpent_s_Corridor/index.html" class="game-link">The_Serpent_s_Corridor</a>
+
+                    <a href="Blurring_Boundaries/The_Shadow_Oracle/index.html" class="game-link">The_Shadow_Oracle</a>
+
+                    <a href="Blurring_Boundaries/The_Singularity_Event/index.html" class="game-link">The_Singularity_Event</a>
+
+                    <a href="Blurring_Boundaries/The_Unquestionable_Hardness_of_Problems/index.html" class="game-link">The_Unquestionable_Hardness_of_Problems</a>
+
+                    <a href="Blurring_Boundaries/The_Watercolor_Journey/index.html" class="game-link">The_Watercolor_Journey</a>
+
+                    <a href="Blurring_Boundaries/Twin_Peaks_Tycoon/index.html" class="game-link">Twin_Peaks_Tycoon</a>
+
+                    <a href="Blurring_Boundaries/Valley_Estate_Architect/index.html" class="game-link">Valley_Estate_Architect</a>
+
+                    <a href="Blurring_Boundaries/Violet_Connection_The_Rhythm_of_Hearts/index.html" class="game-link">Violet_Connection_The_Rhythm_of_Hearts</a>
+
+                    <a href="Blurring_Boundaries/Voice_AI_Impact_Simulator/index.html" class="game-link">Voice_AI_Impact_Simulator</a>
+
+                    <a href="Blurring_Boundaries/Web_of_Life_-_Interactive_Sanctuary/index.html" class="game-link">Web_of_Life_-_Interactive_Sanctuary</a>
+
+                    <a href="Blurring_Boundaries/Wisdom_in_the_Wild_Web_of_Life/index.html" class="game-link">Wisdom_in_the_Wild_Web_of_Life</a>
+
+                    <a href="Blurring_Boundaries/Wyrm_s_Ascent_The_Dragon_Pit/index.html" class="game-link">Wyrm_s_Ascent_The_Dragon_Pit</a>
+
+                    <a href="Blurring_Boundaries/Zen_Veranda_Architect/index.html" class="game-link">Zen_Veranda_Architect</a>
+
+                </div>
             </div>
 
-            <!-- Cosmo Spacer -->
             <div class="theme-card">
                 <div class="theme-header">
-                    <span class="theme-icon">🌌</span>
-                    <span class="theme-title">Cosmo Spacer</span>
-                    <span class="theme-count">46 games</span>
+                    <div class="theme-emoji">🌌</div>
+                    <div class="theme-title">Cosmo Spacer</div>
+                    <div class="theme-count">74</div>
                 </div>
-                <p class="theme-description">Space exploration, cosmic mysteries, and astronomical themes</p>
-                <div class="games-list" id="cosmo-spacer-games"></div>
+                <div class="theme-games">
+
+                    <a href="Cosmo_Spacer/AGI_Convergence_Simulator/index.html" class="game-link">AGI_Convergence_Simulator</a>
+
+                    <a href="Cosmo_Spacer/AI_Futures_Alignment_vs_Convergence/index.html" class="game-link">AI_Futures_Alignment_vs_Convergence</a>
+
+                    <a href="Cosmo_Spacer/AI_Office_Chronicles_The_Game/index.html" class="game-link">AI_Office_Chronicles_The_Game</a>
+
+                    <a href="Cosmo_Spacer/AI_Reconstruction_Protocol/index.html" class="game-link">AI_Reconstruction_Protocol</a>
+
+                    <a href="Cosmo_Spacer/ASCENSION_PROTOCOL_BEYOND_UBI/index.html" class="game-link">ASCENSION_PROTOCOL_BEYOND_UBI</a>
+
+                    <a href="Cosmo_Spacer/Artifact_001_The_Void_Resonator/index.html" class="game-link">Artifact_001_The_Void_Resonator</a>
+
+                    <a href="Cosmo_Spacer/Astral_Cavern_Cosmic_Mindfulness/index.html" class="game-link">Astral_Cavern_Cosmic_Mindfulness</a>
+
+                    <a href="Cosmo_Spacer/Beyond_Automation_AI_Lab_Simulator/index.html" class="game-link">Beyond_Automation_AI_Lab_Simulator</a>
+
+                    <a href="Cosmo_Spacer/Cave_of_Echoes_Interactive_Exploration/index.html" class="game-link">Cave_of_Echoes_Interactive_Exploration</a>
+
+                    <a href="Cosmo_Spacer/Celestial_Altar_The_Ritual/index.html" class="game-link">Celestial_Altar_The_Ritual</a>
+
+                    <a href="Cosmo_Spacer/Celestial_Dream_Catcher/index.html" class="game-link">Celestial_Dream_Catcher</a>
+
+                    <a href="Cosmo_Spacer/Celestial_Forest_Run/index.html" class="game-link">Celestial_Forest_Run</a>
+
+                    <a href="Cosmo_Spacer/Chrono-Fragment_Stabilizer/index.html" class="game-link">Chrono-Fragment_Stabilizer</a>
+
+                    <a href="Cosmo_Spacer/Chrono-Vortex_Decrypter/index.html" class="game-link">Chrono-Vortex_Decrypter</a>
+
+                    <a href="Cosmo_Spacer/Chronos_Bridge_The_Great_Upload/index.html" class="game-link">Chronos_Bridge_The_Great_Upload</a>
+
+                    <a href="Cosmo_Spacer/Cosmic_Credit_Collector_2019/index.html" class="game-link">Cosmic_Credit_Collector_2019</a>
+
+                    <a href="Cosmo_Spacer/Cosmic_Infinity_Engine/index.html" class="game-link">Cosmic_Infinity_Engine</a>
+
+                    <a href="Cosmo_Spacer/Cosmic_Query_Event_Horizon/index.html" class="game-link">Cosmic_Query_Event_Horizon</a>
+
+                    <a href="Cosmo_Spacer/Cosmic_Renaissance_Composer/index.html" class="game-link">Cosmic_Renaissance_Composer</a>
+
+                    <a href="Cosmo_Spacer/Cosmic_Sanctuary/index.html" class="game-link">Cosmic_Sanctuary</a>
+
+                    <a href="Cosmo_Spacer/Cosmic_Void_Explorer/index.html" class="game-link">Cosmic_Void_Explorer</a>
+
+                    <a href="Cosmo_Spacer/Cyber-Bloom_Synthesis/index.html" class="game-link">Cyber-Bloom_Synthesis</a>
+
+                    <a href="Cosmo_Spacer/Cyber-Homestead_OS/index.html" class="game-link">Cyber-Homestead_OS</a>
+
+                    <a href="Cosmo_Spacer/Cyber-Organic_Synthesis_Protocol/index.html" class="game-link">Cyber-Organic_Synthesis_Protocol</a>
+
+                    <a href="Cosmo_Spacer/Cyber-Pastoral_Farm_Interface/index.html" class="game-link">Cyber-Pastoral_Farm_Interface</a>
+
+                    <a href="Cosmo_Spacer/Cyber-Temple_Data_Harvester/index.html" class="game-link">Cyber-Temple_Data_Harvester</a>
+
+                    <a href="Cosmo_Spacer/Cyber_Serpent_Data_Eater/index.html" class="game-link">Cyber_Serpent_Data_Eater</a>
+
+                    <a href="Cosmo_Spacer/Driftwood_Workshop_OS/index.html" class="game-link">Driftwood_Workshop_OS</a>
+
+                    <a href="Cosmo_Spacer/EagleEye_Synthetic_Chorus_Protocol/index.html" class="game-link">EagleEye_Synthetic_Chorus_Protocol</a>
+
+                    <a href="Cosmo_Spacer/Eco-Link_Cyber_Druid_Interface/index.html" class="game-link">Eco-Link_Cyber_Druid_Interface</a>
+
+                    <a href="Cosmo_Spacer/Event_Horizon_Entropy_Manager/index.html" class="game-link">Event_Horizon_Entropy_Manager</a>
+
+                    <a href="Cosmo_Spacer/Galactic_Globe_The_Roast_Battle/index.html" class="game-link">Galactic_Globe_The_Roast_Battle</a>
+
+                    <a href="Cosmo_Spacer/Hyperion_Reactor_Control/index.html" class="game-link">Hyperion_Reactor_Control</a>
+
+                    <a href="Cosmo_Spacer/Hyperspace_Serpent/index.html" class="game-link">Hyperspace_Serpent</a>
+
+                    <a href="Cosmo_Spacer/Infrared_Journey/index.html" class="game-link">Infrared_Journey</a>
+
+                    <a href="Cosmo_Spacer/Interactive_Galaxy_Forge/index.html" class="game-link">Interactive_Galaxy_Forge</a>
+
+                    <a href="Cosmo_Spacer/JWST_Deep_Field_Explorer/index.html" class="game-link">JWST_Deep_Field_Explorer</a>
+
+                    <a href="Cosmo_Spacer/Lumina_Grove_-_Interactive_Soundscape/index.html" class="game-link">Lumina_Grove_-_Interactive_Soundscape</a>
+
+                    <a href="Cosmo_Spacer/Luminous_Strands_Ethereal_Flow/index.html" class="game-link">Luminous_Strands_Ethereal_Flow</a>
+
+                    <a href="Cosmo_Spacer/Mystic_Spire_Arcane_Defense/index.html" class="game-link">Mystic_Spire_Arcane_Defense</a>
+
+                    <a href="Cosmo_Spacer/MÖBIUS_DATA_Self-Referential_Consciousness/index.html" class="game-link">MÖBIUS_DATA_Self-Referential_Consciousness</a>
+
+                    <a href="Cosmo_Spacer/NEURAL_SYNC_PROTOCOL/index.html" class="game-link">NEURAL_SYNC_PROTOCOL</a>
+
+                    <a href="Cosmo_Spacer/Nebula_Forge_Galactic_Simulator/index.html" class="game-link">Nebula_Forge_Galactic_Simulator</a>
+
+                    <a href="Cosmo_Spacer/Nebula_Nexus_Galaxy_Sandbox/index.html" class="game-link">Nebula_Nexus_Galaxy_Sandbox</a>
+
+                    <a href="Cosmo_Spacer/Neon_Ascension_The_Tower_Climb/index.html" class="game-link">Neon_Ascension_The_Tower_Climb</a>
+
+                    <a href="Cosmo_Spacer/Neon_Neural_Flow/index.html" class="game-link">Neon_Neural_Flow</a>
+
+                    <a href="Cosmo_Spacer/Neural_Core_Stabilizer/index.html" class="game-link">Neural_Core_Stabilizer</a>
+
+                    <a href="Cosmo_Spacer/Neural_Sync_Protocol_2_3/index.html" class="game-link">Neural_Sync_Protocol_2_3</a>
+
+                    <a href="Cosmo_Spacer/Neural_Synthesizer_AI/index.html" class="game-link">Neural_Synthesizer_AI</a>
+
+                    <a href="Cosmo_Spacer/Neural_Void_Voyager/index.html" class="game-link">Neural_Void_Voyager</a>
+
+                    <a href="Cosmo_Spacer/Noir_Abstract_Studio/index.html" class="game-link">Noir_Abstract_Studio</a>
+
+                    <a href="Cosmo_Spacer/Orbital_Bistro_Edge_of_the_Void/index.html" class="game-link">Orbital_Bistro_Edge_of_the_Void</a>
+
+                    <a href="Cosmo_Spacer/PROTOCOL_12_AIs_-_War_Machine_Interface/index.html" class="game-link">PROTOCOL_12_AIs_-_War_Machine_Interface</a>
+
+                    <a href="Cosmo_Spacer/Project_CHIMERA_Identity_Stabilizer/index.html" class="game-link">Project_CHIMERA_Identity_Stabilizer</a>
+
+                    <a href="Cosmo_Spacer/Project_PLATO_S_CAVE_SIMULATION_ARCHITECT/index.html" class="game-link">Project_PLATO_S_CAVE_SIMULATION_ARCHITECT</a>
+
+                    <a href="Cosmo_Spacer/Protocol_DRAGON_Server_Guardian/index.html" class="game-link">Protocol_DRAGON_Server_Guardian</a>
+
+                    <a href="Cosmo_Spacer/Quantum_Core_Stabilizer/index.html" class="game-link">Quantum_Core_Stabilizer</a>
+
+                    <a href="Cosmo_Spacer/Quantum_Core_Stabilizer/index.html" class="game-link">Quantum_Core_Stabilizer</a>
+
+                    <a href="Cosmo_Spacer/Quantum_Galaxy_Core/index.html" class="game-link">Quantum_Galaxy_Core</a>
+
+                    <a href="Cosmo_Spacer/Quantum_Nexus_Interface/index.html" class="game-link">Quantum_Nexus_Interface</a>
+
+                    <a href="Cosmo_Spacer/Rift_Walker_The_Orange_Void/index.html" class="game-link">Rift_Walker_The_Orange_Void</a>
+
+                    <a href="Cosmo_Spacer/Rise_Remix_The_Ascension/index.html" class="game-link">Rise_Remix_The_Ascension</a>
+
+                    <a href="Cosmo_Spacer/Rise_Remix_The_Ascension_2_3/index.html" class="game-link">Rise_Remix_The_Ascension_2_3</a>
+
+                    <a href="Cosmo_Spacer/Strange_Loops_-_Eternal_Learning_Algorithm/index.html" class="game-link">Strange_Loops_-_Eternal_Learning_Algorithm</a>
+
+                    <a href="Cosmo_Spacer/Tactical_Command_Interface/index.html" class="game-link">Tactical_Command_Interface</a>
+
+                    <a href="Cosmo_Spacer/The_AInthropologist_Contentment_Dashboard/index.html" class="game-link">The_AInthropologist_Contentment_Dashboard</a>
+
+                    <a href="Cosmo_Spacer/The_AInthropologist_Field_Report/index.html" class="game-link">The_AInthropologist_Field_Report</a>
+
+                    <a href="Cosmo_Spacer/The_Algoriture_Influence_Simulator/index.html" class="game-link">The_Algoriture_Influence_Simulator</a>
+
+                    <a href="Cosmo_Spacer/The_Astral_Shrine/index.html" class="game-link">The_Astral_Shrine</a>
+
+                    <a href="Cosmo_Spacer/The_Eternal_Vigil_Cosmic_Altar/index.html" class="game-link">The_Eternal_Vigil_Cosmic_Altar</a>
+
+                    <a href="Cosmo_Spacer/The_Memory_Loom/index.html" class="game-link">The_Memory_Loom</a>
+
+                    <a href="Cosmo_Spacer/Valley_Estate_Architect/index.html" class="game-link">Valley_Estate_Architect</a>
+
+                    <a href="Cosmo_Spacer/VibeStack_Viral_Tycoon/index.html" class="game-link">VibeStack_Viral_Tycoon</a>
+
+                    <a href="Cosmo_Spacer/Void_Drifter_Event_Horizon/index.html" class="game-link">Void_Drifter_Event_Horizon</a>
+
+                </div>
             </div>
 
-            <!-- Neon Cyber -->
             <div class="theme-card">
                 <div class="theme-header">
-                    <span class="theme-icon">⚡</span>
-                    <span class="theme-title">Neon Cyber</span>
-                    <span class="theme-count">48 games</span>
+                    <div class="theme-emoji">🐉</div>
+                    <div class="theme-title">Dragons</div>
+                    <div class="theme-count">9</div>
                 </div>
-                <p class="theme-description">Cyberpunk aesthetics, neon-soaked environments, digital worlds</p>
-                <div class="games-list" id="neon-cyber-games"></div>
+                <div class="theme-games">
+
+                    <a href="Dragons/Cyber_Serpent_Data_Eater/index.html" class="game-link">Cyber_Serpent_Data_Eater</a>
+
+                    <a href="Dragons/Data_Dragon_ID_KIT/index.html" class="game-link">Data_Dragon_ID_KIT</a>
+
+                    <a href="Dragons/Data_Dragon_Keeper_The_Transformation/index.html" class="game-link">Data_Dragon_Keeper_The_Transformation</a>
+
+                    <a href="Dragons/Hyperspace_Serpent/index.html" class="game-link">Hyperspace_Serpent</a>
+
+                    <a href="Dragons/Neon_Wyvern_Protocol/index.html" class="game-link">Neon_Wyvern_Protocol</a>
+
+                    <a href="Dragons/Protocol_DRAGON_Server_Guardian/index.html" class="game-link">Protocol_DRAGON_Server_Guardian</a>
+
+                    <a href="Dragons/Serpent_s_Cove_Guardian_of_the_Deep/index.html" class="game-link">Serpent_s_Cove_Guardian_of_the_Deep</a>
+
+                    <a href="Dragons/The_Serpent_s_Corridor/index.html" class="game-link">The_Serpent_s_Corridor</a>
+
+                    <a href="Dragons/Wyrm_s_Ascent_The_Dragon_Pit/index.html" class="game-link">Wyrm_s_Ascent_The_Dragon_Pit</a>
+
+                </div>
             </div>
 
-            <!-- Nature Harmony -->
             <div class="theme-card">
                 <div class="theme-header">
-                    <span class="theme-icon">🌿</span>
-                    <span class="theme-title">Nature Harmony</span>
-                    <span class="theme-count">12 games</span>
+                    <div class="theme-emoji">🌾</div>
+                    <div class="theme-title">Farmy Fun</div>
+                    <div class="theme-count">9</div>
                 </div>
-                <p class="theme-description">Natural environments, ecology, and environmental themes</p>
-                <div class="games-list" id="nature-harmony-games"></div>
+                <div class="theme-games">
+
+                    <a href="Farmy_Fun/BitSoil_Farm_The_Digital_Detox/index.html" class="game-link">BitSoil_Farm_The_Digital_Detox</a>
+
+                    <a href="Farmy_Fun/BitSoil_SageByte_The_Architecture_of_Mending/index.html" class="game-link">BitSoil_SageByte_The_Architecture_of_Mending</a>
+
+                    <a href="Farmy_Fun/Cyber-Homestead_OS/index.html" class="game-link">Cyber-Homestead_OS</a>
+
+                    <a href="Farmy_Fun/Cyber-Pastoral_Farm_Interface/index.html" class="game-link">Cyber-Pastoral_Farm_Interface</a>
+
+                    <a href="Farmy_Fun/Cyber-Temple_Data_Harvester/index.html" class="game-link">Cyber-Temple_Data_Harvester</a>
+
+                    <a href="Farmy_Fun/Neural_Root_Access_Data_Harvester/index.html" class="game-link">Neural_Root_Access_Data_Harvester</a>
+
+                    <a href="Farmy_Fun/Sunset_Ranch_Simulator/index.html" class="game-link">Sunset_Ranch_Simulator</a>
+
+                    <a href="Farmy_Fun/Synth-Farm_2077_Agri-Tech_Simulator/index.html" class="game-link">Synth-Farm_2077_Agri-Tech_Simulator</a>
+
+                    <a href="Farmy_Fun/The_Hustler_Who_Lost_the_Clock/index.html" class="game-link">The_Hustler_Who_Lost_the_Clock</a>
+
+                </div>
             </div>
 
-            <!-- Dragons -->
             <div class="theme-card">
                 <div class="theme-header">
-                    <span class="theme-icon">🐉</span>
-                    <span class="theme-title">Dragons</span>
-                    <span class="theme-count">9 games</span>
+                    <div class="theme-emoji">🕯️</div>
+                    <div class="theme-title">Mystic Rituals</div>
+                    <div class="theme-count">13</div>
                 </div>
-                <p class="theme-description">Games featuring dragons, serpents, and mythical creatures</p>
-                <div class="games-list" id="dragons-games"></div>
+                <div class="theme-games">
+
+                    <a href="Mystic_Rituals/Celestial_Altar_The_Ritual/index.html" class="game-link">Celestial_Altar_The_Ritual</a>
+
+                    <a href="Mystic_Rituals/Cosmic_Sanctuary/index.html" class="game-link">Cosmic_Sanctuary</a>
+
+                    <a href="Mystic_Rituals/Cyber-Temple_Data_Harvester/index.html" class="game-link">Cyber-Temple_Data_Harvester</a>
+
+                    <a href="Mystic_Rituals/Luminous_Strands_Ethereal_Flow/index.html" class="game-link">Luminous_Strands_Ethereal_Flow</a>
+
+                    <a href="Mystic_Rituals/Mystic_Spire_Arcane_Defense/index.html" class="game-link">Mystic_Spire_Arcane_Defense</a>
+
+                    <a href="Mystic_Rituals/Spirit_Sky_Arena/index.html" class="game-link">Spirit_Sky_Arena</a>
+
+                    <a href="Mystic_Rituals/The_Astral_Shrine/index.html" class="game-link">The_Astral_Shrine</a>
+
+                    <a href="Mystic_Rituals/The_Eternal_Vigil_Cosmic_Altar/index.html" class="game-link">The_Eternal_Vigil_Cosmic_Altar</a>
+
+                    <a href="Mystic_Rituals/The_Mystic_Doorway/index.html" class="game-link">The_Mystic_Doorway</a>
+
+                    <a href="Mystic_Rituals/The_Sanctuary_Tree/index.html" class="game-link">The_Sanctuary_Tree</a>
+
+                    <a href="Mystic_Rituals/The_Shadow_Oracle/index.html" class="game-link">The_Shadow_Oracle</a>
+
+                    <a href="Mystic_Rituals/The_Vigil_Keeper_of_the_Flame/index.html" class="game-link">The_Vigil_Keeper_of_the_Flame</a>
+
+                    <a href="Mystic_Rituals/Web_of_Life_-_Interactive_Sanctuary/index.html" class="game-link">Web_of_Life_-_Interactive_Sanctuary</a>
+
+                </div>
             </div>
 
-            <!-- Mystic Rituals -->
             <div class="theme-card">
                 <div class="theme-header">
-                    <span class="theme-icon">🔮</span>
-                    <span class="theme-title">Mystic Rituals</span>
-                    <span class="theme-count">9 games</span>
+                    <div class="theme-emoji">💠</div>
+                    <div class="theme-title">Neon Cyber</div>
+                    <div class="theme-count">72</div>
                 </div>
-                <p class="theme-description">Mystical experiences, rituals, and spiritual journeys</p>
-                <div class="games-list" id="mystic-rituals-games"></div>
+                <div class="theme-games">
+
+                    <a href="Neon_Cyber/AGI_Convergence_Simulator/index.html" class="game-link">AGI_Convergence_Simulator</a>
+
+                    <a href="Neon_Cyber/AI_Office_Chronicles_The_Game/index.html" class="game-link">AI_Office_Chronicles_The_Game</a>
+
+                    <a href="Neon_Cyber/AI_Reconstruction_Protocol/index.html" class="game-link">AI_Reconstruction_Protocol</a>
+
+                    <a href="Neon_Cyber/ASCENSION_PROTOCOL_BEYOND_UBI/index.html" class="game-link">ASCENSION_PROTOCOL_BEYOND_UBI</a>
+
+                    <a href="Neon_Cyber/Authentic_Human_Simulator/index.html" class="game-link">Authentic_Human_Simulator</a>
+
+                    <a href="Neon_Cyber/Beyond_Automation_AI_Lab_Simulator/index.html" class="game-link">Beyond_Automation_AI_Lab_Simulator</a>
+
+                    <a href="Neon_Cyber/Bio-Digital_Identity_Synthesizer/index.html" class="game-link">Bio-Digital_Identity_Synthesizer</a>
+
+                    <a href="Neon_Cyber/Bio-Digital_Interface/index.html" class="game-link">Bio-Digital_Interface</a>
+
+                    <a href="Neon_Cyber/BitSoil_Farm_The_Digital_Detox/index.html" class="game-link">BitSoil_Farm_The_Digital_Detox</a>
+
+                    <a href="Neon_Cyber/Chromatic_Dialogue_Interactive_Art/index.html" class="game-link">Chromatic_Dialogue_Interactive_Art</a>
+
+                    <a href="Neon_Cyber/Chrono-Fragment_Stabilizer/index.html" class="game-link">Chrono-Fragment_Stabilizer</a>
+
+                    <a href="Neon_Cyber/Chrono-Harmonic_Synthesizer/index.html" class="game-link">Chrono-Harmonic_Synthesizer</a>
+
+                    <a href="Neon_Cyber/Chrono-Vortex_Decrypter/index.html" class="game-link">Chrono-Vortex_Decrypter</a>
+
+                    <a href="Neon_Cyber/Cosmic_Infinity_Engine/index.html" class="game-link">Cosmic_Infinity_Engine</a>
+
+                    <a href="Neon_Cyber/Cyber-Bloom_Synthesis/index.html" class="game-link">Cyber-Bloom_Synthesis</a>
+
+                    <a href="Neon_Cyber/Cyber-Homestead_OS/index.html" class="game-link">Cyber-Homestead_OS</a>
+
+                    <a href="Neon_Cyber/Cyber-Organic_Resonance_Tuner/index.html" class="game-link">Cyber-Organic_Resonance_Tuner</a>
+
+                    <a href="Neon_Cyber/Cyber-Organic_Synthesis_Protocol/index.html" class="game-link">Cyber-Organic_Synthesis_Protocol</a>
+
+                    <a href="Neon_Cyber/Cyber-Pastoral_Farm_Interface/index.html" class="game-link">Cyber-Pastoral_Farm_Interface</a>
+
+                    <a href="Neon_Cyber/Cyber-Relic_Restoration_Protocol/index.html" class="game-link">Cyber-Relic_Restoration_Protocol</a>
+
+                    <a href="Neon_Cyber/Cyber-Shepherd_OS/index.html" class="game-link">Cyber-Shepherd_OS</a>
+
+                    <a href="Neon_Cyber/Cyber-Temple_Data_Harvester/index.html" class="game-link">Cyber-Temple_Data_Harvester</a>
+
+                    <a href="Neon_Cyber/Cyber_Serpent_Data_Eater/index.html" class="game-link">Cyber_Serpent_Data_Eater</a>
+
+                    <a href="Neon_Cyber/Data_Dragon_ID_KIT/index.html" class="game-link">Data_Dragon_ID_KIT</a>
+
+                    <a href="Neon_Cyber/Data_Dragon_Keeper_The_Transformation/index.html" class="game-link">Data_Dragon_Keeper_The_Transformation</a>
+
+                    <a href="Neon_Cyber/Digital_Entropy_Cube/index.html" class="game-link">Digital_Entropy_Cube</a>
+
+                    <a href="Neon_Cyber/Digital_Sentience_The_Synthesizer/index.html" class="game-link">Digital_Sentience_The_Synthesizer</a>
+
+                    <a href="Neon_Cyber/EagleEye_Synthetic_Chorus_Protocol/index.html" class="game-link">EagleEye_Synthetic_Chorus_Protocol</a>
+
+                    <a href="Neon_Cyber/Eco-Link_Cyber_Druid_Interface/index.html" class="game-link">Eco-Link_Cyber_Druid_Interface</a>
+
+                    <a href="Neon_Cyber/Eco-Raft_Survivor/index.html" class="game-link">Eco-Raft_Survivor</a>
+
+                    <a href="Neon_Cyber/Emerald_Spire_Core_Control/index.html" class="game-link">Emerald_Spire_Core_Control</a>
+
+                    <a href="Neon_Cyber/Galactic_Globe_The_Roast_Battle/index.html" class="game-link">Galactic_Globe_The_Roast_Battle</a>
+
+                    <a href="Neon_Cyber/GrieVoice_AI_Grievance_Systems/index.html" class="game-link">GrieVoice_AI_Grievance_Systems</a>
+
+                    <a href="Neon_Cyber/Habitat_734B_Stasis_Control/index.html" class="game-link">Habitat_734B_Stasis_Control</a>
+
+                    <a href="Neon_Cyber/Hyperion_Reactor_Control/index.html" class="game-link">Hyperion_Reactor_Control</a>
+
+                    <a href="Neon_Cyber/MÖBIUS_DATA_Self-Referential_Consciousness/index.html" class="game-link">MÖBIUS_DATA_Self-Referential_Consciousness</a>
+
+                    <a href="Neon_Cyber/NEURAL_SYNC_PROTOCOL/index.html" class="game-link">NEURAL_SYNC_PROTOCOL</a>
+
+                    <a href="Neon_Cyber/Neon_Ascension_The_Tower_Climb/index.html" class="game-link">Neon_Ascension_The_Tower_Climb</a>
+
+                    <a href="Neon_Cyber/Neon_City_Overgrowth/index.html" class="game-link">Neon_City_Overgrowth</a>
+
+                    <a href="Neon_Cyber/Neon_Desk_Canine_Chaos/index.html" class="game-link">Neon_Desk_Canine_Chaos</a>
+
+                    <a href="Neon_Cyber/Neon_Neural_Flow/index.html" class="game-link">Neon_Neural_Flow</a>
+
+                    <a href="Neon_Cyber/Neon_Rain_Zen_Walk/index.html" class="game-link">Neon_Rain_Zen_Walk</a>
+
+                    <a href="Neon_Cyber/Neon_Sync_Overdrive/index.html" class="game-link">Neon_Sync_Overdrive</a>
+
+                    <a href="Neon_Cyber/Neon_Wyvern_Protocol/index.html" class="game-link">Neon_Wyvern_Protocol</a>
+
+                    <a href="Neon_Cyber/Neural_Root_Access_Data_Harvester/index.html" class="game-link">Neural_Root_Access_Data_Harvester</a>
+
+                    <a href="Neon_Cyber/Neural_Sync_Protocol/index.html" class="game-link">Neural_Sync_Protocol</a>
+
+                    <a href="Neon_Cyber/Neural_Sync_Protocol/index.html" class="game-link">Neural_Sync_Protocol</a>
+
+                    <a href="Neon_Cyber/Neural_Sync_Protocol_2_3/index.html" class="game-link">Neural_Sync_Protocol_2_3</a>
+
+                    <a href="Neon_Cyber/Neural_Synthesizer_AI/index.html" class="game-link">Neural_Synthesizer_AI</a>
+
+                    <a href="Neon_Cyber/PROTOCOL_12_AIs_-_War_Machine_Interface/index.html" class="game-link">PROTOCOL_12_AIs_-_War_Machine_Interface</a>
+
+                    <a href="Neon_Cyber/Project_CHIMERA_Identity_Stabilizer/index.html" class="game-link">Project_CHIMERA_Identity_Stabilizer</a>
+
+                    <a href="Neon_Cyber/Project_PLATO_S_CAVE_SIMULATION_ARCHITECT/index.html" class="game-link">Project_PLATO_S_CAVE_SIMULATION_ARCHITECT</a>
+
+                    <a href="Neon_Cyber/Protocol_DRAGON_Server_Guardian/index.html" class="game-link">Protocol_DRAGON_Server_Guardian</a>
+
+                    <a href="Neon_Cyber/Quantum_Core_Stabilizer/index.html" class="game-link">Quantum_Core_Stabilizer</a>
+
+                    <a href="Neon_Cyber/Quantum_Core_Stabilizer/index.html" class="game-link">Quantum_Core_Stabilizer</a>
+
+                    <a href="Neon_Cyber/Quantum_Nexus_Interface/index.html" class="game-link">Quantum_Nexus_Interface</a>
+
+                    <a href="Neon_Cyber/SYNTH_MIND_Neural_Interface/index.html" class="game-link">SYNTH_MIND_Neural_Interface</a>
+
+                    <a href="Neon_Cyber/Scrib-Li_2025_Copywriting_Buffet/index.html" class="game-link">Scrib-Li_2025_Copywriting_Buffet</a>
+
+                    <a href="Neon_Cyber/Sector_9_Hangar_Control/index.html" class="game-link">Sector_9_Hangar_Control</a>
+
+                    <a href="Neon_Cyber/Sentient_Eye_System_Purge/index.html" class="game-link">Sentient_Eye_System_Purge</a>
+
+                    <a href="Neon_Cyber/SoulQuery_The_Organic_Database/index.html" class="game-link">SoulQuery_The_Organic_Database</a>
+
+                    <a href="Neon_Cyber/Synth-Farm_2077_Agri-Tech_Simulator/index.html" class="game-link">Synth-Farm_2077_Agri-Tech_Simulator</a>
+
+                    <a href="Neon_Cyber/Synth-Sprout_Digital_Restoration/index.html" class="game-link">Synth-Sprout_Digital_Restoration</a>
+
+                    <a href="Neon_Cyber/Tactical_Command_Interface/index.html" class="game-link">Tactical_Command_Interface</a>
+
+                    <a href="Neon_Cyber/The_Algoriture_Influence_Simulator/index.html" class="game-link">The_Algoriture_Influence_Simulator</a>
+
+                    <a href="Neon_Cyber/The_Ascension_Protocol/index.html" class="game-link">The_Ascension_Protocol</a>
+
+                    <a href="Neon_Cyber/The_Convergence_Interface/index.html" class="game-link">The_Convergence_Interface</a>
+
+                    <a href="Neon_Cyber/The_Memory_Loom/index.html" class="game-link">The_Memory_Loom</a>
+
+                    <a href="Neon_Cyber/The_Unquestionable_Hardness_of_Problems/index.html" class="game-link">The_Unquestionable_Hardness_of_Problems</a>
+
+                    <a href="Neon_Cyber/VibeStack_Viral_Tycoon/index.html" class="game-link">VibeStack_Viral_Tycoon</a>
+
+                    <a href="Neon_Cyber/Voice_AI_Impact_Simulator/index.html" class="game-link">Voice_AI_Impact_Simulator</a>
+
+                    <a href="Neon_Cyber/Zen_Veranda_Architect/index.html" class="game-link">Zen_Veranda_Architect</a>
+
+                </div>
             </div>
 
-            <!-- Farmy Fun -->
             <div class="theme-card">
                 <div class="theme-header">
-                    <span class="theme-icon">🚜</span>
-                    <span class="theme-title">Farmy Fun</span>
-                    <span class="theme-count">7 games</span>
+                    <div class="theme-emoji">🌿</div>
+                    <div class="theme-title">Nature Harmony</div>
+                    <div class="theme-count">21</div>
                 </div>
-                <p class="theme-description">Farming simulators, pastoral themes, and agricultural games</p>
-                <div class="games-list" id="farmy-fun-games"></div>
+                <div class="theme-games">
+
+                    <a href="Nature_Harmony/Bio-Acoustic_Plant_Interface/index.html" class="game-link">Bio-Acoustic_Plant_Interface</a>
+
+                    <a href="Nature_Harmony/Bio-Digital_Identity_Synthesizer/index.html" class="game-link">Bio-Digital_Identity_Synthesizer</a>
+
+                    <a href="Nature_Harmony/Bio-Digital_Interface/index.html" class="game-link">Bio-Digital_Interface</a>
+
+                    <a href="Nature_Harmony/Canopy_Explorer_s_Journal/index.html" class="game-link">Canopy_Explorer_s_Journal</a>
+
+                    <a href="Nature_Harmony/Canopy_Sentinel/index.html" class="game-link">Canopy_Sentinel</a>
+
+                    <a href="Nature_Harmony/Celestial_Forest_Run/index.html" class="game-link">Celestial_Forest_Run</a>
+
+                    <a href="Nature_Harmony/Cyber-Bloom_Synthesis/index.html" class="game-link">Cyber-Bloom_Synthesis</a>
+
+                    <a href="Nature_Harmony/Cyber-Organic_Resonance_Tuner/index.html" class="game-link">Cyber-Organic_Resonance_Tuner</a>
+
+                    <a href="Nature_Harmony/Cyber-Organic_Synthesis_Protocol/index.html" class="game-link">Cyber-Organic_Synthesis_Protocol</a>
+
+                    <a href="Nature_Harmony/Digital_Sentience_The_Synthesizer/index.html" class="game-link">Digital_Sentience_The_Synthesizer</a>
+
+                    <a href="Nature_Harmony/Dreamscape_Forager/index.html" class="game-link">Dreamscape_Forager</a>
+
+                    <a href="Nature_Harmony/Eco-Link_Cyber_Druid_Interface/index.html" class="game-link">Eco-Link_Cyber_Druid_Interface</a>
+
+                    <a href="Nature_Harmony/Lumina_Grove_-_Interactive_Soundscape/index.html" class="game-link">Lumina_Grove_-_Interactive_Soundscape</a>
+
+                    <a href="Nature_Harmony/Lumina_Light_Memory_Game/index.html" class="game-link">Lumina_Light_Memory_Game</a>
+
+                    <a href="Nature_Harmony/Nile_Riverfront_Builder/index.html" class="game-link">Nile_Riverfront_Builder</a>
+
+                    <a href="Nature_Harmony/Project_CHIMERA_Identity_Stabilizer/index.html" class="game-link">Project_CHIMERA_Identity_Stabilizer</a>
+
+                    <a href="Nature_Harmony/SoulQuery_The_Organic_Database/index.html" class="game-link">SoulQuery_The_Organic_Database</a>
+
+                    <a href="Nature_Harmony/Symbiosis_Human-AI_Resonance/index.html" class="game-link">Symbiosis_Human-AI_Resonance</a>
+
+                    <a href="Nature_Harmony/Twin_Peaks_Tycoon/index.html" class="game-link">Twin_Peaks_Tycoon</a>
+
+                    <a href="Nature_Harmony/Valley_Estate_Architect/index.html" class="game-link">Valley_Estate_Architect</a>
+
+                    <a href="Nature_Harmony/Wisdom_in_the_Wild_Web_of_Life/index.html" class="game-link">Wisdom_in_the_Wild_Web_of_Life</a>
+
+                </div>
             </div>
 
-            <!-- Paint Splash -->
             <div class="theme-card">
                 <div class="theme-header">
-                    <span class="theme-icon">🎨</span>
-                    <span class="theme-title">Paint Splash</span>
-                    <span class="theme-count">14 games</span>
+                    <div class="theme-emoji">🏠</div>
+                    <div class="theme-title">HouseSim</div>
+                    <div class="theme-count">9</div>
                 </div>
-                <p class="theme-description">Interactive paint splashing - click to splash paint on canvas, colors flow and merge</p>
-                <div class="games-list" id="paint-splash-games"></div>
+                <div class="theme-games">
+
+                    <a href="HouseSim/BitSoil_SageByte_The_Architecture_of_Mending/index.html" class="game-link">BitSoil_SageByte_The_Architecture_of_Mending</a>
+
+                    <a href="HouseSim/Cyber-Homestead_OS/index.html" class="game-link">Cyber-Homestead_OS</a>
+
+                    <a href="HouseSim/Habitat_734B_Stasis_Control/index.html" class="game-link">Habitat_734B_Stasis_Control</a>
+
+                    <a href="HouseSim/Nile_Riverfront_Builder/index.html" class="game-link">Nile_Riverfront_Builder</a>
+
+                    <a href="HouseSim/Orbital_Bistro_Edge_of_the_Void/index.html" class="game-link">Orbital_Bistro_Edge_of_the_Void</a>
+
+                    <a href="HouseSim/Project_PLATO_S_CAVE_SIMULATION_ARCHITECT/index.html" class="game-link">Project_PLATO_S_CAVE_SIMULATION_ARCHITECT</a>
+
+                    <a href="HouseSim/The_Midnight_Village_Mystery/index.html" class="game-link">The_Midnight_Village_Mystery</a>
+
+                    <a href="HouseSim/Valley_Estate_Architect/index.html" class="game-link">Valley_Estate_Architect</a>
+
+                    <a href="HouseSim/Zen_Veranda_Architect/index.html" class="game-link">Zen_Veranda_Architect</a>
+
+                </div>
             </div>
 
-            <!-- Hyper Drive -->
             <div class="theme-card">
                 <div class="theme-header">
-                    <span class="theme-icon">🚀</span>
-                    <span class="theme-title">Hyper Drive</span>
-                    <span class="theme-count">21 games</span>
+                    <div class="theme-emoji">💡</div>
+                    <div class="theme-title">Light Patterns</div>
+                    <div class="theme-count">16</div>
                 </div>
-                <p class="theme-description">First-person motion through space or tunnels - feeling of being inside a moving vehicle</p>
-                <div class="games-list" id="hyper-drive-games"></div>
+                <div class="theme-games">
+
+                    <a href="Light_Patterns/Beyond_Automation_AI_Lab_Simulator/index.html" class="game-link">Beyond_Automation_AI_Lab_Simulator</a>
+
+                    <a href="Light_Patterns/Circle_of_Unity_-_Interactive_Harmony/index.html" class="game-link">Circle_of_Unity_-_Interactive_Harmony</a>
+
+                    <a href="Light_Patterns/Eco-Raft_Survivor/index.html" class="game-link">Eco-Raft_Survivor</a>
+
+                    <a href="Light_Patterns/Lumina_Light_Memory_Game/index.html" class="game-link">Lumina_Light_Memory_Game</a>
+
+                    <a href="Light_Patterns/NEURAL_SYNC_PROTOCOL/index.html" class="game-link">NEURAL_SYNC_PROTOCOL</a>
+
+                    <a href="Light_Patterns/Neon_City_Overgrowth/index.html" class="game-link">Neon_City_Overgrowth</a>
+
+                    <a href="Light_Patterns/Neon_Sync_Overdrive/index.html" class="game-link">Neon_Sync_Overdrive</a>
+
+                    <a href="Light_Patterns/Neural_Sync_Interface/index.html" class="game-link">Neural_Sync_Interface</a>
+
+                    <a href="Light_Patterns/Neural_Sync_Protocol/index.html" class="game-link">Neural_Sync_Protocol</a>
+
+                    <a href="Light_Patterns/Neural_Sync_Protocol/index.html" class="game-link">Neural_Sync_Protocol</a>
+
+                    <a href="Light_Patterns/Neural_Sync_Protocol_2_3/index.html" class="game-link">Neural_Sync_Protocol_2_3</a>
+
+                    <a href="Light_Patterns/Nile_Riverfront_Builder/index.html" class="game-link">Nile_Riverfront_Builder</a>
+
+                    <a href="Light_Patterns/Rise_Remix_The_Ascension_2_3/index.html" class="game-link">Rise_Remix_The_Ascension_2_3</a>
+
+                    <a href="Light_Patterns/The_Eternal_Vigil_Cosmic_Altar/index.html" class="game-link">The_Eternal_Vigil_Cosmic_Altar</a>
+
+                    <a href="Light_Patterns/The_Memory_Loom/index.html" class="game-link">The_Memory_Loom</a>
+
+                    <a href="Light_Patterns/The_Vigil_Keeper_of_the_Flame/index.html" class="game-link">The_Vigil_Keeper_of_the_Flame</a>
+
+                </div>
             </div>
 
-            <!-- UX Landings -->
             <div class="theme-card">
                 <div class="theme-header">
-                    <span class="theme-icon">🖥️</span>
-                    <span class="theme-title">UX Landings</span>
-                    <span class="theme-count">55 games</span>
+                    <div class="theme-emoji">🎨</div>
+                    <div class="theme-title">Paint Splash</div>
+                    <div class="theme-count">24</div>
                 </div>
-                <p class="theme-description">UI/UX focused games with interactive interfaces and dashboards</p>
-                <div class="games-list" id="ux-landings-games"></div>
+                <div class="theme-games">
+
+                    <a href="Paint_Splash/Abstractify_Kinetic_Canvas/index.html" class="game-link">Abstractify_Kinetic_Canvas</a>
+
+                    <a href="Paint_Splash/Bio-Digital_Identity_Synthesizer/index.html" class="game-link">Bio-Digital_Identity_Synthesizer</a>
+
+                    <a href="Paint_Splash/Bio-Digital_Interface/index.html" class="game-link">Bio-Digital_Interface</a>
+
+                    <a href="Paint_Splash/Chromatic_Dialogue_Interactive_Art/index.html" class="game-link">Chromatic_Dialogue_Interactive_Art</a>
+
+                    <a href="Paint_Splash/Chrono-Fragment_Stabilizer/index.html" class="game-link">Chrono-Fragment_Stabilizer</a>
+
+                    <a href="Paint_Splash/Chrono-Vortex_Decrypter/index.html" class="game-link">Chrono-Vortex_Decrypter</a>
+
+                    <a href="Paint_Splash/Cosmic_Void_Explorer/index.html" class="game-link">Cosmic_Void_Explorer</a>
+
+                    <a href="Paint_Splash/Cyber-Shepherd_OS/index.html" class="game-link">Cyber-Shepherd_OS</a>
+
+                    <a href="Paint_Splash/Cyber-Temple_Data_Harvester/index.html" class="game-link">Cyber-Temple_Data_Harvester</a>
+
+                    <a href="Paint_Splash/Cyber_Serpent_Data_Eater/index.html" class="game-link">Cyber_Serpent_Data_Eater</a>
+
+                    <a href="Paint_Splash/Event_Horizon_Entropy_Manager/index.html" class="game-link">Event_Horizon_Entropy_Manager</a>
+
+                    <a href="Paint_Splash/Hyperspace_Serpent/index.html" class="game-link">Hyperspace_Serpent</a>
+
+                    <a href="Paint_Splash/Infrared_Journey/index.html" class="game-link">Infrared_Journey</a>
+
+                    <a href="Paint_Splash/Luminous_Strands_Ethereal_Flow/index.html" class="game-link">Luminous_Strands_Ethereal_Flow</a>
+
+                    <a href="Paint_Splash/Mystic_Spire_Arcane_Defense/index.html" class="game-link">Mystic_Spire_Arcane_Defense</a>
+
+                    <a href="Paint_Splash/MÖBIUS_DATA_Self-Referential_Consciousness/index.html" class="game-link">MÖBIUS_DATA_Self-Referential_Consciousness</a>
+
+                    <a href="Paint_Splash/Nebula_Forge_Galactic_Simulator/index.html" class="game-link">Nebula_Forge_Galactic_Simulator</a>
+
+                    <a href="Paint_Splash/Nebula_Nexus_Galaxy_Sandbox/index.html" class="game-link">Nebula_Nexus_Galaxy_Sandbox</a>
+
+                    <a href="Paint_Splash/Neural_Sync_Protocol/index.html" class="game-link">Neural_Sync_Protocol</a>
+
+                    <a href="Paint_Splash/Noir_Abstract_Studio/index.html" class="game-link">Noir_Abstract_Studio</a>
+
+                    <a href="Paint_Splash/Quantum_Galaxy_Core/index.html" class="game-link">Quantum_Galaxy_Core</a>
+
+                    <a href="Paint_Splash/SoulQuery_The_Organic_Database/index.html" class="game-link">SoulQuery_The_Organic_Database</a>
+
+                    <a href="Paint_Splash/Synapse_The_Living_Book/index.html" class="game-link">Synapse_The_Living_Book</a>
+
+                    <a href="Paint_Splash/The_Singularity_Event/index.html" class="game-link">The_Singularity_Event</a>
+
+                </div>
             </div>
 
-            <!-- Light Patterns -->
             <div class="theme-card">
                 <div class="theme-header">
-                    <span class="theme-icon">💡</span>
-                    <span class="theme-title">Light Patterns</span>
-                    <span class="theme-count">12 games</span>
+                    <div class="theme-emoji">⚔️</div>
+                    <div class="theme-title">Us vs Them</div>
+                    <div class="theme-count">13</div>
                 </div>
-                <p class="theme-description">Memory games with flickering light patterns that must be repeated</p>
-                <div class="games-list" id="light-patterns-games"></div>
+                <div class="theme-games">
+
+                    <a href="Us_vs_Them/AI_Futures_Alignment_vs_Convergence/index.html" class="game-link">AI_Futures_Alignment_vs_Convergence</a>
+
+                    <a href="Us_vs_Them/BitSoil_SageByte_The_Architecture_of_Mending/index.html" class="game-link">BitSoil_SageByte_The_Architecture_of_Mending</a>
+
+                    <a href="Us_vs_Them/Cyber-Temple_Data_Harvester/index.html" class="game-link">Cyber-Temple_Data_Harvester</a>
+
+                    <a href="Us_vs_Them/Dream_Spire_Pearl_Protector/index.html" class="game-link">Dream_Spire_Pearl_Protector</a>
+
+                    <a href="Us_vs_Them/Galactic_Globe_The_Roast_Battle/index.html" class="game-link">Galactic_Globe_The_Roast_Battle</a>
+
+                    <a href="Us_vs_Them/Lumi_The_Serenity_Bot/index.html" class="game-link">Lumi_The_Serenity_Bot</a>
+
+                    <a href="Us_vs_Them/Mystic_Spire_Arcane_Defense/index.html" class="game-link">Mystic_Spire_Arcane_Defense</a>
+
+                    <a href="Us_vs_Them/Neural_Sync_Interface/index.html" class="game-link">Neural_Sync_Interface</a>
+
+                    <a href="Us_vs_Them/PROTOCOL_12_AIs_-_War_Machine_Interface/index.html" class="game-link">PROTOCOL_12_AIs_-_War_Machine_Interface</a>
+
+                    <a href="Us_vs_Them/Protocol_DRAGON_Server_Guardian/index.html" class="game-link">Protocol_DRAGON_Server_Guardian</a>
+
+                    <a href="Us_vs_Them/Serpent_s_Cove_Guardian_of_the_Deep/index.html" class="game-link">Serpent_s_Cove_Guardian_of_the_Deep</a>
+
+                    <a href="Us_vs_Them/The_Guardian_of_the_Arch/index.html" class="game-link">The_Guardian_of_the_Arch</a>
+
+                    <a href="Us_vs_Them/The_Watercolor_Journey/index.html" class="game-link">The_Watercolor_Journey</a>
+
+                </div>
             </div>
 
-            <!-- Us vs Them -->
             <div class="theme-card">
                 <div class="theme-header">
-                    <span class="theme-icon">⚔️</span>
-                    <span class="theme-title">Us vs Them</span>
-                    <span class="theme-count">10 games</span>
+                    <div class="theme-emoji">🖥️</div>
+                    <div class="theme-title">UX Landings</div>
+                    <div class="theme-count">90</div>
                 </div>
-                <p class="theme-description">Competitive games, conflicts, and adversarial challenges</p>
-                <div class="games-list" id="us-vs-them-games"></div>
+                <div class="theme-games">
+
+                    <a href="UX_Landings/AGI_Convergence_Simulator/index.html" class="game-link">AGI_Convergence_Simulator</a>
+
+                    <a href="UX_Landings/AI_Futures_Alignment_vs_Convergence/index.html" class="game-link">AI_Futures_Alignment_vs_Convergence</a>
+
+                    <a href="UX_Landings/AI_Lab_Chaos_Simulator/index.html" class="game-link">AI_Lab_Chaos_Simulator</a>
+
+                    <a href="UX_Landings/AI_Office_Chronicles_The_Game/index.html" class="game-link">AI_Office_Chronicles_The_Game</a>
+
+                    <a href="UX_Landings/AI_Reconstruction_Protocol/index.html" class="game-link">AI_Reconstruction_Protocol</a>
+
+                    <a href="UX_Landings/ASCENSION_PROTOCOL_BEYOND_UBI/index.html" class="game-link">ASCENSION_PROTOCOL_BEYOND_UBI</a>
+
+                    <a href="UX_Landings/Abstractify_Kinetic_Canvas/index.html" class="game-link">Abstractify_Kinetic_Canvas</a>
+
+                    <a href="UX_Landings/Art-Dozer_Color_Cleanup/index.html" class="game-link">Art-Dozer_Color_Cleanup</a>
+
+                    <a href="UX_Landings/Authentic_Human_Simulator/index.html" class="game-link">Authentic_Human_Simulator</a>
+
+                    <a href="UX_Landings/Beyond_Automation_AI_Lab_Simulator/index.html" class="game-link">Beyond_Automation_AI_Lab_Simulator</a>
+
+                    <a href="UX_Landings/Bio-Acoustic_Plant_Interface/index.html" class="game-link">Bio-Acoustic_Plant_Interface</a>
+
+                    <a href="UX_Landings/Bio-Digital_Interface/index.html" class="game-link">Bio-Digital_Interface</a>
+
+                    <a href="UX_Landings/BitSoil_SageByte_The_Architecture_of_Mending/index.html" class="game-link">BitSoil_SageByte_The_Architecture_of_Mending</a>
+
+                    <a href="UX_Landings/Celestial_Altar_The_Ritual/index.html" class="game-link">Celestial_Altar_The_Ritual</a>
+
+                    <a href="UX_Landings/Celestial_Forest_Run/index.html" class="game-link">Celestial_Forest_Run</a>
+
+                    <a href="UX_Landings/Chromatic_Dialogue_Interactive_Art/index.html" class="game-link">Chromatic_Dialogue_Interactive_Art</a>
+
+                    <a href="UX_Landings/Chrono-Fragment_Stabilizer/index.html" class="game-link">Chrono-Fragment_Stabilizer</a>
+
+                    <a href="UX_Landings/Chrono-Harmonic_Synthesizer/index.html" class="game-link">Chrono-Harmonic_Synthesizer</a>
+
+                    <a href="UX_Landings/Chrono-Vortex_Decrypter/index.html" class="game-link">Chrono-Vortex_Decrypter</a>
+
+                    <a href="UX_Landings/Chronos_Bridge_The_Great_Upload/index.html" class="game-link">Chronos_Bridge_The_Great_Upload</a>
+
+                    <a href="UX_Landings/Cosmic_Infinity_Engine/index.html" class="game-link">Cosmic_Infinity_Engine</a>
+
+                    <a href="UX_Landings/Cosmic_Void_Explorer/index.html" class="game-link">Cosmic_Void_Explorer</a>
+
+                    <a href="UX_Landings/Cyber-Homestead_OS/index.html" class="game-link">Cyber-Homestead_OS</a>
+
+                    <a href="UX_Landings/Cyber-Pastoral_Farm_Interface/index.html" class="game-link">Cyber-Pastoral_Farm_Interface</a>
+
+                    <a href="UX_Landings/Cyber-Shepherd_OS/index.html" class="game-link">Cyber-Shepherd_OS</a>
+
+                    <a href="UX_Landings/Cyber_Serpent_Data_Eater/index.html" class="game-link">Cyber_Serpent_Data_Eater</a>
+
+                    <a href="UX_Landings/Digital_Entropy_Cube/index.html" class="game-link">Digital_Entropy_Cube</a>
+
+                    <a href="UX_Landings/Dreamscape_Forager/index.html" class="game-link">Dreamscape_Forager</a>
+
+                    <a href="UX_Landings/Eco-Link_Cyber_Druid_Interface/index.html" class="game-link">Eco-Link_Cyber_Druid_Interface</a>
+
+                    <a href="UX_Landings/Eco-Retreat_Simulator/index.html" class="game-link">Eco-Retreat_Simulator</a>
+
+                    <a href="UX_Landings/Emerald_Spire_Core_Control/index.html" class="game-link">Emerald_Spire_Core_Control</a>
+
+                    <a href="UX_Landings/Emotional_Detox_The_Therapy_Chair/index.html" class="game-link">Emotional_Detox_The_Therapy_Chair</a>
+
+                    <a href="UX_Landings/Engagement_Unlocked_The_Simulator/index.html" class="game-link">Engagement_Unlocked_The_Simulator</a>
+
+                    <a href="UX_Landings/Entropy_Stabilizer_The_Dual_Core/index.html" class="game-link">Entropy_Stabilizer_The_Dual_Core</a>
+
+                    <a href="UX_Landings/Event_Horizon_Entropy_Manager/index.html" class="game-link">Event_Horizon_Entropy_Manager</a>
+
+                    <a href="UX_Landings/Habitat_734B_Stasis_Control/index.html" class="game-link">Habitat_734B_Stasis_Control</a>
+
+                    <a href="UX_Landings/Hyperion_Reactor_Control/index.html" class="game-link">Hyperion_Reactor_Control</a>
+
+                    <a href="UX_Landings/Impasto_Abstract_Art_Generator/index.html" class="game-link">Impasto_Abstract_Art_Generator</a>
+
+                    <a href="UX_Landings/Infrared_Journey/index.html" class="game-link">Infrared_Journey</a>
+
+                    <a href="UX_Landings/Interactive_Galaxy_Forge/index.html" class="game-link">Interactive_Galaxy_Forge</a>
+
+                    <a href="UX_Landings/Interactive_Galaxy_Generator/index.html" class="game-link">Interactive_Galaxy_Generator</a>
+
+                    <a href="UX_Landings/Luminous_Strands_Ethereal_Flow/index.html" class="game-link">Luminous_Strands_Ethereal_Flow</a>
+
+                    <a href="UX_Landings/Mystic_Spire_Arcane_Defense/index.html" class="game-link">Mystic_Spire_Arcane_Defense</a>
+
+                    <a href="UX_Landings/MÖBIUS_DATA_Self-Referential_Consciousness/index.html" class="game-link">MÖBIUS_DATA_Self-Referential_Consciousness</a>
+
+                    <a href="UX_Landings/NEURAL_NEXUS_AI_Interface/index.html" class="game-link">NEURAL_NEXUS_AI_Interface</a>
+
+                    <a href="UX_Landings/Nebula_Forge_Galactic_Simulator/index.html" class="game-link">Nebula_Forge_Galactic_Simulator</a>
+
+                    <a href="UX_Landings/Nebula_Nexus_Galaxy_Sandbox/index.html" class="game-link">Nebula_Nexus_Galaxy_Sandbox</a>
+
+                    <a href="UX_Landings/Neon_Ascension_The_Tower_Climb/index.html" class="game-link">Neon_Ascension_The_Tower_Climb</a>
+
+                    <a href="UX_Landings/Neon_Neural_Flow/index.html" class="game-link">Neon_Neural_Flow</a>
+
+                    <a href="UX_Landings/Neon_Wyvern_Protocol/index.html" class="game-link">Neon_Wyvern_Protocol</a>
+
+                    <a href="UX_Landings/Neural_Convergence_Interface/index.html" class="game-link">Neural_Convergence_Interface</a>
+
+                    <a href="UX_Landings/Neural_Core_Stabilizer/index.html" class="game-link">Neural_Core_Stabilizer</a>
+
+                    <a href="UX_Landings/Neural_Harmony_Chaos_to_Clarity/index.html" class="game-link">Neural_Harmony_Chaos_to_Clarity</a>
+
+                    <a href="UX_Landings/Neural_Sync_Interface/index.html" class="game-link">Neural_Sync_Interface</a>
+
+                    <a href="UX_Landings/Neural_Sync_Protocol/index.html" class="game-link">Neural_Sync_Protocol</a>
+
+                    <a href="UX_Landings/Neural_Sync_Protocol_2_3/index.html" class="game-link">Neural_Sync_Protocol_2_3</a>
+
+                    <a href="UX_Landings/Neural_Synthesizer_AI/index.html" class="game-link">Neural_Synthesizer_AI</a>
+
+                    <a href="UX_Landings/Nile_Riverfront_Builder/index.html" class="game-link">Nile_Riverfront_Builder</a>
+
+                    <a href="UX_Landings/Noir_Abstract_Studio/index.html" class="game-link">Noir_Abstract_Studio</a>
+
+                    <a href="UX_Landings/Orbital_Bistro_Edge_of_the_Void/index.html" class="game-link">Orbital_Bistro_Edge_of_the_Void</a>
+
+                    <a href="UX_Landings/PROTOCOL_12_AIs_-_War_Machine_Interface/index.html" class="game-link">PROTOCOL_12_AIs_-_War_Machine_Interface</a>
+
+                    <a href="UX_Landings/Project_PLATO_S_CAVE_SIMULATION_ARCHITECT/index.html" class="game-link">Project_PLATO_S_CAVE_SIMULATION_ARCHITECT</a>
+
+                    <a href="UX_Landings/Quantum_Galaxy_Core/index.html" class="game-link">Quantum_Galaxy_Core</a>
+
+                    <a href="UX_Landings/Quantum_Nexus_Interface/index.html" class="game-link">Quantum_Nexus_Interface</a>
+
+                    <a href="UX_Landings/SYNTH_MIND_Neural_Interface/index.html" class="game-link">SYNTH_MIND_Neural_Interface</a>
+
+                    <a href="UX_Landings/Sector_9_Hangar_Control/index.html" class="game-link">Sector_9_Hangar_Control</a>
+
+                    <a href="UX_Landings/Sentient_Eye_System_Purge/index.html" class="game-link">Sentient_Eye_System_Purge</a>
+
+                    <a href="UX_Landings/Singularity_Reactor_Control/index.html" class="game-link">Singularity_Reactor_Control</a>
+
+                    <a href="UX_Landings/Strange_Loops_-_Eternal_Learning_Algorithm/index.html" class="game-link">Strange_Loops_-_Eternal_Learning_Algorithm</a>
+
+                    <a href="UX_Landings/Sunday_Braai_Simulator/index.html" class="game-link">Sunday_Braai_Simulator</a>
+
+                    <a href="UX_Landings/Sunset_Ranch_Simulator/index.html" class="game-link">Sunset_Ranch_Simulator</a>
+
+                    <a href="UX_Landings/Symbiosis_Human-AI_Resonance/index.html" class="game-link">Symbiosis_Human-AI_Resonance</a>
+
+                    <a href="UX_Landings/Synth-Farm_2077_Agri-Tech_Simulator/index.html" class="game-link">Synth-Farm_2077_Agri-Tech_Simulator</a>
+
+                    <a href="UX_Landings/Synth-Sprout_Digital_Restoration/index.html" class="game-link">Synth-Sprout_Digital_Restoration</a>
+
+                    <a href="UX_Landings/Tactical_Command_Interface/index.html" class="game-link">Tactical_Command_Interface</a>
+
+                    <a href="UX_Landings/The_AInthropologist_Contentment_Dashboard/index.html" class="game-link">The_AInthropologist_Contentment_Dashboard</a>
+
+                    <a href="UX_Landings/The_Adventures_of_Elara_-_Interactive_Storybook/index.html" class="game-link">The_Adventures_of_Elara_-_Interactive_Storybook</a>
+
+                    <a href="UX_Landings/The_Algoriture_Influence_Simulator/index.html" class="game-link">The_Algoriture_Influence_Simulator</a>
+
+                    <a href="UX_Landings/The_Convergence_Interface/index.html" class="game-link">The_Convergence_Interface</a>
+
+                    <a href="UX_Landings/The_Great_Tree_Ascent/index.html" class="game-link">The_Great_Tree_Ascent</a>
+
+                    <a href="UX_Landings/The_Hall_of_Reflections/index.html" class="game-link">The_Hall_of_Reflections</a>
+
+                    <a href="UX_Landings/The_Rift_Walker/index.html" class="game-link">The_Rift_Walker</a>
+
+                    <a href="UX_Landings/The_Sanctuary_Tree/index.html" class="game-link">The_Sanctuary_Tree</a>
+
+                    <a href="UX_Landings/The_Serpent_s_Corridor/index.html" class="game-link">The_Serpent_s_Corridor</a>
+
+                    <a href="UX_Landings/The_Singularity_Event/index.html" class="game-link">The_Singularity_Event</a>
+
+                    <a href="UX_Landings/The_Watercolor_Journey/index.html" class="game-link">The_Watercolor_Journey</a>
+
+                    <a href="UX_Landings/VibeStack_Viral_Tycoon/index.html" class="game-link">VibeStack_Viral_Tycoon</a>
+
+                    <a href="UX_Landings/Voice_AI_Impact_Simulator/index.html" class="game-link">Voice_AI_Impact_Simulator</a>
+
+                    <a href="UX_Landings/Void_Drifter_Event_Horizon/index.html" class="game-link">Void_Drifter_Event_Horizon</a>
+
+                    <a href="UX_Landings/Web_of_Life_-_Interactive_Sanctuary/index.html" class="game-link">Web_of_Life_-_Interactive_Sanctuary</a>
+
+                </div>
             </div>
 
-            <!-- HouseSim -->
             <div class="theme-card">
                 <div class="theme-header">
-                    <span class="theme-icon">🏠</span>
-                    <span class="theme-title">HouseSim</span>
-                    <span class="theme-count">9 games</span>
+                    <div class="theme-emoji">🧘</div>
+                    <div class="theme-title">Zazen</div>
+                    <div class="theme-count">13</div>
                 </div>
-                <p class="theme-description">Home design, architecture, and interior simulation games</p>
-                <div class="games-list" id="housesim-games"></div>
+                <div class="theme-games">
+
+                    <a href="Zazen/ASCENSION_PROTOCOL_BEYOND_UBI/index.html" class="game-link">ASCENSION_PROTOCOL_BEYOND_UBI</a>
+
+                    <a href="Zazen/Ascension_Step_Into_The_Light/index.html" class="game-link">Ascension_Step_Into_The_Light</a>
+
+                    <a href="Zazen/Celestial_Altar_The_Ritual/index.html" class="game-link">Celestial_Altar_The_Ritual</a>
+
+                    <a href="Zazen/Cosmic_Sanctuary/index.html" class="game-link">Cosmic_Sanctuary</a>
+
+                    <a href="Zazen/Neon_Ascension_The_Tower_Climb/index.html" class="game-link">Neon_Ascension_The_Tower_Climb</a>
+
+                    <a href="Zazen/Neon_Rain_Zen_Walk/index.html" class="game-link">Neon_Rain_Zen_Walk</a>
+
+                    <a href="Zazen/Project_Ascension/index.html" class="game-link">Project_Ascension</a>
+
+                    <a href="Zazen/Rise_Remix_The_Ascension/index.html" class="game-link">Rise_Remix_The_Ascension</a>
+
+                    <a href="Zazen/Rise_Remix_The_Ascension_2_3/index.html" class="game-link">Rise_Remix_The_Ascension_2_3</a>
+
+                    <a href="Zazen/The_Ascension_Protocol/index.html" class="game-link">The_Ascension_Protocol</a>
+
+                    <a href="Zazen/The_Eternal_Vigil_Cosmic_Altar/index.html" class="game-link">The_Eternal_Vigil_Cosmic_Altar</a>
+
+                    <a href="Zazen/The_Vigil_Keeper_of_the_Flame/index.html" class="game-link">The_Vigil_Keeper_of_the_Flame</a>
+
+                    <a href="Zazen/Zen_Veranda_Architect/index.html" class="game-link">Zen_Veranda_Architect</a>
+
+                </div>
             </div>
 
-            <!-- Zazen -->
             <div class="theme-card">
                 <div class="theme-header">
-                    <span class="theme-icon">🧘</span>
-                    <span class="theme-title">Zazen</span>
-                    <span class="theme-count">11 games</span>
+                    <div class="theme-emoji">🚀</div>
+                    <div class="theme-title">Hyper Drive</div>
+                    <div class="theme-count">29</div>
                 </div>
-                <p class="theme-description">Ritual activities - lighting candles, moving objects to attain enlightenment</p>
-                <div class="games-list" id="zazen-games"></div>
+                <div class="theme-games">
+
+                    <a href="Hyper_Drive/Astral_Cavern_Cosmic_Mindfulness/index.html" class="game-link">Astral_Cavern_Cosmic_Mindfulness</a>
+
+                    <a href="Hyper_Drive/Cosmic_Infinity_Engine/index.html" class="game-link">Cosmic_Infinity_Engine</a>
+
+                    <a href="Hyper_Drive/Driftwood_Workshop_OS/index.html" class="game-link">Driftwood_Workshop_OS</a>
+
+                    <a href="Hyper_Drive/Eco-Raft_Survivor/index.html" class="game-link">Eco-Raft_Survivor</a>
+
+                    <a href="Hyper_Drive/Hyperspace_Serpent/index.html" class="game-link">Hyperspace_Serpent</a>
+
+                    <a href="Hyper_Drive/I_AM_IT_-_The_Surreal_Chase/index.html" class="game-link">I_AM_IT_-_The_Surreal_Chase</a>
+
+                    <a href="Hyper_Drive/Infrared_Journey/index.html" class="game-link">Infrared_Journey</a>
+
+                    <a href="Hyper_Drive/JWST_Deep_Field_Explorer/index.html" class="game-link">JWST_Deep_Field_Explorer</a>
+
+                    <a href="Hyper_Drive/Neon_City_Overgrowth/index.html" class="game-link">Neon_City_Overgrowth</a>
+
+                    <a href="Hyper_Drive/Neon_Rain_Zen_Walk/index.html" class="game-link">Neon_Rain_Zen_Walk</a>
+
+                    <a href="Hyper_Drive/Neon_Sync_Overdrive/index.html" class="game-link">Neon_Sync_Overdrive</a>
+
+                    <a href="Hyper_Drive/Neural_Void_Voyager/index.html" class="game-link">Neural_Void_Voyager</a>
+
+                    <a href="Hyper_Drive/Orbital_Bistro_Edge_of_the_Void/index.html" class="game-link">Orbital_Bistro_Edge_of_the_Void</a>
+
+                    <a href="Hyper_Drive/Project_CHIMERA_Identity_Stabilizer/index.html" class="game-link">Project_CHIMERA_Identity_Stabilizer</a>
+
+                    <a href="Hyper_Drive/Project_PLATO_S_CAVE_SIMULATION_ARCHITECT/index.html" class="game-link">Project_PLATO_S_CAVE_SIMULATION_ARCHITECT</a>
+
+                    <a href="Hyper_Drive/Rift_Walker_The_Orange_Void/index.html" class="game-link">Rift_Walker_The_Orange_Void</a>
+
+                    <a href="Hyper_Drive/SYNTH_MIND_Neural_Interface/index.html" class="game-link">SYNTH_MIND_Neural_Interface</a>
+
+                    <a href="Hyper_Drive/Sector_9_Hangar_Control/index.html" class="game-link">Sector_9_Hangar_Control</a>
+
+                    <a href="Hyper_Drive/Serpent_s_Cove_Guardian_of_the_Deep/index.html" class="game-link">Serpent_s_Cove_Guardian_of_the_Deep</a>
+
+                    <a href="Hyper_Drive/Sunday_Braai_Simulator/index.html" class="game-link">Sunday_Braai_Simulator</a>
+
+                    <a href="Hyper_Drive/The_Ascent_to_Sunspire/index.html" class="game-link">The_Ascent_to_Sunspire</a>
+
+                    <a href="Hyper_Drive/The_Astral_Shrine/index.html" class="game-link">The_Astral_Shrine</a>
+
+                    <a href="Hyper_Drive/The_Midnight_Village_Mystery/index.html" class="game-link">The_Midnight_Village_Mystery</a>
+
+                    <a href="Hyper_Drive/The_Rift_Walker/index.html" class="game-link">The_Rift_Walker</a>
+
+                    <a href="Hyper_Drive/The_Singularity_Event/index.html" class="game-link">The_Singularity_Event</a>
+
+                    <a href="Hyper_Drive/The_Watercolor_Journey/index.html" class="game-link">The_Watercolor_Journey</a>
+
+                    <a href="Hyper_Drive/Violet_Connection_The_Rhythm_of_Hearts/index.html" class="game-link">Violet_Connection_The_Rhythm_of_Hearts</a>
+
+                    <a href="Hyper_Drive/Void_Drifter_Event_Horizon/index.html" class="game-link">Void_Drifter_Event_Horizon</a>
+
+                    <a href="Hyper_Drive/Zen_Veranda_Architect/index.html" class="game-link">Zen_Veranda_Architect</a>
+
+                </div>
             </div>
+
         </div>
 
         <footer>
-            <p>🎨 <strong>All games AI-generated by Gemini 3.0 from images</strong></p>
-            <p style="margin-top: 10px;">Created with HTML5, Canvas, Web Audio API, and CSS3</p>
-            <p style="margin-top: 10px;">
-                <a href="https://github.com/LiezlC/GemGames">View on GitHub</a>
-            </p>
+            <p><strong>All games created by Google Gemini 3.0</strong></p>
+            <p>November 2024 | Organized by thematic content</p>
+            <a href="../README.md" class="back-link">Back to README</a>
         </footer>
     </div>
-
-    <script>
-        // Theme to folder mapping
-        const themes = {
-            'blurring-boundaries': 'Blurring_Boundaries',
-            'cosmo-spacer': 'Cosmo_Spacer',
-            'neon-cyber': 'Neon_Cyber',
-            'nature-harmony': 'Nature_Harmony',
-            'dragons': 'Dragons',
-            'mystic-rituals': 'Mystic_Rituals',
-            'farmy-fun': 'Farmy_Fun',
-            'paint-splash': 'Paint_Splash',
-            'hyper-drive': 'Hyper_Drive',
-            'ux-landings': 'UX_Landings',
-            'light-patterns': 'Light_Patterns',
-            'us-vs-them': 'Us_vs_Them',
-            'housesim': 'HouseSim',
-            'zazen': 'Zazen'
-        };
-
-        // Load games from categorization data
-        fetch('../theme_categorization.json')
-            .then(response => response.json())
-            .then(data => {
-                Object.entries(themes).forEach(([id, folder]) => {
-                    const container = document.getElementById(`${id}-games`);
-                    const games = data.themes[folder] || [];
-
-                    if (games.length > 0) {
-                        games.sort().forEach(game => {
-                            const link = document.createElement('a');
-                            link.href = `${folder}/${game}/index.html`;
-                            link.className = 'game-link';
-                            link.textContent = game.replace(/_/g, ' ');
-                            container.appendChild(link);
-                        });
-                    } else {
-                        container.innerHTML = '<p style="opacity: 0.5; text-align: center;">No games yet</p>';
-                    }
-                });
-            })
-            .catch(error => {
-                console.error('Error loading games:', error);
-            });
-    </script>
 </body>
 </html>

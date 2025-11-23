@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Governance Command Center</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8;
+            color: #1e293b;
+        }
+
+        /* Custom Pyramid CSS */
+        .pyramid-level {
+            clip-path: polygon(15% 0, 85% 0, 100% 100%, 0% 100%);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+        .pyramid-level:hover {
+            transform: scale(1.02);
+            z-index: 10;
+        }
+        
+        /* Triangle shape for top level */
+        .pyramid-top {
+            clip-path: polygon(50% 0, 0% 100%, 100% 100%);
+        }
+
+        /* Black Box Animation */
+        .black-box {
+            transition: all 1s ease;
+            background: linear-gradient(135deg, #1a1a1a 0%, #000000 100%);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+        }
+        .black-box.open {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid #4ade80;
+            box-shadow: 0 0 20px #4ade80;
+        }
+        .hidden-logic {
+            opacity: 0;
+            transition: opacity 1s ease;
+        }
+        .black-box.open .hidden-logic {
+            opacity: 1;
+        }
+
+        /* Card Flip */
+        .flip-card {
+            perspective: 1000px;
+        }
+        .flip-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        .flip-card:hover .flip-card-inner {
+            transform: rotateY(180deg);
+        }
+        .flip-card-front, .flip-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            border-radius: 0.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        .flip-card-back {
+            transform: rotateY(180deg);
+        }
+
+        /* Game Drag Area */
+        .drop-zone {
+            transition: background-color 0.2s;
+        }
+        .drop-zone.drag-over {
+            background-color: rgba(255, 255, 255, 0.5);
+            border: 2px dashed #4b5563;
+        }
+
+        .animate-float {
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-slate-900 text-white p-6 shadow-lg">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-extrabold tracking-tight">AI Governance <span class="text-blue-400">Command Center</span></h1>
+                <p class="text-slate-400 text-sm mt-1">Navigate Risks, Rules, and Responsibilities</p>
+            </div>
+            <div class="flex space-x-4">
+                <button onclick="switchTab('risks')" id="btn-risks" class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 transition font-semibold">⚠️ The Challenge</button>
+                <button onclick="switchTab('regulator')" id="btn-regulator" class="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 transition font-semibold">⚖️ The Regulator Game</button>
+                <button onclick="switchTab('xai')" id="btn-xai" class="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 transition font-semibold">🧠 XAI Lab</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow p-6 max-w-6xl mx-auto w-full">
+
+        <!-- SECTION 1: THE CHALLENGE (RISKS) -->
+        <div id="view-risks" class="space-y-8">
+            <div class="bg-white rounded-xl p-8 shadow-md border-l-4 border-red-500">
+                <div class="flex flex-col md:flex-row items-center gap-8">
+                    <div class="flex-1">
+                        <h2 class="text-2xl font-bold text-slate-800 mb-4">AI is Revolutionising Warfare</h2>
+                        <p class="text-slate-600 mb-4">Militaries are rapidly adopting AI for intelligence, cyber warfare, and autonomous systems. This introduces the concept of <span class="font-bold text-red-600">Lethal Autonomous Weapon Systems (LAWS)</span>.</p>
+                        <div class="flex gap-4 mt-4">
+                            <div class="text-4xl animate-float">🚁</div>
+                            <div class="text-4xl animate-float" style="animation-delay: 0.5s">🤖</div>
+                            <div class="text-4xl animate-float" style="animation-delay: 1s">🛡️</div>
+                        </div>
+                    </div>
+                    <div class="flex-1 bg-red-50 p-6 rounded-lg border border-red-100">
+                        <h3 class="font-bold text-red-800 mb-2">⚠️ Threat Monitor</h3>
+                        <div class="space-y-2 text-sm text-red-700">
+                            <div class="flex items-center gap-2"><span class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span> Detecting Autonomous Swarms...</div>
+                            <div class="flex items-center gap-2"><span class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span> Analyzing Accountability Gaps...</div>
+                            <div class="flex items-center gap-2"><span class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span> Calculating Strategic Instability...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h3 class="text-xl font-bold text-slate-800">Primary Risks Dashboard</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Ethical Card -->
+                <div class="flip-card h-64 cursor-pointer">
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front bg-slate-800 text-white rounded-xl shadow-lg">
+                            <div class="text-5xl mb-4">⚖️</div>
+                            <h4 class="text-xl font-bold">Ethical & Legal</h4>
+                            <p class="text-sm text-slate-400 mt-2">Hover to reveal details</p>
+                        </div>
+                        <div class="flip-card-back bg-blue-600 text-white rounded-xl shadow-lg">
+                            <h4 class="text-lg font-bold mb-2">Violations & Gaps</h4>
+                            <p class="text-sm">Violating laws of war and creating accountability gaps when systems make mistakes.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Operational Card -->
+                <div class="flip-card h-64 cursor-pointer">
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front bg-slate-800 text-white rounded-xl shadow-lg">
+                            <div class="text-5xl mb-4">⚙️⚠️</div>
+                            <h4 class="text-xl font-bold">Operational</h4>
+                            <p class="text-sm text-slate-400 mt-2">Hover to reveal details</p>
+                        </div>
+                        <div class="flip-card-back bg-orange-600 text-white rounded-xl shadow-lg">
+                            <h4 class="text-lg font-bold mb-2">System Failures</h4>
+                            <p class="text-sm">Risks from data bias, operator over-trust, or malicious manipulation.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Strategic Card -->
+                <div class="flip-card h-64 cursor-pointer">
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front bg-slate-800 text-white rounded-xl shadow-lg">
+                            <div class="text-5xl mb-4">🌐☢️</div>
+                            <h4 class="text-xl font-bold">Strategic</h4>
+                            <p class="text-sm text-slate-400 mt-2">Hover to reveal details</p>
+                        </div>
+                        <div class="flip-card-back bg-red-700 text-white rounded-xl shadow-lg">
+                            <h4 class="text-lg font-bold mb-2">Conflict Escalation</h4>
+                            <p class="text-sm">Lowering threshold for conflict and sparking uncontrollable AI arms races.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION 2: THE REGULATOR GAME (EU AI ACT) -->
+        <div id="view-regulator" class="hidden">
+            <div class="flex flex-col md:flex-row gap-8">
+                <!-- Game Area -->
+                <div class="flex-1">
+                    <div class="bg-white p-6 rounded-xl shadow-lg">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-2xl font-bold">EU AI Act Sorter</h2>
+                            <div class="bg-slate-100 px-4 py-2 rounded-full font-mono font-bold">Score: <span id="score">0</span></div>
+                        </div>
+                        <p class="text-slate-600 mb-6">Drag the incoming AI System to the correct Risk Level based on the EU AI Act.</p>
+
+                        <!-- The Card to Sort -->
+                        <div id="card-container" class="h-32 flex items-center justify-center mb-8">
+                            <div id="draggable-card" draggable="true" class="bg-slate-800 text-white p-4 rounded-lg shadow-xl cursor-grab active:cursor-grabbing w-64 text-center transform hover:scale-105 transition">
+                                <div class="text-3xl mb-2" id="card-icon">❓</div>
+                                <div class="font-bold" id="card-text">Loading...</div>
+                            </div>
+                        </div>
+
+                        <div id="feedback" class="h-8 text-center font-bold text-lg mb-4"></div>
+
+                    </div>
+                </div>
+
+                <!-- The Pyramid Drop Zones -->
+                <div class="flex-1 flex flex-col items-center justify-center space-y-1">
+                    
+                    <!-- Unacceptable Risk -->
+                    <div class="w-48 h-24 bg-red-700 pyramid-top pyramid-level drop-zone flex flex-col" data-risk="unacceptable">
+                        <span class="mt-8">Unacceptable</span>
+                        <span class="text-[10px] font-light opacity-80">BANNED</span>
+                    </div>
+
+                    <!-- High Risk -->
+                    <div class="w-64 h-20 bg-orange-500 pyramid-level drop-zone" style="clip-path: polygon(20% 0, 80% 0, 100% 100%, 0% 100%);" data-risk="high">
+                        <div class="text-center">
+                            <div>High Risk</div>
+                            <div class="text-[10px] font-light opacity-80">STRICTLY REGULATED</div>
+                        </div>
+                    </div>
+
+                    <!-- Limited Risk -->
+                    <div class="w-80 h-20 bg-yellow-400 pyramid-level drop-zone text-slate-900" style="clip-path: polygon(15% 0, 85% 0, 100% 100%, 0% 100%);" data-risk="limited">
+                        <div class="text-center">
+                            <div>Limited Risk</div>
+                            <div class="text-[10px] font-light opacity-80">TRANSPARENCY OBLIGATIONS</div>
+                        </div>
+                    </div>
+
+                    <!-- Minimal Risk -->
+                    <div class="w-96 h-20 bg-green-400 pyramid-level drop-zone text-slate-900" style="clip-path: polygon(10% 0, 90% 0, 100% 100%, 0% 100%);" data-risk="minimal">
+                        <div class="text-center">
+                            <div>Minimal Risk</div>
+                            <div class="text-[10px] font-light opacity-80">LARGELY UNREGULATED</div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION 3: XAI LAB (BLACK BOX) -->
+        <div id="view-xai" class="hidden">
+            <div class="bg-white rounded-xl p-8 shadow-lg">
+                <h2 class="text-2xl font-bold mb-2">Explainable AI (XAI)</h2>
+                <p class="text-slate-600 mb-8">Most advanced AI models are "Black Boxes"—we see the input and output, but not the logic. Use the slider to apply XAI methods and build trust.</p>
+
+                <div class="flex flex-col md:flex-row items-center gap-12 justify-center">
+                    
+                    <!-- Input -->
+                    <div class="text-center">
+                        <div class="text-6xl mb-2">🖼️</div>
+                        <div class="font-bold text-slate-500">Input Data</div>
+                    </div>
+
+                    <!-- The Black Box -->
+                    <div class="relative w-64 h-64">
+                        <div id="black-box" class="black-box w-full h-full rounded-xl flex items-center justify-center relative overflow-hidden">
+                            <!-- Hidden Logic (SVG) -->
+                            <div class="hidden-logic absolute inset-0 p-4">
+                                <svg viewBox="0 0 100 100" class="w-full h-full opacity-80">
+                                    <!-- Neural Network Visualization -->
+                                    <circle cx="20" cy="20" r="5" fill="#4ade80" />
+                                    <circle cx="20" cy="50" r="5" fill="#4ade80" />
+                                    <circle cx="20" cy="80" r="5" fill="#4ade80" />
+                                    
+                                    <circle cx="50" cy="35" r="5" fill="#4ade80" />
+                                    <circle cx="50" cy="65" r="5" fill="#4ade80" />
+
+                                    <circle cx="80" cy="50" r="8" fill="#fff" />
+
+                                    <line x1="20" y1="20" x2="50" y2="35" stroke="#4ade80" stroke-width="2" />
+                                    <line x1="20" y1="50" x2="50" y2="35" stroke="#4ade80" stroke-width="2" />
+                                    <line x1="20" y1="50" x2="50" y2="65" stroke="#4ade80" stroke-width="2" />
+                                    <line x1="20" y1="80" x2="50" y2="65" stroke="#4ade80" stroke-width="2" />
+
+                                    <line x1="50" y1="35" x2="80" y2="50" stroke="#4ade80" stroke-width="2" />
+                                    <line x1="50" y1="65" x2="80" y2="50" stroke="#4ade80" stroke-width="2" />
+                                </svg>
+                                <div class="absolute bottom-2 w-full text-center text-green-400 font-mono text-xs">Logic Revealed</div>
+                            </div>
+                            
+                            <!-- Cover Content -->
+                            <div id="box-cover" class="absolute z-10 text-center transition-opacity duration-500">
+                                <div class="text-6xl">⬛</div>
+                                <div class="text-gray-400 font-mono mt-2">BLACK BOX</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Output -->
+                    <div class="text-center">
+                        <div class="text-6xl mb-2">🧠</div>
+                        <div class="font-bold text-slate-500">Decision</div>
+                    </div>
+
+                </div>
+
+                <!-- Controls -->
+                <div class="mt-12 max-w-md mx-auto">
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Transparency Level</label>
+                    <input type="range" id="transparency-slider" min="0" max="100" value="0" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                    <div class="flex justify-between text-xs text-slate-500 mt-1">
+                        <span>Opaque</span>
+                        <span>Transparent</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="bg-slate-100 p-4 text-center text-slate-500 text-sm">
+        Generated based on "AI Governance" Infographic • Interactive Educational Tool
+    </footer>
+
+    <script>
+        // --- Tab Switching Logic ---
+        function switchTab(tabName) {
+            // Hide all views
+            document.getElementById('view-risks').classList.add('hidden');
+            document.getElementById('view-regulator').classList.add('hidden');
+            document.getElementById('view-xai').classList.add('hidden');
+
+            // Reset buttons
+            document.getElementById('btn-risks').className = "px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 transition font-semibold";
+            document.getElementById('btn-regulator').className = "px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 transition font-semibold";
+            document.getElementById('btn-xai').className = "px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 transition font-semibold";
+
+            // Show selected
+            document.getElementById('view-' + tabName).classList.remove('hidden');
+            
+            // Highlight button
+            document.getElementById('btn-' + tabName).className = "px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 transition font-semibold";
+        }
+
+        // --- XAI Slider Logic ---
+        const slider = document.getElementById('transparency-slider');
+        const blackBox = document.getElementById('black-box');
+        const boxCover = document.getElementById('box-cover');
+
+        slider.addEventListener('input', (e) => {
+            const val = e.target.value;
+            // Fade out the "Black Box" text/icon
+            boxCover.style.opacity = 1 - (val / 100);
+            
+            // Reveal the logic
+            if (val > 80) {
+                blackBox.classList.add('open');
+            } else {
+                blackBox.classList.remove('open');
+            }
+        });
+
+        // --- Regulator Game Logic ---
+        const scenarios = [
+            { text: "Social Scoring System", icon: "🚫", risk: "unacceptable" },
+            { text: "Spam Filter", icon: "📧", risk: "minimal" },
+            { text: "Medical Diagnosis AI", icon: "🏥", risk: "high" },
+            { text: "Chatbot Customer Service", icon: "💬", risk: "limited" },
+            { text: "Real-time Biometric ID in Public", icon: "👁️", risk: "unacceptable" },
+            { text: "Video Game AI Enemy", icon: "🎮", risk: "minimal" },
+            { text: "Recruitment Sorting Tool", icon: "📄", risk: "high" },
+            { text: "Deep Fake Generator", icon: "🎭", risk: "limited" }
+        ];
+
+        let currentScenarioIndex = 0;
+        let score = 0;
+        const card = document.getElementById('draggable-card');
+        const cardText = document.getElementById('card-text');
+        const cardIcon = document.getElementById('card-icon');
+        const feedback = document.getElementById('feedback');
+        const scoreDisplay = document.getElementById('score');
+        const dropZones = document.querySelectorAll('.drop-zone');
+
+        function loadScenario() {
+            if (currentScenarioIndex >= scenarios.length) {
+                cardText.innerText = "All Scenarios Complete!";
+                cardIcon.innerText = "🎉";
+                card.draggable = false;
+                card.classList.add('bg-green-600');
+                return;
+            }
+            const s = scenarios[currentScenarioIndex];
+            cardText.innerText = s.text;
+            cardIcon.innerText = s.icon;
+            card.dataset.risk = s.risk;
+            feedback.innerText = "";
+            feedback.className = "h-8 text-center font-bold text-lg mb-4";
+        }
+
+        // Drag Events
+        card.addEventListener('dragstart', (e) => {
+            e.dataTransfer.setData('text/plain', card.dataset.risk);
+            setTimeout(() => card.classList.add('invisible'), 0);
+        });
+
+        card.addEventListener('dragend', () => {
+            card.classList.remove('invisible');
+        });
+
+        dropZones.forEach(zone => {
+            zone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                zone.classList.add('drag-over');
+            });
+
+            zone.addEventListener('dragleave', () => {
+                zone.classList.remove('drag-over');
+            });
+
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zone.classList.remove('drag-over');
+                const cardRisk = e.dataTransfer.getData('text/plain');
+                const zoneRisk = zone.dataset.risk;
+
+                if (cardRisk === zoneRisk) {
+                    // Correct
+                    score += 100;
+                    scoreDisplay.innerText = score;
+                    feedback.innerText = "Correct!";
+                    feedback.classList.add('text-green-600');
+                    currentScenarioIndex++;
+                    
+                    // Animation for success
+                    zone.style.transform = "scale(1.1)";
+                    setTimeout(() => zone.style.transform = "scale(1)", 200);
+
+                    loadScenario();
+                } else {
+                    // Incorrect
+                    feedback.innerText = "Incorrect! Try again.";
+                    feedback.classList.add('text-red-600');
+                    score = Math.max(0, score - 50);
+                    scoreDisplay.innerText = score;
+                }
+            });
+        });
+
+        // Initialize
+        loadScenario();
+
+    </script>
+</body>
+</html>

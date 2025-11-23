@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project: CHIMERA // Identity Stabilizer</title>
+    <style>
+        :root {
+            --bio-color: #eebb99;
+            --bio-accent: #d65d5d;
+            --cyber-color: #b0c4de;
+            --cyber-accent: #00f2ff;
+            --bg-color: #111;
+            --glass: rgba(255, 255, 255, 0.05);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: white;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* Background Grid Animation */
+        .bg-grid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 200%;
+            height: 200%;
+            background-image: 
+                linear-gradient(rgba(0, 242, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 242, 255, 0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+            transform: perspective(500px) rotateX(60deg) translateY(-100px) translateZ(-200px);
+            animation: gridMove 20s linear infinite;
+            z-index: -1;
+        }
+
+        @keyframes gridMove {
+            0% { transform: perspective(500px) rotateX(60deg) translateY(0) translateZ(-200px); }
+            100% { transform: perspective(500px) rotateX(60deg) translateY(40px) translateZ(-200px); }
+        }
+
+        /* Main UI Container */
+        .interface {
+            display: grid;
+            grid-template-columns: 1fr 300px 1fr;
+            gap: 20px;
+            width: 90%;
+            max-width: 1000px;
+            align-items: center;
+            z-index: 10;
+        }
+
+        /* Side Panels */
+        .panel {
+            background: var(--glass);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 10px;
+            height: 400px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            backdrop-filter: blur(5px);
+            transition: all 0.3s ease;
+        }
+
+        .panel.bio { border-left: 4px solid var(--bio-accent); }
+        .panel.cyber { border-right: 4px solid var(--cyber-accent); text-align: right; }
+
+        h2 { margin: 0 0 10px 0; font-size: 1.2rem; letter-spacing: 2px; text-transform: uppercase; }
+        .bio h2 { color: var(--bio-accent); }
+        .cyber h2 { color: var(--cyber-accent); }
+
+        /* Stats Bars */
+        .stat-container {
+            margin-bottom: 15px;
+        }
+        .stat-label { font-size: 0.8rem; opacity: 0.7; display: block; margin-bottom: 5px; }
+        .bar-bg { width: 100%; height: 10px; background: rgba(0,0,0,0.5); border-radius: 5px; overflow: hidden; }
+        .bar-fill { height: 100%; transition: width 0.2s; }
+        
+        #bio-health { background: var(--bio-accent); width: 50%; }
+        #cyber-cpu { background: var(--cyber-accent); width: 50%; }
+
+        /* Action Buttons */
+        .btn {
+            padding: 15px;
+            border: none;
+            font-family: inherit;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.2s;
+            text-transform: uppercase;
+            margin-top: 10px;
+            border-radius: 4px;
+        }
+        
+        .btn-bio {
+            background: linear-gradient(45deg, #d65d5d, #eebb99);
+            color: #330000;
+            box-shadow: 0 4px 15px rgba(214, 93, 93, 0.3);
+        }
+        .btn-bio:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(214, 93, 93, 0.5); }
+        .btn-bio:active { transform: translateY(1px); }
+
+        .btn-cyber {
+            background: linear-gradient(45deg, #00f2ff, #0066ff);
+            color: #001133;
+            box-shadow: 0 4px 15px rgba(0, 242, 255, 0.3);
+        }
+        .btn-cyber:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 242, 255, 0.5); }
+        .btn-cyber:active { transform: translateY(1px); }
+
+        /* The Central Face (SVG) */
+        .avatar-container {
+            position: relative;
+            width: 300px;
+            height: 400px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        svg {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 0 20px rgba(0,0,0,0.5));
+        }
+
+        /* Glitch Effect Classes */
+        .glitch-anim {
+            animation: glitch 0.3s cubic-bezier(.25, .46, .45, .94) both infinite;
+        }
+        @keyframes glitch {
+            0% { transform: translate(0) }
+            20% { transform: translate(-2px, 2px) }
+            40% { transform: translate(-2px, -2px) }
+            60% { transform: translate(2px, 2px) }
+            80% { transform: translate(2px, -2px) }
+            100% { transform: translate(0) }
+        }
+
+        /* Status Display */
+        .status-display {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-shadow: 0 0 10px black;
+        }
+
+        /* Game Over Overlay */
+        #game-over {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+        #game-over.visible { visibility: visible; opacity: 1; }
+        #game-over h1 { font-size: 3rem; color: red; text-shadow: 0 0 20px red; }
+        #restart-btn {
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            background: white;
+            color: black;
+            border: none;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        /* Responsive */
+        @media (max-width: 800px) {
+            .interface {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto auto;
+            }
+            .panel { height: auto; }
+            .avatar-container { height: 300px; margin: 0 auto; }
+        }
+
+        /* Logs */
+        .log-box {
+            height: 100px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid #333;
+            padding: 5px;
+            font-size: 0.7rem;
+            overflow-y: auto;
+            margin-top: 10px;
+            font-family: monospace;
+        }
+        .log-entry { margin-bottom: 2px; }
+        .log-bio { color: #ff9999; }
+        .log-cyber { color: #99ffff; }
+
+    </style>
+</head>
+<body>
+
+    <div class="bg-grid"></div>
+
+    <div class="interface">
+        
+        <!-- Left Panel: Biological -->
+        <div class="panel bio">
+            <div>
+                <h2>Biological</h2>
+                <div class="stat-container">
+                    <span class="stat-label">Vitality</span>
+                    <div class="bar-bg"><div id="bio-health" class="bar-fill"></div></div>
+                </div>
+                <div class="stat-container">
+                    <span class="stat-label">Dopamine</span>
+                    <div class="bar-bg"><div id="bio-mood" class="bar-fill" style="width: 80%; background: #d68d5d;"></div></div>
+                </div>
+                <div class="log-box" id="bio-log">
+                    <div class="log-entry log-bio">> System initialized...</div>
+                    <div class="log-entry log-bio">> Heart rate normal.</div>
+                </div>
+            </div>
+            <div>
+                <button class="btn btn-bio" onclick="game.actionBio('stimulate')">Adrenaline Shot</button>
+                <button class="btn btn-bio" style="margin-top:5px; background: #5d4444; color: #cca;" onclick="game.actionBio('rest')">Deep Sleep</button>
+            </div>
+        </div>
+
+        <!-- Center: The Avatar -->
+        <div class="avatar-container">
+            <svg viewBox="0 0 200 250" id="avatar-svg">
+                <defs>
+                    <linearGradient id="skinGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" style="stop-color:#eebb99;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#d4a07d;stop-opacity:1" />
+                    </linearGradient>
+                    <linearGradient id="metalGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#e0e0e0;stop-opacity:1" />
+                        <stop offset="50%" style="stop-color:#7f8c8d;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#2c3e50;stop-opacity:1" />
+                    </linearGradient>
+                    <clipPath id="split-mask">
+                        <rect id="mask-rect" x="100" y="0" width="200" height="250" />
+                    </clipPath>
+                </defs>
+
+                <!-- Base Layer: Human Face -->
+                <g id="human-layer">
+                    <!-- Head Shape -->
+                    <path d="M 50 50 Q 100 20 150 50 Q 180 100 170 180 Q 100 240 30 180 Q 20 100 50 50" fill="url(#skinGradient)" />
+                    <!-- Left Ear -->
+                    <path d="M 30 100 Q 10 120 30 140" fill="#d4a07d" />
+                    <!-- Right Ear -->
+                    <path d="M 170 100 Q 190 120 170 140" fill="#d4a07d" />
+                    <!-- Eyes -->
+                    <g id="human-eyes">
+                        <ellipse cx="75" cy="110" rx="15" ry="8" fill="white" />
+                        <circle cx="75" cy="110" r="4" fill="#3e2723" />
+                        <ellipse cx="125" cy="110" rx="15" ry="8" fill="white" />
+                        <circle cx="125" cy="110" r="4" fill="#3e2723" />
+                    </g>
+                    <!-- Nose -->
+                    <path d="M 100 110 Q 95 140 100 150 Q 105 140 100 110" fill="rgba(0,0,0,0.1)" />
+                    <!-- Mouth -->
+                    <path d="M 75 170 Q 100 180 125 170" stroke="#a1887f" stroke-width="3" fill="none" />
+                    <!-- Hair -->
+                    <path d="M 30 80 Q 50 20 100 20 Q 150 20 170 80" fill="none" stroke="#3e2723" stroke-width="2" />
+                </g>
+
+                <!-- Overlay Layer: Robot Face (Clipped) -->
+                <g id="robot-layer" clip-path="url(#split-mask)">
+                    <!-- Head Shape (Plating) -->
+                    <path d="M 48 48 Q 100 15 152 48 Q 182 100 172 182 Q 100 242 28 182 Q 18 100 48 48" fill="url(#metalGradient)" stroke="#555" stroke-width="2" />
+                    
+                    <!-- Panel Lines -->
+                    <path d="M 100 20 L 100 240" stroke="#333" stroke-width="1" />
+                    <path d="M 50 80 L 150 80" stroke="#333" stroke-width="1" fill="none" />
+                    <circle cx="50" cy="50" r="3" fill="#333" />
+                    <circle cx="150" cy="50" r="3" fill="#333" />
+                    
+                    <!-- Robot Eye (Right) -->
+                    <circle cx="125" cy="110" r="12" fill="#111" stroke="#555" stroke-width="2" />
+                    <circle cx="125" cy="110" r="5" fill="#00f2ff" id="robo-eye-glow">
+                        <animate attributeName="opacity" values="0.5;1;0.5" dur="2s" repeatCount="indefinite" />
+                    </circle>
+
+                    <!-- Robot Eye (Left - usually hidden unless full robot) -->
+                    <circle cx="75" cy="110" r="12" fill="#111" stroke="#555" stroke-width="2" />
+                    <circle cx="75" cy="110" r="5" fill="#00f2ff" />
+
+                    <!-- Mouth Grate -->
+                    <rect x="70" y="165" width="60" height="15" fill="#222" rx="5" />
+                    <line x1="80" y1="165" x2="80" y2="180" stroke="#555" />
+                    <line x1="90" y1="165" x2="90" y2="180" stroke="#555" />
+                    <line x1="100" y1="165" x2="100" y2="180" stroke="#555" />
+                    <line x1="110" y1="165" x2="110" y2="180" stroke="#555" />
+                    <line x1="120" y1="165" x2="120" y2="180" stroke="#555" />
+                </g>
+
+                <!-- The Split Line -->
+                <line id="split-line" x1="100" y1="0" x2="100" y2="250" stroke="white" stroke-width="2" stroke-dasharray="5,5" />
+            </svg>
+            <div class="status-display" id="status-text">STABLE</div>
+        </div>
+
+        <!-- Right Panel: Cybernetic -->
+        <div class="panel cyber">
+            <div>
+                <h2>Synthetic</h2>
+                <div class="stat-container">
+                    <span class="stat-label">CPU Heat</span>
+                    <div class="bar-bg"><div id="cyber-heat" class="bar-fill" style="width: 20%; background: #ff4444;"></div></div>
+                </div>
+                <div class="stat-container">
+                    <span class="stat-label">Processing Load</span>
+                    <div class="bar-bg"><div id="cyber-load" class="bar-fill"></div></div>
+                </div>
+                <div class="log-box" id="cyber-log" style="text-align: left;">
+                    <div class="log-entry log-cyber">> Kernel loaded.</div>
+                    <div class="log-entry log-cyber">> Awaiting input...</div>
+                </div>
+            </div>
+            <div>
+                <button class="btn btn-cyber" onclick="game.actionCyber('cool')">Flush Coolant</button>
+                <button class="btn btn-cyber" style="margin-top:5px; background: #003366; color: #aaf;" onclick="game.actionCyber('optimize')">Defrag Logic</button>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="game-over">
+        <h1 id="end-reason">SYSTEM FAILURE</h1>
+        <p style="color: #aaa; max-width: 400px; text-align: center;">The balance between biological needs and synthetic efficiency was lost.</p>
+        <button id="restart-btn" onclick="location.reload()">REBOOT SYSTEM</button>
+    </div>
+
+    <script>
+        const game = {
+            stats: {
+                bioHealth: 100, // Decreases over time. If 0 -> Death
+                bioMood: 80,    // Affects decay rate
+                cyberHeat: 20,  // Increases over time. If 100 -> Meltdown
+                cyberLoad: 30,  // Affects heat rate
+                splitPos: 50    // 0 = Full Human, 100 = Full Robot
+            },
+            running: true,
+            timer: null,
+
+            init() {
+                this.timer = setInterval(() => this.tick(), 100);
+                this.updateUI();
+                this.log('bio', 'Subject conscious.');
+                this.log('cyber', 'Daemon active.');
+            },
+
+            tick() {
+                if (!this.running) return;
+
+                // Bio Decay Logic
+                let decay = 0.05;
+                if (this.stats.bioMood < 30) decay *= 2;
+                this.stats.bioHealth -= decay;
+
+                // Cyber Heat Logic
+                let heatGen = 0.05;
+                if (this.stats.cyberLoad > 70) heatGen *= 2;
+                this.stats.cyberHeat += heatGen;
+
+                // Balance Logic (The Split)
+                // If Bio is low, robot takes over. If Heat is high, human takes over (failsafe).
+                // Target split is based on the ratio of Health vs Heat
+                // Health 100, Heat 0 -> Split 0 (Human)
+                // Health 0, Heat 100 -> Split 100 (Robot)
+                
+                // Calculate dominance
+                const bioStrength = this.stats.bioHealth;
+                const cyberStrength = this.stats.cyberHeat; 
+                
+                // The split position naturally drifts towards the stronger side
+                // If heat is high, the machine expands (Split moves Left -> 0)
+                // Wait, let's map visuals:
+                // SVG Mask: x=0 (Full Robot visible), x=200 (Full Human visible)
+                // Let's say Split 0 = Full Human (Mask x=200), Split 100 = Full Robot (Mask x=0)
+                
+                // Dynamic drift
+                let drift = 0;
+                if (this.stats.cyberHeat > 50) drift += 0.1; // Heat makes robot expand
+                if (this.stats.bioHealth < 50) drift += 0.1; // Weakness makes robot expand
+                if (this.stats.bioMood > 80) drift -= 0.1;   // Happiness pushes robot back
+                
+                this.stats.splitPos += drift;
+                
+                // Clamp values
+                this.stats.bioHealth = Math.max(0, Math.min(100, this.stats.bioHealth));
+                this.stats.bioMood = Math.max(0, Math.min(100, this.stats.bioMood));
+                this.stats.cyberHeat = Math.max(0, Math.min(100, this.stats.cyberHeat));
+                this.stats.cyberLoad = Math.max(0, Math.min(100, this.stats.cyberLoad));
+                this.stats.splitPos = Math.max(0, Math.min(100, this.stats.splitPos));
+
+                // Random Events
+                if (Math.random() < 0.01) {
+                    this.stats.cyberLoad += 10;
+                    this.log('cyber', 'WARN: Unexpected process spawned.');
+                }
+                if (Math.random() < 0.01) {
+                    this.stats.bioMood -= 10;
+                    this.log('bio', 'Subject feels anxiety.');
+                }
+
+                this.checkGameOver();
+                this.updateUI();
+            },
+
+            actionBio(type) {
+                if (!this.running) return;
+                if (type === 'stimulate') {
+                    this.stats.bioHealth += 10;
+                    this.stats.bioMood += 5;
+                    this.stats.cyberHeat += 5; // Stress on system
+                    this.log('bio', 'Adrenaline administered.');
+                    this.pulseAvatar('human');
+                } else if (type === 'rest') {
+                    this.stats.bioHealth += 5;
+                    this.stats.bioMood += 15;
+                    this.stats.splitPos -= 5; // Reclaim humanity
+                    this.log('bio', 'Rest cycle complete.');
+                }
+                this.updateUI();
+            },
+
+            actionCyber(type) {
+                if (!this.running) return;
+                if (type === 'cool') {
+                    this.stats.cyberHeat -= 15;
+                    this.stats.bioHealth -= 5; // Freezing hurts bio
+                    this.log('cyber', 'Coolant flushed.');
+                    this.pulseAvatar('robot');
+                } else if (type === 'optimize') {
+                    this.stats.cyberLoad -= 20;
+                    this.stats.splitPos += 5; // Efficiency favors machine
+                    this.log('cyber', 'Logic gates optimized.');
+                }
+                this.updateUI();
+            },
+
+            pulseAvatar(side) {
+                const svg = document.getElementById('avatar-svg');
+                svg.style.transform = side === 'human' ? 'scale(1.05)' : 'scale(0.95)';
+                setTimeout(() => svg.style.transform = 'scale(1)', 100);
+            },
+
+            updateUI() {
+                // Update Bars
+                document.getElementById('bio-health').style.width = this.stats.bioHealth + '%';
+                document.getElementById('bio-mood').style.width = this.stats.bioMood + '%';
+                document.getElementById('cyber-heat').style.width = this.stats.cyberHeat + '%';
+                document.getElementById('cyber-load').style.width = this.stats.cyberLoad + '%';
+
+                // Update Split Face
+                // splitPos 0 = Human (Mask X = 200)
+                // splitPos 100 = Robot (Mask X = 0)
+                // Formula: maskX = 200 - (splitPos * 2)
+                const maskX = 200 - (this.stats.splitPos * 2);
+                document.getElementById('mask-rect').setAttribute('x', maskX);
+                document.getElementById('split-line').setAttribute('x1', maskX);
+                document.getElementById('split-line').setAttribute('x2', maskX);
+
+                // Status Text
+                const status = document.getElementById('status-text');
+                if (this.stats.splitPos > 80) {
+                    status.innerText = "ASSIMILATION IMMINENT";
+                    status.style.color = "#00f2ff";
+                    document.body.classList.add('glitch-anim');
+                } else if (this.stats.splitPos < 20) {
+                    status.innerText = "ORGANIC REJECTION";
+                    status.style.color = "#d65d5d";
+                    document.body.classList.remove('glitch-anim');
+                } else {
+                    status.innerText = "HYBRID STABLE";
+                    status.style.color = "white";
+                    document.body.classList.remove('glitch-anim');
+                }
+            },
+
+            log(side, msg) {
+                const box = document.getElementById(side + '-log');
+                const div = document.createElement('div');
+                div.className = 'log-entry log-' + side;
+                div.innerText = '> ' + msg;
+                box.appendChild(div);
+                box.scrollTop = box.scrollHeight;
+            },
+
+            checkGameOver() {
+                if (this.stats.bioHealth <= 0) {
+                    this.endGame("BIOLOGICAL FAILURE");
+                } else if (this.stats.cyberHeat >= 100) {
+                    this.endGame("CORE MELTDOWN");
+                } else if (this.stats.splitPos >= 100) {
+                    this.endGame("TOTAL ASSIMILATION");
+                } else if (this.stats.splitPos <= 0) {
+                    this.endGame("SYSTEM REJECTION"); // Actually maybe this isn't game over? Let's keep it hard.
+                }
+            },
+
+            endGame(reason) {
+                this.running = false;
+                clearInterval(this.timer);
+                document.getElementById('end-reason').innerText = reason;
+                document.getElementById('game-over').classList.add('visible');
+            }
+        };
+
+        // Start
+        game.init();
+
+    </script>
+</body>
+</html>

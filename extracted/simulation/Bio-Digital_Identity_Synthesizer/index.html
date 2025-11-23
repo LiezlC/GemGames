@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bio-Digital Identity Synthesizer</title>
+    <style>
+        :root {
+            --bg-color: #1a0b2e;
+            --primary: #ff007c;
+            --secondary: #00f2ea;
+            --tertiary: #ffea00;
+            --glass: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 20% 30%, #4a0e4e 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, #0e4e45 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, #2e0b1f 0%, transparent 70%);
+            font-family: 'Courier New', Courier, monospace;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            user-select: none;
+        }
+
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            filter: blur(0.5px) contrast(1.2);
+        }
+
+        #ui-layer {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            pointer-events: none; /* Let clicks pass through to canvas mostly */
+        }
+
+        .hud-panel {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            text-align: center;
+            pointer-events: auto;
+            max-width: 400px;
+            width: 90%;
+            transition: transform 0.2s;
+        }
+
+        h1 {
+            margin: 0 0 10px 0;
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .status-text {
+            font-size: 0.9rem;
+            color: #aaa;
+            margin-bottom: 15px;
+            height: 1.2em;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        button {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--secondary);
+            color: var(--secondary);
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+        }
+
+        button:hover {
+            background: var(--secondary);
+            color: #000;
+            box-shadow: 0 0 15px var(--secondary);
+        }
+
+        button.scan-btn {
+            border-color: var(--primary);
+            color: var(--primary);
+            width: 100%;
+            padding: 15px;
+            font-size: 1rem;
+        }
+
+        button.scan-btn:hover {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 0 20px var(--primary);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .scanner-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            height: 400px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 150px;
+            pointer-events: none;
+            z-index: 5;
+            box-shadow: inset 0 0 50px rgba(0,0,0,0.5);
+        }
+
+        .scan-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: var(--secondary);
+            box-shadow: 0 0 15px var(--secondary);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .scanning .scan-line {
+            opacity: 1;
+            animation: scanMove 2s infinite linear;
+        }
+
+        @keyframes scanMove {
+            0% { top: 0%; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+        }
+
+        .data-stream {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            font-size: 10px;
+            color: rgba(255,255,255,0.3);
+            text-align: right;
+            pointer-events: none;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+    
+    <div class="scanner-overlay">
+        <div class="scan-line"></div>
+    </div>
+
+    <div id="ui-layer">
+        <div class="hud-panel">
+            <h1>Biometric Synthesizer</h1>
+            <div class="status-text" id="status">System Standby...</div>
+            
+            <button class="scan-btn" id="scanBtn">Generate Identity</button>
+            
+            <div class="controls">
+                <button id="colorBtn">Remix DNA</button>
+                <button id="dissolveBtn">Dissolve</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="data-stream" id="dataStream"></div>
+
+    <script>
+        // Setup Canvas
+        const container = document.getElementById('canvas-container');
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        container.appendChild(canvas);
+
+        let width, height;
+        let cx, cy;
+
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+            cx = width / 2;
+            cy = height / 2;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // State
+        let isScanning = false;
+        let particles = [];
+        let ridges = [];
+        let hueBase = 320; // Pinkish start
+        let scanProgress = 0;
+
+        // Utilities
+        const rand = (min, max) => Math.random() * (max - min) + min;
+        
+        // Fingerprint Generation Logic
+        class RidgePoint {
+            constructor(angle, radius, noiseOffset) {
+                this.angle = angle;
+                this.baseRadius = radius;
+                this.noiseOffset = noiseOffset;
+                this.currentRadius = radius + Math.sin(angle * 10 + noiseOffset) * 5;
+                this.x = cx + Math.cos(angle) * this.currentRadius;
+                this.y = cy + Math.sin(angle) * this.currentRadius;
+                this.dissolved = false;
+                
+                // Calculate color based on position (gradient effect from image)
+                // Left is pink/purple, Right is teal/green/yellow
+                const gradientPos = (Math.cos(angle) + 1) / 2; // 0 to 1
+                this.color = `hsl(${hueBase + (gradientPos * 100)}, 80%, 60%)`;
+            }
+
+            update() {
+                if (this.dissolved) return;
+                // Slight breathing animation
+                const time = Date.now() * 0.001;
+                const breathe = Math.sin(time + this.baseRadius * 0.1) * 2;
+                this.x = cx + Math.cos(this.angle) * (this.currentRadius + breathe);
+                this.y = cy + Math.sin(this.angle) * (this.currentRadius + breathe);
+            }
+        }
+
+        function generateFingerprint() {
+            ridges = [];
+            const numRings = 40;
+            const spacing = 7;
+            const noiseSeed = Math.random() * 100;
+
+            for (let r = 1; r < numRings; r++) {
+                const radius = r * spacing;
+                const circumference = 2 * Math.PI * radius;
+                const steps = Math.floor(circumference / 4); // Density of points
+                
+                // Create gaps to simulate fingerprint ridges ending
+                let gapCounter = 0;
+                let inGap = false;
+
+                for (let i = 0; i < steps; i++) {
+                    const angle = (i / steps) * Math.PI * 2;
+                    
+                    // Perlin-ish noise for gaps
+                    if (Math.random() < 0.05) inGap = !inGap;
+                    
+                    // The image has a specific "dissolving" look on the right
+                    // Let's make the right side (angle 0 or 2PI) more fragmented
+                    const isRightSide = Math.cos(angle) > 0.3;
+                    if (isRightSide && Math.random() < 0.3) continue;
+
+                    if (!inGap) {
+                        ridges.push(new RidgePoint(angle, radius, noiseSeed));
+                    }
+                }
+            }
+        }
+
+        // Particle System for the "Dissolve" effect
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                this.vx = rand(0.5, 3); // Move right mostly
+                this.vy = rand(-1, 1);
+                this.life = 1.0;
+                this.size = rand(1, 3);
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.life -= 0.01;
+                this.size *= 0.99;
+            }
+
+            draw(ctx) {
+                ctx.globalAlpha = this.life;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+            }
+        }
+
+        // Animation Loop
+        function animate() {
+            // Trail effect
+            ctx.fillStyle = 'rgba(26, 11, 46, 0.2)';
+            ctx.fillRect(0, 0, width, height);
+
+            // Draw Ridges
+            ctx.lineWidth = 2;
+            
+            // We draw points as small segments
+            ridges.forEach(p => {
+                if (p.dissolved) return;
+                p.update();
+                
+                // If scanning, check if scan line passed this point
+                if (isScanning) {
+                    // Simple scan logic: based on Y position relative to scan progress
+                    const scanY = (scanProgress / 100) * 400 + (cy - 200);
+                    if (Math.abs(p.y - scanY) < 10) {
+                        ctx.fillStyle = '#fff'; // Highlight scan line
+                        ctx.fillRect(p.x, p.y, 2, 2);
+                    }
+                }
+
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 1.5, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Update and Draw Particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                p.update();
+                p.draw(ctx);
+                if (p.life <= 0) particles.splice(i, 1);
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        // Interactions
+        const scanBtn = document.getElementById('scanBtn');
+        const colorBtn = document.getElementById('colorBtn');
+        const dissolveBtn = document.getElementById('dissolveBtn');
+        const statusText = document.getElementById('status');
+        const scannerOverlay = document.querySelector('.scanner-overlay');
+        const dataStream = document.getElementById('dataStream');
+
+        // Generate initial fingerprint
+        generateFingerprint();
+        animate();
+
+        // Data Stream Effect
+        setInterval(() => {
+            const hex = Math.random().toString(16).substr(2, 8).toUpperCase();
+            dataStream.innerHTML += `<div>0x${hex}</div>`;
+            if (dataStream.children.length > 10) dataStream.removeChild(dataStream.firstChild);
+        }, 100);
+
+        // Button Logic
+        scanBtn.addEventListener('click', () => {
+            if (isScanning) return;
+            isScanning = true;
+            scannerOverlay.classList.add('scanning');
+            statusText.innerText = "ANALYZING BIOMETRIC DATA...";
+            statusText.style.color = "#00f2ea";
+            scanProgress = 0;
+
+            // Scan simulation
+            const scanInterval = setInterval(() => {
+                scanProgress += 1;
+                
+                // Emit particles during scan
+                if (scanProgress % 5 === 0) {
+                    for(let i=0; i<5; i++) {
+                        const randomRidge = ridges[Math.floor(Math.random() * ridges.length)];
+                        if(randomRidge && !randomRidge.dissolved) {
+                            particles.push(new Particle(randomRidge.x, randomRidge.y, randomRidge.color));
+                        }
+                    }
+                }
+
+                if (scanProgress >= 100) {
+                    clearInterval(scanInterval);
+                    isScanning = false;
+                    scannerOverlay.classList.remove('scanning');
+                    statusText.innerText = "IDENTITY VERIFIED. ACCESS GRANTED.";
+                    statusText.style.color = "#00ff00";
+                    
+                    // Regenerate after success
+                    setTimeout(() => {
+                        generateFingerprint();
+                        statusText.innerText = "SYSTEM READY";
+                        statusText.style.color = "#aaa";
+                    }, 2000);
+                }
+            }, 20);
+        });
+
+        colorBtn.addEventListener('click', () => {
+            hueBase = (hueBase + 60) % 360;
+            generateFingerprint();
+            statusText.innerText = "DNA SEQUENCE REMIXED";
+            
+            // Burst effect
+            for(let i=0; i<50; i++) {
+                particles.push(new Particle(cx, cy, `hsl(${hueBase}, 80%, 60%)`));
+            }
+        });
+
+        dissolveBtn.addEventListener('click', () => {
+            statusText.innerText = "DISSOLVING DATA...";
+            let count = 0;
+            const total = ridges.length;
+            
+            const dissolveInterval = setInterval(() => {
+                // Dissolve a chunk of ridges
+                for(let i=0; i<50; i++) {
+                    if (ridges.length > 0) {
+                        const idx = Math.floor(Math.random() * ridges.length);
+                        const p = ridges[idx];
+                        particles.push(new Particle(p.x, p.y, p.color));
+                        ridges.splice(idx, 1);
+                        count++;
+                    }
+                }
+                
+                if (ridges.length === 0) {
+                    clearInterval(dissolveInterval);
+                    setTimeout(() => {
+                        generateFingerprint();
+                        statusText.innerText = "RECONSTRUCTING...";
+                    }, 1000);
+                }
+            }, 50);
+        });
+
+    </script>
+</body>
+</html>

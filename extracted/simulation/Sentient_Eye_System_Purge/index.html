@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentient Eye: System Purge</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+
+        body {
+            background: radial-gradient(circle at center, #4a3b69 0%, #2d2445 50%, #1a1626 100%);
+            color: white;
+            font-family: 'Orbitron', sans-serif;
+            overflow: hidden;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Circuit Background Pattern */
+        .circuit-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(100, 200, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(100, 200, 255, 0.05) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* The Eye Container */
+        .eye-container {
+            position: relative;
+            width: 400px;
+            height: 220px;
+            filter: drop-shadow(0 0 20px rgba(168, 85, 247, 0.6));
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .eye-container:active {
+            transform: scale(0.98);
+        }
+
+        /* Eye Shape (Sclera) */
+        .eye-shape {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #e0e0e0 0%, #a5a5a5 100%);
+            clip-path: polygon(0% 50%, 15% 20%, 50% 0%, 85% 20%, 100% 50%, 85% 80%, 50% 100%, 15% 80%);
+            position: relative;
+            overflow: hidden;
+            border: 2px solid rgba(255,255,255,0.5);
+        }
+
+        /* Low Poly Facets overlay */
+        .poly-overlay {
+            position: absolute;
+            inset: 0;
+            background: 
+                linear-gradient(45deg, rgba(0,0,0,0.1) 25%, transparent 25%),
+                linear-gradient(-45deg, rgba(255,255,255,0.2) 25%, transparent 25%);
+            background-size: 20px 20px;
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        /* Iris */
+        .iris {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 140px;
+            height: 140px;
+            background: radial-gradient(circle, #4f46e5 0%, #312e81 70%, #000 100%);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: inset 0 0 20px #000;
+            border: 2px solid #818cf8;
+        }
+
+        /* Iris Texture */
+        .iris::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            background: repeating-conic-gradient(rgba(255,255,255,0.1) 0% 2%, transparent 2% 5%);
+        }
+
+        /* Pupil */
+        .pupil {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 50px;
+            height: 50px;
+            background: black;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 10px rgba(0,0,0,0.8);
+        }
+
+        /* Highlight/Reflection */
+        .highlight {
+            position: absolute;
+            top: 30%;
+            left: 60%;
+            width: 20px;
+            height: 10px;
+            background: white;
+            border-radius: 50%;
+            transform: rotate(-45deg);
+            filter: blur(1px);
+            opacity: 0.8;
+        }
+
+        /* Eyelids for blinking */
+        .eyelid-top, .eyelid-bottom {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            height: 50%;
+            background: #2d2445;
+            transition: height 0.1s;
+            z-index: 10;
+        }
+        .eyelid-top { top: 0; transform: translateY(-100%); }
+        .eyelid-bottom { bottom: 0; transform: translateY(100%); }
+
+        .blinking .eyelid-top { transform: translateY(0); }
+        .blinking .eyelid-bottom { transform: translateY(0); }
+
+        /* Tear Drop */
+        .tear {
+            position: absolute;
+            width: 20px;
+            height: 30px;
+            background: radial-gradient(circle at 30% 30%, #ffffff, #a5b4fc);
+            border-radius: 0 50% 50% 50%;
+            transform: rotate(45deg);
+            box-shadow: 0 0 15px #a5b4fc;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        /* Glitch Enemy */
+        .glitch {
+            position: absolute;
+            color: #f472b6;
+            font-family: monospace;
+            font-size: 14px;
+            user-select: none;
+            text-shadow: 0 0 5px #f472b6;
+            white-space: nowrap;
+            animation: shake 0.5s infinite;
+        }
+
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+
+        /* Ripple Effect */
+        .ripple {
+            position: absolute;
+            border: 2px solid rgba(165, 180, 252, 0.8);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            animation: rippleAnim 0.8s ease-out forwards;
+        }
+
+        @keyframes rippleAnim {
+            0% { width: 0; height: 0; opacity: 1; border-width: 5px; }
+            100% { width: 300px; height: 300px; opacity: 0; border-width: 0; }
+        }
+
+        .ui-panel {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            z-index: 20;
+        }
+        
+        .btn {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 8px 16px;
+            color: white;
+            cursor: pointer;
+            font-family: 'Orbitron', sans-serif;
+            transition: all 0.3s;
+        }
+        .btn:hover {
+            background: rgba(255,255,255,0.2);
+            box-shadow: 0 0 15px #a5b4fc;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="circuit-bg"></div>
+
+    <!-- Instructions -->
+    <div class="absolute top-10 text-center pointer-events-none">
+        <h1 class="text-3xl font-bold text-purple-300 tracking-widest mb-2 glow">SENTIENT EYE</h1>
+        <p class="text-sm text-blue-200 opacity-80">System corrupted. Click the Eye to cry and purge the data glitches.</p>
+        <p class="text-xs text-pink-300 mt-2">Score: <span id="score">0</span> | Integrity: <span id="health">100</span>%</p>
+    </div>
+
+    <!-- The Eye -->
+    <div class="eye-container" id="eyeContainer">
+        <div class="eye-shape">
+            <div class="poly-overlay"></div>
+            <div class="iris" id="iris">
+                <div class="pupil"></div>
+                <div class="highlight"></div>
+            </div>
+            <div class="eyelid-top" id="lidTop"></div>
+            <div class="eyelid-bottom" id="lidBottom"></div>
+        </div>
+    </div>
+
+    <!-- Game Area (Full Screen Overlay for Tears/Glitches) -->
+    <div id="gameArea" class="absolute inset-0 pointer-events-none overflow-hidden"></div>
+
+    <div class="ui-panel">
+        <button class="btn" onclick="resetGame()">RESET SYSTEM</button>
+    </div>
+
+    <script>
+        const eyeContainer = document.getElementById('eyeContainer');
+        const iris = document.getElementById('iris');
+        const lidTop = document.getElementById('lidTop');
+        const lidBottom = document.getElementById('lidBottom');
+        const gameArea = document.getElementById('gameArea');
+        const scoreEl = document.getElementById('score');
+        const healthEl = document.getElementById('health');
+
+        let score = 0;
+        let health = 100;
+        let gameActive = true;
+        let glitchInterval;
+
+        // Eye Tracking Logic
+        document.addEventListener('mousemove', (e) => {
+            if (!gameActive) return;
+
+            const eyeRect = eyeContainer.getBoundingClientRect();
+            const eyeCenterX = eyeRect.left + eyeRect.width / 2;
+            const eyeCenterY = eyeRect.top + eyeRect.height / 2;
+
+            // Calculate angle and distance
+            const angle = Math.atan2(e.clientY - eyeCenterY, e.clientX - eyeCenterX);
+            const dist = Math.min(Math.hypot(e.clientX - eyeCenterX, e.clientY - eyeCenterY), 40); // Limit movement radius
+
+            const moveX = Math.cos(angle) * dist;
+            const moveY = Math.sin(angle) * dist;
+
+            // Move Iris
+            iris.style.transform = `translate(calc(-50% + ${moveX}px), calc(-50% + ${moveY}px))`;
+        });
+
+        // Blinking Logic
+        function blink() {
+            eyeContainer.classList.add('blinking');
+            setTimeout(() => {
+                eyeContainer.classList.remove('blinking');
+            }, 200);
+            setTimeout(blink, Math.random() * 3000 + 2000);
+        }
+        blink();
+
+        // Crying Mechanic
+        eyeContainer.addEventListener('click', (e) => {
+            if (!gameActive) return;
+            createTear();
+            // Visual feedback on click
+            eyeContainer.style.transform = "scale(0.95)";
+            setTimeout(() => eyeContainer.style.transform = "scale(1)", 100);
+        });
+
+        function createTear() {
+            const tear = document.createElement('div');
+            tear.classList.add('tear');
+            
+            const eyeRect = eyeContainer.getBoundingClientRect();
+            // Start from bottom center of eye
+            const startX = eyeRect.left + eyeRect.width / 2 - 10;
+            const startY = eyeRect.top + eyeRect.height - 40;
+
+            tear.style.left = startX + 'px';
+            tear.style.top = startY + 'px';
+            
+            gameArea.appendChild(tear);
+
+            // Animate Tear
+            let pos = startY;
+            let velocity = 2;
+            const gravity = 0.5;
+
+            const anim = setInterval(() => {
+                velocity += gravity;
+                pos += velocity;
+                tear.style.top = pos + 'px';
+
+                // Check collisions with glitches
+                checkTearCollision(tear, anim);
+
+                // Check bottom of screen
+                if (pos > window.innerHeight - 50) {
+                    createRipple(startX + 10, window.innerHeight - 50);
+                    clearInterval(anim);
+                    tear.remove();
+                }
+            }, 16);
+        }
+
+        function createRipple(x, y) {
+            const ripple = document.createElement('div');
+            ripple.classList.add('ripple');
+            ripple.style.left = x + 'px';
+            ripple.style.top = y + 'px';
+            gameArea.appendChild(ripple);
+
+            // Check ripple collision (AOE damage)
+            setTimeout(() => {
+                const glitches = document.querySelectorAll('.glitch');
+                glitches.forEach(glitch => {
+                    const gRect = glitch.getBoundingClientRect();
+                    const dist = Math.hypot(gRect.left - x, gRect.top - y);
+                    if (dist < 150) { // Ripple radius
+                        destroyGlitch(glitch);
+                    }
+                });
+            }, 100);
+
+            setTimeout(() => ripple.remove(), 800);
+        }
+
+        // Glitch System
+        const glitchTexts = ["ERROR", "0x4F", "NULL", "VOID", "NaN", "404", "SYSTEM_FAIL", "???"];
+
+        function spawnGlitch() {
+            if (!gameActive) return;
+            
+            const glitch = document.createElement('div');
+            glitch.classList.add('glitch');
+            glitch.innerText = glitchTexts[Math.floor(Math.random() * glitchTexts.length)];
+            
+            // Random position at bottom, float up
+            const startX = Math.random() * (window.innerWidth - 100);
+            const startY = window.innerHeight;
+            
+            glitch.style.left = startX + 'px';
+            glitch.style.top = startY + 'px';
+            
+            gameArea.appendChild(glitch);
+
+            let pos = startY;
+            const speed = Math.random() * 1 + 0.5;
+
+            const anim = setInterval(() => {
+                if (!gameActive) { clearInterval(anim); return; }
+                pos -= speed;
+                glitch.style.top = pos + 'px';
+
+                // Check if it hits the eye
+                const gRect = glitch.getBoundingClientRect();
+                const eRect = eyeContainer.getBoundingClientRect();
+
+                // Simple box collision with eye
+                if (gRect.top < eRect.bottom && gRect.bottom > eRect.top && 
+                    gRect.right > eRect.left && gRect.left < eRect.right) {
+                    takeDamage();
+                    clearInterval(anim);
+                    glitch.remove();
+                }
+
+                if (pos < -50) {
+                    clearInterval(anim);
+                    glitch.remove();
+                }
+            }, 16);
+            
+            // Store interval on element to clear later if needed
+            glitch.dataset.animId = anim;
+        }
+
+        function checkTearCollision(tear, tearAnim) {
+            const tRect = tear.getBoundingClientRect();
+            const glitches = document.querySelectorAll('.glitch');
+
+            glitches.forEach(glitch => {
+                const gRect = glitch.getBoundingClientRect();
+                
+                if (tRect.left < gRect.right && tRect.right > gRect.left &&
+                    tRect.top < gRect.bottom && tRect.bottom > gRect.top) {
+                    
+                    destroyGlitch(glitch);
+                    // Tear continues (piercing) or stops? Let's stop it.
+                    clearInterval(tearAnim);
+                    tear.remove();
+                    createRipple(tRect.left, tRect.top);
+                }
+            });
+        }
+
+        function destroyGlitch(glitch) {
+            if(glitch.parentNode) {
+                score += 10;
+                updateUI();
+                
+                // Explosion effect text
+                const boom = document.createElement('div');
+                boom.style.position = 'absolute';
+                boom.style.left = glitch.style.left;
+                boom.style.top = glitch.style.top;
+                boom.style.color = '#a5b4fc';
+                boom.style.fontWeight = 'bold';
+                boom.innerText = "PURGED";
+                boom.style.fontSize = '12px';
+                gameArea.appendChild(boom);
+                
+                glitch.remove();
+
+                setTimeout(() => boom.remove(), 500);
+            }
+        }
+
+        function takeDamage() {
+            health -= 10;
+            eyeContainer.style.filter = "drop-shadow(0 0 20px rgba(255, 0, 0, 0.8))";
+            setTimeout(() => {
+                eyeContainer.style.filter = "drop-shadow(0 0 20px rgba(168, 85, 247, 0.6))";
+            }, 200);
+
+            if (health <= 0) {
+                gameOver();
+            }
+            updateUI();
+        }
+
+        function updateUI() {
+            scoreEl.innerText = score;
+            healthEl.innerText = health;
+            healthEl.style.color = health < 30 ? 'red' : '#a5b4fc';
+        }
+
+        function gameOver() {
+            gameActive = false;
+            clearInterval(glitchInterval);
+            document.querySelectorAll('.glitch').forEach(g => g.remove());
+            
+            const msg = document.createElement('div');
+            msg.classList.add('absolute', 'text-4xl', 'text-red-500', 'font-bold', 'bg-black', 'p-4', 'border', 'border-red-500');
+            msg.style.top = '50%';
+            msg.style.zIndex = '100';
+            msg.innerText = "SYSTEM FAILURE";
+            document.body.appendChild(msg);
+            
+            setTimeout(() => msg.remove(), 3000);
+        }
+
+        function resetGame() {
+            gameActive = true;
+            score = 0;
+            health = 100;
+            updateUI();
+            document.querySelectorAll('.glitch').forEach(g => g.remove());
+            clearInterval(glitchInterval);
+            glitchInterval = setInterval(spawnGlitch, 2000);
+        }
+
+        // Start Spawning
+        glitchInterval = setInterval(spawnGlitch, 2000);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Neural Flow</title>
+    <style>
+        :root {
+            --neon-cyan: #00f3ff;
+            --neon-pink: #ff00ff;
+            --neon-purple: #bc13fe;
+            --bg-color: #050510;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            overflow: hidden;
+            font-family: 'Courier New', Courier, monospace;
+            color: white;
+            user-select: none;
+        }
+
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* UI Overlay */
+        #ui-layer {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            background: rgba(0, 0, 20, 0.6);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.1);
+            width: 280px;
+            transition: transform 0.3s ease;
+        }
+
+        h1 {
+            font-size: 1.2rem;
+            margin: 0;
+            text-transform: uppercase;
+            background: linear-gradient(90deg, var(--neon-cyan), var(--neon-pink));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        label {
+            font-size: 0.8rem;
+            color: #aaa;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--neon-cyan);
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--neon-cyan);
+            margin-top: -6px; 
+        }
+        
+        input[type="range"]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #333;
+            border-radius: 2px;
+        }
+
+        .btn {
+            background: transparent;
+            border: 1px solid var(--neon-pink);
+            color: var(--neon-pink);
+            padding: 10px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+            text-transform: uppercase;
+            transition: all 0.2s;
+            border-radius: 5px;
+            font-size: 0.8rem;
+            text-align: center;
+        }
+
+        .btn:hover {
+            background: var(--neon-pink);
+            color: white;
+            box-shadow: 0 0 15px var(--neon-pink);
+        }
+
+        .stats {
+            font-size: 0.7rem;
+            color: #666;
+            margin-top: 10px;
+            border-top: 1px solid #333;
+            padding-top: 10px;
+        }
+
+        /* Tutorial Tooltip */
+        .tooltip {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            border: 1px solid var(--neon-cyan);
+            padding: 10px 20px;
+            border-radius: 20px;
+            pointer-events: none;
+            z-index: 20;
+            animation: pulse 2s infinite;
+            text-align: center;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(0, 243, 255, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(0, 243, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 243, 255, 0); }
+        }
+
+        /* SVG Icons */
+        .icon {
+            width: 24px;
+            height: 24px;
+            fill: currentColor;
+            vertical-align: middle;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui-layer">
+        <h1>
+            <svg class="icon" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zm0 9l2.5-1.25L12 8.5l-2.5 1.25L12 11zm0 2.5l-5-2.5-5 2.5L12 22l10-8.5-5-2.5-5 2.5z"/></svg>
+            Neural Flow
+        </h1>
+        
+        <div class="control-group">
+            <label>Flow Intensity <span id="val-speed">50%</span></label>
+            <input type="range" id="speed" min="1" max="100" value="50">
+        </div>
+
+        <div class="control-group">
+            <label>Chaos Factor <span id="val-chaos">20%</span></label>
+            <input type="range" id="chaos" min="0" max="100" value="20">
+        </div>
+
+        <div class="control-group">
+            <label>Particle Count <span id="val-count">2000</span></label>
+            <input type="range" id="count" min="500" max="5000" value="2000">
+        </div>
+
+        <button class="btn" id="clear-nodes">Reset Nodes</button>
+        <button class="btn" id="toggle-color">Switch Palette</button>
+
+        <div class="stats">
+            Double-click to create a Data Node.<br>
+            Nodes attract the stream.
+        </div>
+    </div>
+
+    <div class="tooltip" id="tooltip">
+        Double-Click anywhere to place a Gravity Node
+    </div>
+
+    <div id="canvas-container">
+        <canvas id="flowCanvas"></canvas>
+    </div>
+
+    <script>
+        /**
+         * NEON NEURAL FLOW
+         * A generative art application mimicking the provided image.
+         * Features:
+         * - Particle system following flow fields (sine/noise).
+         * - Interactive "Nodes" (Gravity wells) that pull particles.
+         * - Dynamic color blending (Cyan/Magenta).
+         */
+
+        const canvas = document.getElementById('flowCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // State
+        let width, height;
+        let particles = [];
+        let nodes = [];
+        let animationId;
+        let time = 0;
+        let mouse = { x: 0, y: 0, active: false };
+        
+        // Config
+        const config = {
+            particleCount: 2000,
+            baseSpeed: 2,
+            chaos: 0.2,
+            colorMode: 'cyber', // 'cyber' or 'fire'
+            nodeRadius: 60
+        };
+
+        // UI Elements
+        const ui = {
+            speed: document.getElementById('speed'),
+            chaos: document.getElementById('chaos'),
+            count: document.getElementById('count'),
+            valSpeed: document.getElementById('val-speed'),
+            valChaos: document.getElementById('val-chaos'),
+            valCount: document.getElementById('val-count'),
+            resetBtn: document.getElementById('clear-nodes'),
+            colorBtn: document.getElementById('toggle-color'),
+            tooltip: document.getElementById('tooltip')
+        };
+
+        // Resize Handler
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            initParticles();
+        }
+        window.addEventListener('resize', resize);
+
+        // Particle Class
+        class Particle {
+            constructor() {
+                this.reset(true);
+            }
+
+            reset(randomY = false) {
+                this.x = Math.random() * width;
+                this.y = randomY ? Math.random() * height : height + 10;
+                this.vx = 0;
+                this.vy = 0;
+                this.life = Math.random() * 0.5 + 0.5; // Opacity
+                this.size = Math.random() * 1.5 + 0.5;
+                
+                // Assign a "lane" preference to mimic the bundled cables in the image
+                this.lane = Math.floor(Math.random() * 5); 
+                this.laneOffset = (Math.random() - 0.5) * 100;
+            }
+
+            update() {
+                // Base upward movement
+                let speedMult = config.baseSpeed * 0.02 + 0.5;
+                this.y -= (Math.random() * 1 + 1) * speedMult;
+
+                // Calculate Flow Field (Sine waves to mimic the image curves)
+                // We create a few "main streams" based on X position
+                
+                // Normalized X (-1 to 1)
+                let nx = (this.x / width) * 2 - 1;
+                
+                // Complex sine wave pattern for the "cable" look
+                let flowX = Math.sin(this.y * 0.005 + time * 0.002) * 2;
+                flowX += Math.sin(this.y * 0.01) * 1;
+                flowX += (Math.random() - 0.5) * config.chaos;
+
+                // Apply Node Gravity
+                nodes.forEach(node => {
+                    let dx = node.x - this.x;
+                    let dy = node.y - this.y;
+                    let dist = Math.sqrt(dx*dx + dy*dy);
+                    
+                    if (dist < 300) {
+                        let force = (300 - dist) / 300;
+                        this.vx += (dx / dist) * force * 0.5;
+                        this.vy += (dy / dist) * force * 0.5;
+                    }
+                });
+
+                // Mouse Interaction (Repel)
+                if (mouse.active) {
+                    let dx = mouse.x - this.x;
+                    let dy = mouse.y - this.y;
+                    let dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist < 150) {
+                        this.vx -= (dx / dist) * 0.5;
+                        this.vy -= (dy / dist) * 0.5;
+                    }
+                }
+
+                // Apply velocity with damping
+                this.x += this.vx + flowX;
+                this.y += this.vy;
+                this.vx *= 0.95;
+                this.vy *= 0.95;
+
+                // Wrap around or reset
+                if (this.y < -10 || this.x < -50 || this.x > width + 50) {
+                    this.reset();
+                }
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                
+                // Color Logic based on X position and Lane (Cyan vs Magenta split)
+                let hue;
+                if (config.colorMode === 'cyber') {
+                    // Left side cyan, right side magenta/purple, mixed in middle
+                    let ratio = this.x / width;
+                    if (ratio < 0.4) hue = 180; // Cyan
+                    else if (ratio > 0.6) hue = 300; // Magenta
+                    else hue = 240 + (Math.random() * 60); // Blue/Purple mix
+                    
+                    // Node proximity changes color to white/bright
+                    let nearNode = false;
+                    nodes.forEach(n => {
+                        let d = Math.hypot(n.x - this.x, n.y - this.y);
+                        if (d < 50) nearNode = true;
+                    });
+                    
+                    let lightness = nearNode ? 90 : 50;
+                    ctx.fillStyle = `hsla(${hue}, 100%, ${lightness}%, ${this.life})`;
+                } else {
+                    // Fire mode
+                    let hue = 0 + (this.y / height) * 60;
+                    ctx.fillStyle = `hsla(${hue}, 100%, 50%, ${this.life})`;
+                }
+
+                ctx.fill();
+            }
+        }
+
+        // Node Class (The glowing orbs)
+        class Node {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.pulse = 0;
+            }
+
+            draw() {
+                this.pulse += 0.05;
+                let r = 10 + Math.sin(this.pulse) * 2;
+                
+                // Glow
+                let gradient = ctx.createRadialGradient(this.x, this.y, 5, this.x, this.y, 40);
+                gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+                gradient.addColorStop(0.2, 'rgba(0, 243, 255, 0.8)');
+                gradient.addColorStop(1, 'rgba(0, 243, 255, 0)');
+                
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 40, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Core
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 5, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Rings
+                ctx.strokeStyle = 'rgba(255, 0, 255, 0.5)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, r + 10, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+        }
+
+        function initParticles() {
+            particles = [];
+            for (let i = 0; i < config.particleCount; i++) {
+                particles.push(new Particle());
+            }
+        }
+
+        function animate() {
+            // Trail effect
+            ctx.fillStyle = 'rgba(5, 5, 16, 0.2)'; // Keep trails
+            ctx.fillRect(0, 0, width, height);
+            
+            // Global composite for glow
+            ctx.globalCompositeOperation = 'lighter';
+
+            // Draw Nodes
+            nodes.forEach(node => node.draw());
+
+            // Draw Particles
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+
+            // Reset composite
+            ctx.globalCompositeOperation = 'source-over';
+
+            time++;
+            animationId = requestAnimationFrame(animate);
+        }
+
+        // Interaction
+        canvas.addEventListener('mousemove', (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+            mouse.active = true;
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            mouse.active = false;
+        });
+
+        canvas.addEventListener('dblclick', (e) => {
+            nodes.push(new Node(e.clientX, e.clientY));
+            ui.tooltip.style.opacity = '0'; // Hide tooltip after first interaction
+        });
+
+        // UI Events
+        ui.speed.addEventListener('input', (e) => {
+            config.baseSpeed = parseInt(e.target.value);
+            ui.valSpeed.textContent = e.target.value + '%';
+        });
+
+        ui.chaos.addEventListener('input', (e) => {
+            config.chaos = parseInt(e.target.value) / 50; // Scale down
+            ui.valChaos.textContent = e.target.value + '%';
+        });
+
+        ui.count.addEventListener('change', (e) => {
+            config.particleCount = parseInt(e.target.value);
+            ui.valCount.textContent = config.particleCount;
+            initParticles();
+        });
+
+        ui.resetBtn.addEventListener('click', () => {
+            nodes = [];
+        });
+
+        ui.colorBtn.addEventListener('click', () => {
+            config.colorMode = config.colorMode === 'cyber' ? 'fire' : 'cyber';
+            // Update UI colors to match mode
+            if(config.colorMode === 'fire') {
+                document.documentElement.style.setProperty('--neon-cyan', '#ffaa00');
+                document.documentElement.style.setProperty('--neon-pink', '#ff3300');
+            } else {
+                document.documentElement.style.setProperty('--neon-cyan', '#00f3ff');
+                document.documentElement.style.setProperty('--neon-pink', '#ff00ff');
+            }
+        });
+
+        // Initialize
+        resize();
+        
+        // Add some initial nodes to match the image aesthetic
+        setTimeout(() => {
+            nodes.push(new Node(width * 0.5, height * 0.5));
+            nodes.push(new Node(width * 0.5, height * 0.3));
+            nodes.push(new Node(width * 0.5, height * 0.7));
+        }, 100);
+
+        animate();
+
+    </script>
+</body>
+</html>

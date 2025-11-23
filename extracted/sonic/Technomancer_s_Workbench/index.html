@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Technomancer's Workbench</title>
+    <style>
+        :root {
+            --glow-color: #0f0;
+            --bg-color: #050510;
+            --desk-color: #3e2723;
+            --monitor-bg: #000;
+            --spark-color: #ffaa00;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            font-family: 'Courier New', Courier, monospace;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+        }
+
+        /* --- The Room / Atmosphere --- */
+        .room {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 50% 30%, #1a1a2e 0%, #000000 80%);
+            z-index: -2;
+        }
+
+        /* Magical Particles Background */
+        .dust {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            opacity: 0.3;
+            animation: float 10s infinite linear;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px) translateX(0px); opacity: 0; }
+            50% { opacity: 0.5; }
+            100% { transform: translateY(-100vh) translateX(20px); opacity: 0; }
+        }
+
+        /* --- The Desk --- */
+        .desk {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 40vh;
+            background: linear-gradient(to bottom, #4e342e, #281815);
+            box-shadow: 0 -10px 50px rgba(0,0,0,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            perspective: 800px;
+            z-index: 1;
+        }
+
+        .desk-surface {
+            width: 90%;
+            height: 100%;
+            position: relative;
+        }
+
+        /* --- Desk Items (Emojis/CSS) --- */
+        .item {
+            position: absolute;
+            font-size: 3rem;
+            cursor: pointer;
+            transition: transform 0.2s, filter 0.2s;
+            filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5));
+        }
+
+        .item:hover {
+            transform: scale(1.2) translateY(-10px);
+            filter: drop-shadow(0 15px 10px rgba(255, 200, 0, 0.4));
+        }
+
+        .item:active {
+            transform: scale(0.9);
+        }
+
+        /* Specific Item Positions */
+        #keyboard { bottom: 20px; left: 50%; transform: translateX(-50%) rotateX(20deg); font-size: 8rem; color: #333; text-shadow: 0 0 10px #000; pointer-events: none; }
+        #potion { bottom: 100px; right: 15%; font-size: 4rem; animation: glowPulse 3s infinite; }
+        #scroll { bottom: 50px; left: 10%; font-size: 4rem; transform: rotate(-20deg); }
+        #crystal { bottom: 120px; left: 20%; font-size: 3.5rem; animation: floatItem 4s ease-in-out infinite; }
+        #tools { bottom: 40px; right: 25%; font-size: 3rem; transform: rotate(15deg); }
+
+        @keyframes glowPulse {
+            0%, 100% { filter: drop-shadow(0 0 5px blue); }
+            50% { filter: drop-shadow(0 0 20px cyan); }
+        }
+        @keyframes floatItem {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* --- The Monitor (Centerpiece) --- */
+        .monitor-casing {
+            position: absolute;
+            bottom: 25vh;
+            width: 600px;
+            height: 450px;
+            background: #222;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8), inset 0 0 10px #000;
+            z-index: 10;
+            transform: perspective(1000px) rotateX(5deg);
+        }
+
+        .screen {
+            width: 100%;
+            height: 100%;
+            background-color: var(--monitor-bg);
+            border-radius: 10px; /* CRT curve */
+            position: relative;
+            overflow: hidden;
+            color: var(--glow-color);
+            text-shadow: 0 0 5px var(--glow-color);
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+            font-size: 14px;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        /* CRT Scanlines */
+        .screen::after {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 2;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+        }
+
+        /* Glitch Effect */
+        .glitch {
+            animation: glitch 1s linear infinite;
+        }
+
+        @keyframes glitch {
+            2%, 64% { transform: translate(2px,0) skew(0deg); }
+            4%, 60% { transform: translate(-2px,0) skew(0deg); }
+            62% { transform: translate(0,0) skew(5deg); }
+        }
+
+        /* --- Game UI Elements --- */
+        .status-bar {
+            border-bottom: 2px solid var(--glow-color);
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .terminal-content {
+            height: 80%;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column-reverse; /* Text flows up */
+        }
+
+        .log-entry {
+            margin-bottom: 4px;
+        }
+        .log-entry.error { color: #ff3333; text-shadow: 0 0 5px red; }
+        .log-entry.success { color: #00ffff; text-shadow: 0 0 5px cyan; }
+        .log-entry.system { color: #ffff00; }
+
+        /* --- Interactive Sparks/Bugs --- */
+        .spark {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background: radial-gradient(circle, #fff, #ffaa00, transparent);
+            border-radius: 50%;
+            cursor: crosshair;
+            z-index: 100;
+            animation: jitter 0.2s infinite;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: black;
+            font-weight: bold;
+        }
+
+        @keyframes jitter {
+            0% { transform: translate(0,0); }
+            25% { transform: translate(2px, -2px); }
+            50% { transform: translate(-2px, 2px); }
+            75% { transform: translate(2px, 2px); }
+            100% { transform: translate(-2px, -2px); }
+        }
+
+        /* --- Wizard Hands (CSS) --- */
+        .hand {
+            position: absolute;
+            width: 150px;
+            height: 200px;
+            background: #dcb;
+            border-radius: 20px;
+            bottom: -50px;
+            z-index: 20;
+            transition: bottom 0.1s;
+            opacity: 0.8;
+            pointer-events: none;
+        }
+        .hand-left { 
+            left: 20%; 
+            transform: rotate(20deg);
+            background: linear-gradient(to right, #222 30%, #dcb 30%); /* Sleeve */
+        }
+        .hand-right { 
+            right: 20%; 
+            transform: rotate(-20deg); 
+            background: linear-gradient(to left, #222 30%, #dcb 30%); /* Sleeve */
+        }
+
+        /* --- Overlay --- */
+        #game-over {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            color: red;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            font-size: 2rem;
+            text-align: center;
+        }
+        button {
+            background: #333; color: #fff; border: 2px solid #fff;
+            padding: 10px 20px; font-size: 1.5rem; cursor: pointer; margin-top: 20px;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        button:hover { background: #fff; color: #000; }
+
+        /* Progress Bar */
+        .integrity-bar-container {
+            width: 200px;
+            height: 20px;
+            border: 1px solid var(--glow-color);
+            margin-top: 5px;
+        }
+        .integrity-bar {
+            width: 100%;
+            height: 100%;
+            background: var(--glow-color);
+            transition: width 0.2s;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Background Atmosphere -->
+    <div class="room">
+        <!-- Generated JS stars will go here -->
+    </div>
+
+    <!-- The Monitor -->
+    <div class="monitor-casing">
+        <div class="screen" id="screen">
+            <div class="status-bar">
+                <span>SYS.INTEGRITY</span>
+                <div class="integrity-bar-container">
+                    <div class="integrity-bar" id="integrity-bar"></div>
+                </div>
+                <span id="score">SCORE: 0</span>
+            </div>
+            <div class="terminal-content" id="terminal">
+                <div class="log-entry system">> SYSTEM BOOT...</div>
+                <div class="log-entry system">> TECHNOMANCY ENGINE v9.2</div>
+                <div class="log-entry">> WAITING FOR USER INPUT...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- The Desk -->
+    <div class="desk">
+        <div class="desk-surface">
+            <!-- Interactive Items -->
+            <div class="item" id="potion" onclick="useItem('potion')" title="Coolant Potion">🧪</div>
+            <div class="item" id="scroll" onclick="useItem('scroll')" title="Scroll of Debugging">📜</div>
+            <div class="item" id="crystal" onclick="useItem('crystal')" title="Mana Capacitor">💎</div>
+            <div class="item" id="tools" onclick="useItem('tools')" title="Hardware Fix">🔧</div>
+            
+            <!-- Aesthetic only -->
+            <div class="item" id="keyboard">⌨️</div>
+        </div>
+    </div>
+
+    <!-- Wizard Hands (Visual Feedback) -->
+    <div class="hand hand-left" id="hand-left"></div>
+    <div class="hand hand-right" id="hand-right"></div>
+
+    <!-- Game Over Overlay -->
+    <div id="game-over">
+        <h1>SYSTEM CRITICAL FAILURE</h1>
+        <p>The magic smoke has escaped.</p>
+        <p id="final-score">Score: 0</p>
+        <button onclick="restartGame()">REBOOT SYSTEM</button>
+    </div>
+
+    <script>
+        // --- Game State ---
+        let integrity = 100;
+        let score = 0;
+        let gameActive = true;
+        let difficulty = 1;
+        let spawnRate = 2000;
+        let gameLoopId;
+        let spawnId;
+        
+        // --- Elements ---
+        const terminal = document.getElementById('terminal');
+        const integrityBar = document.getElementById('integrity-bar');
+        const scoreEl = document.getElementById('score');
+        const gameOverScreen = document.getElementById('game-over');
+        const finalScoreEl = document.getElementById('final-score');
+        const screenEl = document.getElementById('screen');
+
+        // --- Audio Context (Synthesized Sound) ---
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioContext();
+
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            if (type === 'click') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.1);
+            } else if (type === 'error') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(100, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.3);
+            } else if (type === 'heal') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+                osc.frequency.linearRampToValueAtTime(800, audioCtx.currentTime + 0.2);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.2);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.2);
+            }
+        }
+
+        // --- Visual Effects ---
+        function log(msg, type = '') {
+            const div = document.createElement('div');
+            div.className = `log-entry ${type}`;
+            div.innerText = `> ${msg}`;
+            terminal.prepend(div);
+            if (terminal.children.length > 15) terminal.lastChild.remove();
+        }
+
+        function createDust() {
+            const room = document.querySelector('.room');
+            for(let i=0; i<20; i++) {
+                let d = document.createElement('div');
+                d.className = 'dust';
+                d.style.left = Math.random() * 100 + '%';
+                d.style.top = Math.random() * 100 + '%';
+                d.style.width = Math.random() * 5 + 'px';
+                d.style.height = d.style.width;
+                d.style.animationDuration = (Math.random() * 10 + 5) + 's';
+                room.appendChild(d);
+            }
+        }
+        createDust();
+
+        // --- Game Logic ---
+
+        function spawnSpark() {
+            if (!gameActive) return;
+
+            const spark = document.createElement('div');
+            spark.className = 'spark';
+            spark.innerText = ['⚡', '🐛', '🔥', '⚠️'][Math.floor(Math.random() * 4)];
+            
+            // Position randomly within the monitor area mostly
+            const monitorRect = document.querySelector('.monitor-casing').getBoundingClientRect();
+            const x = monitorRect.left + Math.random() * (monitorRect.width - 40);
+            const y = monitorRect.top + Math.random() * (monitorRect.height - 40);
+            
+            spark.style.left = x + 'px';
+            spark.style.top = y + 'px';
+
+            // Spark Logic
+            spark.onclick = (e) => {
+                e.stopPropagation();
+                playSound('click');
+                spark.remove();
+                score += 10;
+                updateUI();
+                log("Anomaly contained.", "success");
+            };
+
+            document.body.appendChild(spark);
+
+            // Spark Timeout (Damage)
+            setTimeout(() => {
+                if (spark.parentNode) {
+                    spark.remove();
+                    damage(10);
+                    log("Hardware failure detected!", "error");
+                    playSound('error');
+                    screenShake();
+                }
+            }, 2000 / difficulty);
+        }
+
+        function screenShake() {
+            screenEl.style.transform = `translate(${Math.random()*10-5}px, ${Math.random()*10-5}px)`;
+            setTimeout(() => {
+                screenEl.style.transform = 'translate(0,0)';
+            }, 100);
+        }
+
+        function damage(amount) {
+            integrity -= amount;
+            if (integrity <= 0) {
+                integrity = 0;
+                endGame();
+            }
+            updateUI();
+        }
+
+        function heal(amount) {
+            integrity = Math.min(100, integrity + amount);
+            updateUI();
+            playSound('heal');
+        }
+
+        function updateUI() {
+            integrityBar.style.width = integrity + '%';
+            integrityBar.style.backgroundColor = integrity < 30 ? 'red' : integrity < 60 ? 'yellow' : '#0f0';
+            scoreEl.innerText = `SCORE: ${score}`;
+        }
+
+        // --- Item Interactions ---
+        window.useItem = function(item) {
+            if (!gameActive) return;
+            
+            // Animate hand
+            const hand = item === 'potion' || item === 'tools' ? document.getElementById('hand-right') : document.getElementById('hand-left');
+            hand.style.bottom = '-10px';
+            setTimeout(() => hand.style.bottom = '-50px', 200);
+
+            switch(item) {
+                case 'potion':
+                    heal(15);
+                    log("Coolant applied. Temp stable.", "system");
+                    break;
+                case 'scroll':
+                    // Clears all sparks currently on screen
+                    const sparks = document.querySelectorAll('.spark');
+                    sparks.forEach(s => s.remove());
+                    score += sparks.length * 5;
+                    log("Debugging Scroll cast! Screen cleared.", "success");
+                    playSound('heal');
+                    break;
+                case 'crystal':
+                    score += 50;
+                    difficulty += 0.1; // Mana overcharge makes game harder but gives points
+                    log("Mana Overcharge! Score Boost.", "system");
+                    playSound('click');
+                    break;
+                case 'tools':
+                    heal(5);
+                    log("Percussive maintenance applied.", "system");
+                    break;
+            }
+            updateUI();
+        }
+
+        // --- Game Loop ---
+        function startGame() {
+            integrity = 100;
+            score = 0;
+            difficulty = 1;
+            gameActive = true;
+            gameOverScreen.style.display = 'none';
+            terminal.innerHTML = '';
+            log("SYSTEM BOOT SEQUENCE INITIATED...");
+            log("WIZARD OS LOADED.");
+            updateUI();
+
+            // Clear existing sparks
+            document.querySelectorAll('.spark').forEach(e => e.remove());
+
+            clearInterval(gameLoopId);
+            clearInterval(spawnId);
+
+            // Difficulty Ramp
+            gameLoopId = setInterval(() => {
+                if(gameActive) {
+                    difficulty += 0.05;
+                    spawnRate = Math.max(500, 2000 - (difficulty * 100));
+                    clearInterval(spawnId);
+                    spawnId = setInterval(spawnSpark, spawnRate);
+                }
+            }, 5000);
+
+            spawnId = setInterval(spawnSpark, spawnRate);
+        }
+
+        function endGame() {
+            gameActive = false;
+            clearInterval(gameLoopId);
+            clearInterval(spawnId);
+            finalScoreEl.innerText = "Final Score: " + score;
+            gameOverScreen.style.display = 'flex';
+        }
+
+        window.restartGame = startGame;
+
+        // Keyboard interaction for flavor
+        document.addEventListener('keydown', (e) => {
+            if (!gameActive) return;
+            playSound('click');
+            // Random tech-babble typing effect
+            const chars = "0101010XZYΩµ∆∂∑";
+            const char = chars[Math.floor(Math.random() * chars.length)];
+            
+            // Sometimes typing heals slightly or gives score
+            if (Math.random() > 0.9) {
+                score += 1;
+                updateUI();
+            }
+            
+            // Add to terminal visually but don't fill it up too much
+            const lastLog = terminal.firstChild;
+            if (lastLog && !lastLog.classList.contains('system') && lastLog.innerText.length < 40) {
+                lastLog.innerText += char;
+            } else {
+                log(char);
+            }
+        });
+
+        // Start immediately
+        startGame();
+
+    </script>
+</body>
+</html>

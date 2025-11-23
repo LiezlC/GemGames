@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Entropy Cube</title>
+    <style>
+        :root {
+            --bg-color: #1a1a1a;
+            --cube-color: #f0f0f0;
+            --accent-pink: #ff00ff;
+            --accent-cyan: #00ffff;
+            --accent-black: #050505;
+            --ui-font: 'Courier New', Courier, monospace;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            overflow: hidden;
+            font-family: var(--ui-font);
+            color: white;
+            user-select: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            perspective: 1000px;
+        }
+
+        /* UI Overlay */
+        #ui-layer {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 2px 2px 0px var(--accent-pink), -2px -2px 0px var(--accent-cyan);
+        }
+
+        p {
+            font-size: 0.8rem;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+
+        #entropy-meter-container {
+            margin-top: 15px;
+            width: 200px;
+            height: 10px;
+            background: #333;
+            border: 1px solid #555;
+            position: relative;
+        }
+
+        #entropy-fill {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-cyan), var(--accent-pink));
+            transition: width 0.2s ease-out;
+        }
+
+        #reset-btn {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: transparent;
+            border: 2px solid white;
+            color: white;
+            padding: 10px 30px;
+            font-family: var(--ui-font);
+            font-weight: bold;
+            cursor: pointer;
+            pointer-events: auto;
+            transition: all 0.3s;
+            z-index: 100;
+            text-transform: uppercase;
+        }
+
+        #reset-btn:hover {
+            background: white;
+            color: black;
+            box-shadow: 0 0 15px var(--accent-cyan);
+        }
+
+        /* 3D Scene */
+        .scene {
+            width: 300px;
+            height: 300px;
+            position: relative;
+            transform-style: preserve-3d;
+            /* Initial rotation */
+            transform: rotateX(-20deg) rotateY(45deg);
+            transition: transform 0.1s ease-out;
+            cursor: crosshair;
+        }
+
+        .cube {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            transform-style: preserve-3d;
+        }
+
+        .face {
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            background: var(--cube-color);
+            border: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: rgba(0,0,0,0.1);
+            backface-visibility: hidden; /* Hide inside to save rendering */
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.05);
+            overflow: hidden; /* Keep splatters inside face bounds */
+        }
+
+        /* Face Positioning */
+        .face.front  { transform: rotateY(0deg) translateZ(150px); }
+        .face.back   { transform: rotateY(180deg) translateZ(150px); }
+        .face.right  { transform: rotateY(90deg) translateZ(150px); }
+        .face.left   { transform: rotateY(-90deg) translateZ(150px); }
+        .face.top    { transform: rotateX(90deg) translateZ(150px); }
+        .face.bottom { transform: rotateX(-90deg) translateZ(150px); }
+
+        /* Splatters (Permanent Marks) */
+        .splatter {
+            position: absolute;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        /* Particles (Explosion Effects) */
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            z-index: 10;
+            animation: flyOut 0.8s forwards ease-out;
+        }
+
+        @keyframes flyOut {
+            0% {
+                transform: translate3d(0,0,0) scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: translate3d(var(--tx), var(--ty), 200px) scale(0);
+                opacity: 0;
+            }
+        }
+
+        /* Glitch Animation for Cube */
+        .glitch-anim {
+            animation: shake 0.2s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="ui-layer">
+        <h1>Entropy Cube</h1>
+        <p>Click to impact. Drag to rotate.</p>
+        <p>Chaos Level:</p>
+        <div id="entropy-meter-container">
+            <div id="entropy-fill"></div>
+        </div>
+    </div>
+
+    <div class="scene" id="scene">
+        <div class="cube" id="cube">
+            <div class="face front" data-face="front"></div>
+            <div class="face back" data-face="back"></div>
+            <div class="face right" data-face="right"></div>
+            <div class="face left" data-face="left"></div>
+            <div class="face top" data-face="top"></div>
+            <div class="face bottom" data-face="bottom"></div>
+        </div>
+    </div>
+
+    <button id="reset-btn">Reset Cube</button>
+
+    <script>
+        const scene = document.getElementById('scene');
+        const cube = document.getElementById('cube');
+        const faces = document.querySelectorAll('.face');
+        const entropyFill = document.getElementById('entropy-fill');
+        const resetBtn = document.getElementById('reset-btn');
+
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+        let rotation = { x: -20, y: 45 };
+        let entropy = 0;
+        const MAX_ENTROPY = 500; // Number of splatters to reach max chaos
+
+        const COLORS = ['#ff00ff', '#00ffff', '#050505', '#ff0099', '#00ccff'];
+
+        // Rotation Logic
+        document.addEventListener('mousedown', (e) => {
+            if(e.target.closest('.face') || e.target === document.body) {
+                isDragging = true;
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                const deltaMove = {
+                    x: e.clientX - previousMousePosition.x,
+                    y: e.clientY - previousMousePosition.y
+                };
+
+                rotation.y += deltaMove.x * 0.5;
+                rotation.x -= deltaMove.y * 0.5;
+
+                scene.style.transform = `rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)`;
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            }
+        });
+
+        // Impact Logic
+        faces.forEach(face => {
+            face.addEventListener('click', (e) => {
+                // Prevent drag from triggering click
+                if (Math.abs(e.clientX - previousMousePosition.x) > 5 || 
+                    Math.abs(e.clientY - previousMousePosition.y) > 5) return;
+
+                createImpact(e, face);
+            });
+        });
+
+        function createImpact(e, face) {
+            // Calculate click position relative to the face
+            const rect = face.getBoundingClientRect();
+            // Since the face is 3D transformed, getting exact local coords is tricky with getBoundingClientRect.
+            // However, e.offsetX and e.offsetY work perfectly on the target element itself!
+            const x = e.offsetX;
+            const y = e.offsetY;
+
+            // 1. Add Permanent Splatter (The "Stain")
+            // We create a cluster of shapes to look like a digital glitch/splatter
+            const numShapes = Math.floor(Math.random() * 5) + 3;
+            
+            for(let i=0; i<numShapes; i++) {
+                const span = document.createElement('div');
+                span.classList.add('splatter');
+                
+                // Randomize properties
+                const size = Math.random() * 40 + 10;
+                const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+                
+                // Random offsets from click center
+                const offX = (Math.random() - 0.5) * 50;
+                const offY = (Math.random() - 0.5) * 50;
+
+                span.style.left = `${x + offX}px`;
+                span.style.top = `${y + offY}px`;
+                span.style.width = `${size}px`;
+                span.style.height = `${size}px`;
+                span.style.backgroundColor = color;
+                
+                // Digital/Glitch aesthetic: CSS Clip Path for jagged shards
+                const p1 = Math.floor(Math.random()*100);
+                const p2 = Math.floor(Math.random()*100);
+                const p3 = Math.floor(Math.random()*100);
+                const p4 = Math.floor(Math.random()*100);
+                span.style.clipPath = `polygon(${p1}% 0%, 100% ${p2}%, ${p3}% 100%, 0% ${p4}%)`;
+                
+                // Sometimes rotate
+                span.style.transform = `rotate(${Math.random() * 360}deg)`;
+
+                face.appendChild(span);
+            }
+
+            // 2. Add Flying Particles (The "Explosion")
+            createParticles(x, y, face);
+
+            // 3. Shake the cube
+            cube.classList.remove('glitch-anim');
+            void cube.offsetWidth; // trigger reflow
+            cube.classList.add('glitch-anim');
+
+            // 4. Update Entropy
+            entropy += 10;
+            updateEntropy();
+        }
+
+        function createParticles(x, y, container) {
+            const particleCount = 12;
+            for (let i = 0; i < particleCount; i++) {
+                const p = document.createElement('div');
+                p.classList.add('particle');
+                
+                const size = Math.random() * 10 + 2;
+                const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+                
+                p.style.width = `${size}px`;
+                p.style.height = `${size}px`;
+                p.style.backgroundColor = color;
+                p.style.left = `${x}px`;
+                p.style.top = `${y}px`;
+
+                // Calculate random trajectory
+                // We use CSS variables to pass the destination to the keyframe
+                const angle = Math.random() * Math.PI * 2;
+                const velocity = Math.random() * 150 + 50;
+                const tx = Math.cos(angle) * velocity + 'px';
+                const ty = Math.sin(angle) * velocity + 'px';
+                
+                p.style.setProperty('--tx', tx);
+                p.style.setProperty('--ty', ty);
+
+                container.appendChild(p);
+
+                // Cleanup particle after animation
+                setTimeout(() => {
+                    p.remove();
+                }, 800);
+            }
+        }
+
+        function updateEntropy() {
+            const percentage = Math.min((entropy / MAX_ENTROPY) * 100, 100);
+            entropyFill.style.width = `${percentage}%`;
+
+            // Dynamic background change based on entropy
+            if (percentage > 50) {
+                document.body.style.backgroundColor = '#111'; // Darker
+            }
+            if (percentage > 80) {
+                // Glitch effect on body
+                document.body.style.textShadow = '2px 0 red, -2px 0 blue';
+            }
+            
+            if (percentage >= 100) {
+                triggerOverload();
+            }
+        }
+
+        function triggerOverload() {
+            // Fun visual effect when maxed out
+            document.body.style.filter = 'invert(1)';
+            setTimeout(() => {
+                document.body.style.filter = 'invert(0)';
+                entropy = 0;
+                updateEntropy();
+                // Clear faces
+                document.querySelectorAll('.splatter').forEach(el => el.remove());
+            }, 200);
+        }
+
+        resetBtn.addEventListener('click', () => {
+            document.querySelectorAll('.splatter').forEach(el => el.remove());
+            entropy = 0;
+            updateEntropy();
+            rotation = { x: -20, y: 45 };
+            scene.style.transform = `rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)`;
+            document.body.style.backgroundColor = '#1a1a1a';
+            document.body.style.textShadow = 'none';
+        });
+
+    </script>
+</body>
+</html>

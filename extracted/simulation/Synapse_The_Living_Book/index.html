@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Synapse: The Living Book</title>
+    <style>
+        :root {
+            --bg-color: #02020a;
+            --book-cover: #3e2723;
+            --page-color: #fdfbf7;
+            --glow-color: #00f7ff;
+            --synapse-color: rgba(100, 200, 255, 0.6);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            background: radial-gradient(circle at bottom center, #1a1a40 0%, var(--bg-color) 80%);
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+        }
+
+        /* Canvas for Neural Network */
+        #neural-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: auto; /* Allow clicking nodes */
+        }
+
+        /* Background Stars */
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            opacity: 0.8;
+            animation: twinkle infinite alternate;
+        }
+
+        @keyframes twinkle {
+            from { opacity: 0.2; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1.2); }
+        }
+
+        /* The Book Container */
+        .book-scene {
+            position: relative;
+            z-index: 10;
+            perspective: 1200px;
+            margin-bottom: -50px; /* Hide bottom edge slightly */
+            width: 800px;
+            max-width: 95vw;
+            height: 400px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            transition: transform 0.5s ease;
+        }
+
+        .book {
+            display: flex;
+            transform-style: preserve-3d;
+            transform: rotateX(30deg);
+            position: relative;
+        }
+
+        .page {
+            width: 300px;
+            height: 220px;
+            background: var(--page-color);
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.1), 0 10px 20px rgba(0,0,0,0.5);
+            position: relative;
+            border-radius: 5px 15px 15px 5px;
+            padding: 20px;
+            box-sizing: border-box;
+            transition: transform 0.3s;
+        }
+
+        .page.left {
+            transform-origin: right center;
+            transform: rotateY(-15deg);
+            border-right: 1px solid #ddd;
+            background: linear-gradient(90deg, #e3e1dc 0%, #fff 20%, #fff 100%);
+        }
+
+        .page.right {
+            transform-origin: left center;
+            transform: rotateY(15deg);
+            border-left: 1px solid #ddd;
+            background: linear-gradient(-90deg, #e3e1dc 0%, #fff 20%, #fff 100%);
+        }
+
+        /* Text Input Area */
+        .input-area {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: transparent;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 16px;
+            color: #333;
+            resize: none;
+            outline: none;
+            line-height: 1.5;
+            background-image: linear-gradient(#999 1px, transparent 1px);
+            background-size: 100% 1.5em;
+        }
+
+        .input-area::placeholder {
+            color: rgba(0,0,0,0.3);
+            font-style: italic;
+        }
+
+        /* Magic Glow from center */
+        .magic-source {
+            position: absolute;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 50px;
+            background: radial-gradient(circle, rgba(0, 247, 255, 0.8) 0%, rgba(0,0,0,0) 70%);
+            filter: blur(20px);
+            z-index: 15;
+            pointer-events: none;
+            animation: pulse 3s infinite ease-in-out;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; transform: translateX(-50%) scale(1); }
+            50% { opacity: 1; transform: translateX(-50%) scale(1.5); }
+        }
+
+        /* UI Overlay */
+        .ui-overlay {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 20;
+            color: var(--glow-color);
+            text-shadow: 0 0 10px var(--glow-color);
+        }
+        
+        .ui-overlay h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 300;
+            letter-spacing: 2px;
+        }
+
+        .ui-overlay p {
+            margin: 5px 0;
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+
+        .stats {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 20;
+            color: white;
+            font-family: monospace;
+            text-align: right;
+        }
+
+        /* Button */
+        .cast-spell-btn {
+            position: absolute;
+            bottom: -60px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 30px;
+            background: rgba(0, 247, 255, 0.1);
+            border: 1px solid var(--glow-color);
+            color: var(--glow-color);
+            border-radius: 20px;
+            cursor: pointer;
+            font-family: inherit;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: all 0.3s;
+            box-shadow: 0 0 10px rgba(0, 247, 255, 0.2);
+        }
+
+        .cast-spell-btn:hover {
+            background: var(--glow-color);
+            color: black;
+            box-shadow: 0 0 20px var(--glow-color);
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="ui-overlay">
+        <h1>SYNAPSE</h1>
+        <p>Type your thoughts to weave the network.</p>
+    </div>
+
+    <div class="stats">
+        <div id="node-count">Nodes: 0</div>
+        <div id="connection-count">Synapses: 0</div>
+    </div>
+
+    <canvas id="neural-canvas"></canvas>
+
+    <div class="book-scene">
+        <div class="magic-source"></div>
+        <div class="book">
+            <div class="page left">
+                <textarea id="input-left" class="input-area" placeholder="Write a concept here..."></textarea>
+            </div>
+            <div class="page right">
+                <textarea id="input-right" class="input-area" placeholder="...and watch it come alive."></textarea>
+                <button class="cast-spell-btn" id="ignite-btn">Ignite Thought</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * SYNAPSE ENGINE
+         * Handles the particle system, neural connections, and interaction.
+         */
+
+        const canvas = document.getElementById('neural-canvas');
+        const ctx = canvas.getContext('2d');
+        const nodeCountEl = document.getElementById('node-count');
+        const connCountEl = document.getElementById('connection-count');
+        const igniteBtn = document.getElementById('ignite-btn');
+        const inputLeft = document.getElementById('input-left');
+        const inputRight = document.getElementById('input-right');
+
+        let width, height;
+        let particles = [];
+        let mouse = { x: -1000, y: -1000 };
+        let activeText = "";
+
+        // Configuration
+        const CONFIG = {
+            particleCount: 0, // Starts empty
+            connectionDistance: 150,
+            mouseDistance: 200,
+            gravity: -0.2, // Float upwards
+            friction: 0.98
+        };
+
+        // Resize handling
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Starfield Background Generation
+        function createStars() {
+            const count = 150;
+            for (let i = 0; i < count; i++) {
+                const star = document.createElement('div');
+                star.classList.add('star');
+                const size = Math.random() * 3;
+                star.style.width = `${size}px`;
+                star.style.height = `${size}px`;
+                star.style.left = `${Math.random() * 100}vw`;
+                star.style.top = `${Math.random() * 80}vh`; // Keep mostly in sky
+                star.style.animationDuration = `${Math.random() * 3 + 2}s`;
+                star.style.animationDelay = `${Math.random() * 5}s`;
+                document.body.prepend(star);
+            }
+        }
+        createStars();
+
+        // Particle Class (The Neurons)
+        class Particle {
+            constructor(x, y, text = null, isMain = false) {
+                this.x = x;
+                this.y = y;
+                // Random velocity, generally upwards and outwards
+                this.vx = (Math.random() - 0.5) * 4;
+                this.vy = (Math.random() * -3) - 1; 
+                
+                this.size = isMain ? 6 : Math.random() * 3 + 1;
+                this.baseColor = isMain ? '#ffffff' : `hsl(${Math.random() * 60 + 180}, 100%, 70%)`; // Cyans and Blues
+                
+                this.text = text;
+                this.isMain = isMain;
+                this.life = 1.0; // Opacity/Life
+                this.decay = Math.random() * 0.002 + 0.001;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Slight gravity/float logic
+                this.vy += (Math.random() - 0.5) * 0.05; // Jitter
+                
+                // Mouse interaction (repel/attract)
+                const dx = mouse.x - this.x;
+                const dy = mouse.y - this.y;
+                const distance = Math.sqrt(dx*dx + dy*dy);
+
+                if (distance < CONFIG.mouseDistance) {
+                    const forceDirectionX = dx / distance;
+                    const forceDirectionY = dy / distance;
+                    const force = (CONFIG.mouseDistance - distance) / CONFIG.mouseDistance;
+                    
+                    // Gentle attraction to mouse
+                    this.vx += forceDirectionX * force * 0.5;
+                    this.vy += forceDirectionY * force * 0.5;
+                }
+
+                // Decay life if it goes too high or old
+                if (this.y < 0) this.life -= 0.05;
+                this.life -= this.decay;
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = this.baseColor;
+                ctx.globalAlpha = this.life;
+                ctx.fill();
+                
+                // Glow effect
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = this.baseColor;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+
+                // Draw Text if main node
+                if (this.text) {
+                    ctx.font = "14px Arial";
+                    ctx.fillStyle = "white";
+                    ctx.textAlign = "center";
+                    ctx.fillText(this.text, this.x, this.y - 15);
+                }
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        // Animation Loop
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+            
+            let connections = 0;
+
+            // Update and Draw Particles
+            for (let i = 0; i < particles.length; i++) {
+                particles[i].update();
+                particles[i].draw();
+
+                // Remove dead particles
+                if (particles[i].life <= 0) {
+                    particles.splice(i, 1);
+                    i--;
+                    continue;
+                }
+
+                // Draw Connections
+                for (let j = i; j < particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x;
+                    const dy = particles[i].y - particles[j].y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < CONFIG.connectionDistance) {
+                        ctx.beginPath();
+                        ctx.strokeStyle = `rgba(100, 200, 255, ${0.2 * particles[i].life})`;
+                        ctx.lineWidth = 1;
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.stroke();
+                        connections++;
+                    }
+                }
+            }
+
+            // Update Stats
+            nodeCountEl.innerText = `Nodes: ${particles.length}`;
+            connCountEl.innerText = `Synapses: ${connections}`;
+
+            requestAnimationFrame(animate);
+        }
+
+        // Interaction Logic
+        function spawnThoughtBurst(text) {
+            const originX = width / 2;
+            const originY = height - 100;
+
+            // Main Idea Node
+            particles.push(new Particle(originX, originY - 50, text, true));
+
+            // Supporting Neurons
+            const burstCount = 15 + Math.floor(Math.random() * 10);
+            for (let i = 0; i < burstCount; i++) {
+                particles.push(new Particle(originX, originY));
+            }
+        }
+
+        // Event Listeners
+        window.addEventListener('mousemove', (e) => {
+            mouse.x = e.x;
+            mouse.y = e.y;
+        });
+
+        // Click to split nodes
+        canvas.addEventListener('click', (e) => {
+            // Check if clicked near a particle
+            for(let i = 0; i < particles.length; i++) {
+                const dx = particles[i].x - e.x;
+                const dy = particles[i].y - e.y;
+                if(Math.sqrt(dx*dx + dy*dy) < 30) {
+                    // Mitosis!
+                    particles[i].vx += 2;
+                    particles.push(new Particle(particles[i].x, particles[i].y));
+                    particles[particles.length-1].vx -= 2;
+                    // Add a spark visual
+                    createSpark(e.x, e.y);
+                    break;
+                }
+            }
+        });
+
+        function createSpark(x, y) {
+            for(let i=0; i<5; i++) {
+                let p = new Particle(x, y);
+                p.size = 2;
+                p.life = 0.5;
+                p.vx *= 3;
+                p.vy *= 3;
+                particles.push(p);
+            }
+        }
+
+        // Typing Interaction
+        const inputs = [inputLeft, inputRight];
+        inputs.forEach(input => {
+            input.addEventListener('input', (e) => {
+                // Spawn small particles while typing
+                if (Math.random() > 0.7) {
+                    const rect = input.getBoundingClientRect();
+                    // Approximate cursor position is hard, just spawn from random spot in input
+                    const x = rect.left + Math.random() * rect.width;
+                    const y = rect.top + Math.random() * rect.height;
+                    
+                    let p = new Particle(x, y);
+                    p.vy = -2; // Float up faster
+                    p.life = 0.8;
+                    particles.push(p);
+                }
+            });
+
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const text = input.value.trim();
+                    if (text) {
+                        spawnThoughtBurst(text);
+                        input.value = ''; // Clear input
+                    }
+                }
+            });
+        });
+
+        igniteBtn.addEventListener('click', () => {
+            const textLeft = inputLeft.value.trim();
+            const textRight = inputRight.value.trim();
+            
+            if(textLeft) {
+                spawnThoughtBurst(textLeft);
+                inputLeft.value = '';
+            }
+            if(textRight) {
+                spawnThoughtBurst(textRight);
+                inputRight.value = '';
+            }
+            
+            if(!textLeft && !textRight) {
+                // Just spawn raw energy if empty
+                spawnThoughtBurst("Imagination");
+            }
+        });
+
+        // Start
+        animate();
+
+        // Initial Burst for visual cue
+        setTimeout(() => {
+            spawnThoughtBurst("Welcome");
+        }, 1000);
+
+    </script>
+</body>
+</html>
