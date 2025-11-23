@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Galaxy Forge</title>
+    <style>
+        :root {
+            --bg-color: #050508;
+            --panel-bg: rgba(20, 20, 30, 0.7);
+            --accent: #f0a500;
+            --text: #e0e0ff;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--bg-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--text);
+        }
+
+        canvas {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 300px;
+            background: var(--panel-bg);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 10;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            transition: transform 0.3s ease;
+        }
+
+        #ui-layer.minimized {
+            transform: translateX(-340px);
+        }
+
+        .toggle-btn {
+            position: absolute;
+            top: 20px;
+            left: 330px;
+            background: var(--panel-bg);
+            color: var(--text);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            z-index: 11;
+            backdrop-filter: blur(5px);
+            display: none; /* Shown via JS logic if needed, but keeping simple for now */
+        }
+
+        h1 {
+            font-size: 1.2rem;
+            margin-top: 0;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            background: linear-gradient(90deg, #fff, #aaa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            margin-bottom: 5px;
+            color: #aaa;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            height: 4px;
+            border-radius: 2px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: var(--accent);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--accent);
+            transition: transform 0.1s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+            font-size: 0.8rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #4b6cb7, #182848);
+            color: white;
+            box-shadow: 0 4px 15px rgba(75, 108, 183, 0.4);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 6px 20px rgba(75, 108, 183, 0.6);
+            transform: translateY(-1px);
+        }
+
+        .btn-danger {
+            background: linear-gradient(45deg, #cb2d3e, #ef473a);
+            color: white;
+        }
+        
+        .btn-warp {
+            background: linear-gradient(45deg, #f0a500, #cf7500);
+            color: #000;
+        }
+
+        .stats {
+            margin-top: 15px;
+            font-size: 0.75rem;
+            color: #666;
+            text-align: center;
+        }
+
+        /* Overlay for "Warp Speed" effect */
+        #warp-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            background: radial-gradient(circle, transparent 0%, #000 150%);
+            opacity: 0;
+            transition: opacity 0.5s;
+            z-index: 5;
+        }
+
+        .hint {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            text-align: center;
+            color: rgba(255,255,255,0.3);
+            font-size: 0.9rem;
+            pointer-events: none;
+            z-index: 2;
+            animation: pulse 3s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.7; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="warp-overlay"></div>
+
+    <div id="ui-layer">
+        <h1>
+            <span>🌌</span> Galaxy Forge
+        </h1>
+        
+        <div class="control-group">
+            <label>Star Count <span id="val-count">15000</span></label>
+            <input type="range" id="inp-count" min="1000" max="50000" step="1000" value="15000">
+        </div>
+
+        <div class="control-group">
+            <label>Spiral Arms <span id="val-arms">3</span></label>
+            <input type="range" id="inp-arms" min="1" max="10" step="1" value="3">
+        </div>
+
+        <div class="control-group">
+            <label>Arm Tightness <span id="val-twist">5</span></label>
+            <input type="range" id="inp-twist" min="0" max="20" step="0.1" value="5">
+        </div>
+
+        <div class="control-group">
+            <label>Core Size <span id="val-core">15</span></label>
+            <input type="range" id="inp-core" min="1" max="50" step="1" value="15">
+        </div>
+
+        <div class="control-group">
+            <label>Rotation Speed <span id="val-speed">1.0</span></label>
+            <input type="range" id="inp-speed" min="0" max="5" step="0.1" value="1.0">
+        </div>
+
+        <div class="control-group">
+            <label>Color Shift (Hue)</label>
+            <input type="range" id="inp-hue" min="0" max="360" step="1" value="220">
+        </div>
+
+        <div class="btn-row">
+            <button class="btn-primary" id="btn-random">Randomize</button>
+            <button class="btn-warp" id="btn-warp">WARP SPEED</button>
+        </div>
+        
+        <div class="stats">
+            Drag mouse to rotate view • Scroll to zoom
+        </div>
+    </div>
+
+    <div class="hint">Click & Drag to Rotate • Scroll to Zoom</div>
+
+    <canvas id="galaxyCanvas"></canvas>
+
+    <script>
+        /**
+         * Galaxy Simulation Logic
+         * Recreates the spiral galaxy visual from the input image using procedural generation.
+         */
+        
+        const canvas = document.getElementById('galaxyCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // State
+        let width, height;
+        let stars = [];
+        let camera = { x: 0, y: 0, z: -500, pitch: 0.4, yaw: 0, zoom: 1 };
+        let isDragging = false;
+        let lastMouse = { x: 0, y: 0 };
+        let warpSpeed = false;
+        let time = 0;
+
+        // Parameters
+        const params = {
+            count: 15000,
+            arms: 3,
+            armTwist: 5, // How much the arms wrap around
+            coreSize: 15, // Variance in the center
+            speed: 0.5,
+            baseHue: 220, // Blueish default
+            spread: 100, // Random scatter
+            armWidth: 0.5 // How thick the arms are
+        };
+
+        // UI Elements
+        const ui = {
+            count: document.getElementById('inp-count'),
+            arms: document.getElementById('inp-arms'),
+            twist: document.getElementById('inp-twist'),
+            core: document.getElementById('inp-core'),
+            speed: document.getElementById('inp-speed'),
+            hue: document.getElementById('inp-hue'),
+            valCount: document.getElementById('val-count'),
+            valArms: document.getElementById('val-arms'),
+            valTwist: document.getElementById('val-twist'),
+            valCore: document.getElementById('val-core'),
+            valSpeed: document.getElementById('val-speed'),
+            btnRandom: document.getElementById('btn-random'),
+            btnWarp: document.getElementById('btn-warp'),
+            overlay: document.getElementById('warp-overlay')
+        };
+
+        // Initialization
+        function init() {
+            resize();
+            window.addEventListener('resize', resize);
+            generateGalaxy();
+            loop();
+            setupEvents();
+        }
+
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+        }
+
+        // Gaussian random for natural distribution
+        function gaussianRandom() {
+            let u = 0, v = 0;
+            while(u === 0) u = Math.random(); 
+            while(v === 0) v = Math.random();
+            return Math.sqrt( -2.0 * Math.log( u ) ) * Math.cos( 2.0 * Math.PI * v );
+        }
+
+        class Star {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                // Random distance from center (weighted towards center)
+                // We use a mix of gaussian and linear to get a dense core but wide arms
+                const dist = Math.abs(gaussianRandom()) * params.spread * 2 + Math.random() * 20;
+                
+                // Determine which arm this star belongs to
+                const armIndex = Math.floor(Math.random() * params.arms);
+                const armAngle = (Math.PI * 2 / params.arms) * armIndex;
+
+                // Calculate spiral angle based on distance
+                // The further out, the more it rotates
+                const spiralAngle = dist * (params.armTwist / 1000);
+
+                // Add randomness to the angle (arm width)
+                const angleRandom = gaussianRandom() * params.armWidth; // Narrower arms
+
+                // Final angle
+                const angle = armAngle + spiralAngle + angleRandom;
+
+                // Polar to Cartesian
+                // Add randomness to radius for "cloud" effect
+                const r = dist + gaussianRandom() * params.coreSize;
+                
+                this.x = Math.cos(angle) * r;
+                this.y = (gaussianRandom() * 10); // Flat disk, small Y variance
+                this.z = Math.sin(angle) * r;
+
+                // Store original position for warp effect reset
+                this.ox = this.x;
+                this.oy = this.y;
+                this.oz = this.z;
+
+                // Visual properties
+                this.size = Math.random() * 1.5 + 0.5;
+                
+                // Color logic
+                // Center is hotter (yellow/white), edges are cooler (blue/purple)
+                // We mix the base hue with distance
+                const distRatio = Math.min(dist / (params.spread * 3), 1);
+                
+                // Core color (Yellowish/White) -> Outer color (User Hue)
+                const coreHue = 60; // Yellow
+                const outerHue = params.baseHue;
+                
+                // Interpolate hue
+                const h = (1 - distRatio) * coreHue + distRatio * outerHue;
+                const s = 80;
+                const l = Math.max(50, 100 - distRatio * 50); // Center is brighter
+                
+                this.color = `hsla(${h}, ${s}%, ${l}%,`; // Alpha added in draw
+                this.blinkSpeed = Math.random() * 0.05;
+                this.blinkOffset = Math.random() * Math.PI * 2;
+            }
+        }
+
+        function generateGalaxy() {
+            stars = [];
+            for (let i = 0; i < params.count; i++) {
+                stars.push(new Star());
+            }
+        }
+
+        function update() {
+            time += 0.01;
+            
+            // Rotate the entire galaxy logic slightly for animation
+            // But we mainly rotate the camera/context
+        }
+
+        function draw() {
+            // Clear background
+            // Use a very slight opacity fillRect to create trails if warp speed
+            if (warpSpeed) {
+                ctx.fillStyle = 'rgba(5, 5, 8, 0.2)';
+            } else {
+                ctx.fillStyle = 'rgba(5, 5, 8, 1)';
+            }
+            ctx.fillRect(0, 0, width, height);
+
+            // Set up 3D projection
+            const cx = width / 2;
+            const cy = height / 2;
+
+            // Precompute rotation matrices based on camera pitch/yaw
+            const cosYaw = Math.cos(camera.yaw);
+            const sinYaw = Math.sin(camera.yaw);
+            const cosPitch = Math.cos(camera.pitch);
+            const sinPitch = Math.sin(camera.pitch);
+
+            // Global rotation for animation
+            const autoRotate = time * (params.speed * 0.1) + (warpSpeed ? time * 2 : 0);
+
+            // Drawing settings
+            ctx.globalCompositeOperation = 'lighter'; // Additive blending for glowing effect
+
+            for (let star of stars) {
+                // 1. Rotate star around Y axis (Galaxy Spin)
+                let x = star.x * Math.cos(autoRotate) - star.z * Math.sin(autoRotate);
+                let z = star.x * Math.sin(autoRotate) + star.z * Math.cos(autoRotate);
+                let y = star.y;
+
+                // Warp effect: stretch stars along Z
+                if (warpSpeed) {
+                    z -= (Math.random() * 500); // Stretch towards camera
+                    if (z < -1000) z += 2000; // Loop back
+                }
+
+                // 2. Apply Camera Rotation (Pitch/Yaw)
+                // Rotate around Y (Yaw)
+                let x1 = x * cosYaw - z * sinYaw;
+                let z1 = x * sinYaw + z * cosYaw;
+                // Rotate around X (Pitch)
+                let y2 = y * cosPitch - z1 * sinPitch;
+                let z2 = y * sinPitch + z1 * cosPitch;
+
+                // 3. Project to 2D
+                // Camera Z offset
+                let zFinal = z2 - camera.z; 
+                
+                if (zFinal <= 0) continue; // Behind camera
+
+                const scale = (500 * camera.zoom) / zFinal;
+                const x2d = cx + x1 * scale;
+                const y2d = cy + y2 * scale;
+
+                // Draw Star
+                const alpha = 0.5 + 0.5 * Math.sin(time * 5 + star.blinkOffset);
+                
+                // Size attenuation
+                let size = star.size * scale;
+                if (warpSpeed) size *= 0.5; // Thinner lines in warp
+
+                if (x2d > 0 && x2d < width && y2d > 0 && y2d < height) {
+                    ctx.fillStyle = star.color + alpha + ')';
+                    
+                    if (warpSpeed) {
+                        // Draw streaks
+                        const len = scale * 20;
+                        ctx.beginPath();
+                        ctx.moveTo(x2d, y2d);
+                        ctx.lineTo(cx + (x1 * 1.1) * scale, cy + (y2 * 1.1) * scale); // Radiate from center
+                        ctx.strokeStyle = ctx.fillStyle;
+                        ctx.lineWidth = size;
+                        ctx.stroke();
+                    } else {
+                        // Draw dots
+                        ctx.beginPath();
+                        ctx.arc(x2d, y2d, size, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+            }
+        }
+
+        function loop() {
+            update();
+            draw();
+            requestAnimationFrame(loop);
+        }
+
+        // Event Listeners
+        function setupEvents() {
+            // UI Inputs
+            ui.count.addEventListener('input', (e) => {
+                params.count = parseInt(e.target.value);
+                ui.valCount.innerText = params.count;
+                generateGalaxy();
+            });
+
+            ui.arms.addEventListener('input', (e) => {
+                params.arms = parseInt(e.target.value);
+                ui.valArms.innerText = params.arms;
+                generateGalaxy();
+            });
+
+            ui.twist.addEventListener('input', (e) => {
+                params.armTwist = parseFloat(e.target.value);
+                ui.valTwist.innerText = params.armTwist;
+                generateGalaxy();
+            });
+
+            ui.core.addEventListener('input', (e) => {
+                params.coreSize = parseInt(e.target.value);
+                ui.valCore.innerText = params.coreSize;
+                generateGalaxy();
+            });
+
+            ui.speed.addEventListener('input', (e) => {
+                params.speed = parseFloat(e.target.value);
+                ui.valSpeed.innerText = params.speed;
+            });
+
+            ui.hue.addEventListener('input', (e) => {
+                params.baseHue = parseInt(e.target.value);
+                generateGalaxy();
+            });
+
+            ui.btnRandom.addEventListener('click', () => {
+                params.arms = Math.floor(Math.random() * 7) + 2;
+                params.armTwist = Math.random() * 15;
+                params.baseHue = Math.floor(Math.random() * 360);
+                params.coreSize = Math.random() * 30 + 5;
+                
+                // Update UI
+                ui.arms.value = params.arms; ui.valArms.innerText = params.arms;
+                ui.twist.value = params.armTwist; ui.valTwist.innerText = Math.floor(params.armTwist*10)/10;
+                ui.hue.value = params.baseHue;
+                ui.core.value = params.coreSize; ui.valCore.innerText = Math.floor(params.coreSize);
+                
+                generateGalaxy();
+            });
+
+            ui.btnWarp.addEventListener('click', () => {
+                warpSpeed = !warpSpeed;
+                if (warpSpeed) {
+                    ui.btnWarp.innerText = "DISENGAGE";
+                    ui.btnWarp.classList.add('btn-danger');
+                    ui.overlay.style.opacity = 1;
+                    // Reset camera pitch for best effect
+                    camera.pitch = 0;
+                    camera.yaw = 0;
+                } else {
+                    ui.btnWarp.innerText = "WARP SPEED";
+                    ui.btnWarp.classList.remove('btn-danger');
+                    ui.overlay.style.opacity = 0;
+                    camera.pitch = 0.4;
+                }
+            });
+
+            // Mouse Interaction
+            canvas.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                lastMouse.x = e.clientX;
+                lastMouse.y = e.clientY;
+                canvas.style.cursor = 'grabbing';
+            });
+
+            window.addEventListener('mouseup', () => {
+                isDragging = false;
+                canvas.style.cursor = 'default';
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (isDragging) {
+                    const dx = e.clientX - lastMouse.x;
+                    const dy = e.clientY - lastMouse.y;
+                    
+                    camera.yaw += dx * 0.005;
+                    camera.pitch += dy * 0.005;
+                    
+                    // Clamp pitch
+                    camera.pitch = Math.max(-Math.PI/2, Math.min(Math.PI/2, camera.pitch));
+
+                    lastMouse.x = e.clientX;
+                    lastMouse.y = e.clientY;
+                }
+            });
+
+            canvas.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                camera.zoom += e.deltaY * -0.001;
+                camera.zoom = Math.max(0.1, Math.min(5, camera.zoom));
+            });
+        }
+
+        // Start
+        init();
+
+    </script>
+</body>
+</html>

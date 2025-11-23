@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Hall of Reflections</title>
+    <style>
+        :root {
+            --wall-color: #e3d5c3;
+            --shadow-color: #8c7b65;
+            --light-color: #fff9e6;
+            --sun-intensity: 0.8;
+            --window-glow: #fff;
+            --floor-reflection: 0.4;
+            --beam-angle: 20deg;
+            --time-hue: 35; /* Gold/Orange */
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #1a1510;
+            font-family: 'Cinzel', 'Georgia', serif;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #4a3b2a;
+        }
+
+        /* UI Overlay */
+        .ui-layer {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 15px 30px;
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        label {
+            font-size: 0.8rem;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        input[type="range"] {
+            width: 150px;
+            cursor: pointer;
+        }
+
+        .message-overlay {
+            position: absolute;
+            top: 20%;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 101;
+            color: #fff;
+            text-align: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+        .message-overlay.visible {
+            opacity: 1;
+        }
+        .message-overlay h1 {
+            font-size: 3rem;
+            margin: 0;
+            font-weight: 300;
+        }
+        .message-overlay p {
+            font-size: 1.2rem;
+            font-style: italic;
+        }
+
+        /* 3D Scene */
+        .scene {
+            width: 100vw;
+            height: 100vh;
+            perspective: 1200px;
+            overflow: hidden;
+            background: radial-gradient(circle at 50% 30%, #2c241b, #000);
+        }
+
+        .hall {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transform: translateZ(0);
+            transition: transform 0.1s ease-out;
+        }
+
+        /* Common Wall Styles */
+        .wall {
+            position: absolute;
+            background: var(--wall-color);
+            box-shadow: inset 0 0 100px var(--shadow-color);
+        }
+
+        /* Floor */
+        .floor {
+            width: 200vw;
+            height: 200vh;
+            background: 
+                linear-gradient(to bottom, rgba(255,255,255,0.1), rgba(0,0,0,0.2)),
+                repeating-linear-gradient(90deg, transparent 0, transparent 98px, rgba(0,0,0,0.05) 99px, rgba(0,0,0,0.05) 100px),
+                repeating-linear-gradient(0deg, transparent 0, transparent 98px, rgba(0,0,0,0.05) 99px, rgba(0,0,0,0.05) 100px),
+                var(--wall-color);
+            transform: rotateX(90deg) translateZ(300px) translateX(-50%);
+            left: 50%;
+            top: 50%;
+            /* Reflection effect */
+            -webkit-box-reflect: above 0px linear-gradient(to bottom, transparent, rgba(255,255,255,0.2));
+        }
+        
+        .floor-reflection {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 50%;
+            background: inherit;
+            transform: scaleY(-1);
+            opacity: var(--floor-reflection);
+            filter: blur(2px);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Ceiling */
+        .ceiling {
+            width: 200vw;
+            height: 200vh;
+            background: 
+                radial-gradient(circle at 50% 50%, transparent 20%, var(--shadow-color) 80%),
+                repeating-radial-gradient(circle at 50% 50%, var(--wall-color), var(--wall-color) 20px, #d6c4b0 21px);
+            transform: rotateX(-90deg) translateZ(500px) translateX(-50%);
+            left: 50%;
+            top: 50%;
+        }
+
+        /* Back Wall & Window */
+        .back-wall {
+            width: 100vw;
+            height: 120vh;
+            background: var(--wall-color);
+            transform: translateZ(-800px) translateY(-20%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: inset 0 0 200px #000;
+        }
+
+        .arch-frame {
+            width: 400px;
+            height: 700px;
+            background: #d1c0a8;
+            border-radius: 200px 200px 0 0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            box-shadow: 
+                inset 10px 10px 30px rgba(0,0,0,0.2),
+                0 0 50px rgba(0,0,0,0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .window {
+            width: 300px;
+            height: 600px;
+            background: linear-gradient(to bottom, var(--window-glow), #ffecd2);
+            border-radius: 150px 150px 0 0;
+            position: relative;
+            box-shadow: 0 0 50px var(--window-glow);
+            display: flex;
+            justify-content: center;
+        }
+
+        /* Window Mullions */
+        .mullion-v {
+            width: 10px;
+            height: 100%;
+            background: #8c7b65;
+            margin: 0 30px;
+        }
+        .mullion-h {
+            position: absolute;
+            width: 100%;
+            height: 10px;
+            background: #8c7b65;
+            top: 30%;
+        }
+        .mullion-h.two { top: 60%; }
+
+        /* Side Arches (Visual depth) */
+        .side-arch {
+            position: absolute;
+            top: -10%;
+            width: 1000px;
+            height: 1000px;
+            border: 80px solid var(--wall-color);
+            border-bottom: none;
+            border-radius: 500px 500px 0 0;
+            box-shadow: inset 0 10px 30px rgba(0,0,0,0.2);
+            pointer-events: none;
+        }
+        .side-arch.left {
+            transform: rotateY(90deg) translateZ(-400px);
+            left: -500px;
+        }
+        .side-arch.right {
+            transform: rotateY(-90deg) translateZ(-400px);
+            right: -500px;
+        }
+
+        /* Light Beams */
+        .light-beam {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 400px;
+            height: 150vh;
+            background: linear-gradient(to bottom, rgba(255, 255, 255, var(--sun-intensity)), transparent);
+            transform-origin: top center;
+            transform: translateX(-50%) rotateZ(var(--beam-angle)) translateZ(-700px);
+            filter: blur(20px);
+            pointer-events: none;
+            mix-blend-mode: overlay;
+            transition: transform 0.5s ease, background 0.5s ease;
+        }
+
+        /* Interactive Artifacts (The boards in the image) */
+        .artifact {
+            position: absolute;
+            bottom: 0;
+            width: 120px;
+            height: 200px;
+            background: #f0e6d6;
+            border: 5px solid #c0b098;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+            transform-style: preserve-3d;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2rem;
+        }
+
+        .artifact:hover {
+            transform: translateY(-10px) scale(1.05);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            border-color: #fff;
+        }
+
+        .artifact.left {
+            transform: translateZ(-400px) translateX(-300px) rotateY(20deg);
+        }
+        .artifact.right {
+            transform: translateZ(-400px) translateX(300px) rotateY(-20deg);
+        }
+        .artifact.center-left {
+            transform: translateZ(-600px) translateX(-150px) rotateY(10deg);
+        }
+
+        .artifact-content {
+            opacity: 0.5;
+            transition: opacity 0.3s;
+        }
+        .artifact:hover .artifact-content {
+            opacity: 1;
+        }
+
+        /* Particles */
+        .dust {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: #fff;
+            border-radius: 50%;
+            opacity: 0.6;
+            animation: float 10s infinite linear;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0) translateX(0); opacity: 0; }
+            20% { opacity: 0.8; }
+            80% { opacity: 0.8; }
+            100% { transform: translateY(-200px) translateX(50px); opacity: 0; }
+        }
+
+        /* Interactive Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 200;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .modal.active {
+            display: flex;
+            opacity: 1;
+        }
+        .modal-card {
+            background: #fff9e6;
+            padding: 40px;
+            max-width: 500px;
+            text-align: center;
+            border-radius: 5px;
+            box-shadow: 0 0 50px rgba(255, 200, 100, 0.3);
+            border: 1px solid #d1c0a8;
+            position: relative;
+        }
+        .modal-card h2 {
+            margin-top: 0;
+            color: #5c4b3a;
+        }
+        .modal-card p {
+            line-height: 1.6;
+            color: #4a3b2a;
+        }
+        .close-btn {
+            margin-top: 20px;
+            padding: 10px 30px;
+            background: #8c7b65;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: background 0.2s;
+        }
+        .close-btn:hover {
+            background: #5c4b3a;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="message-overlay" id="titleOverlay">
+        <h1>Sanctuary of Light</h1>
+        <p>Adjust the time. Explore the silence.</p>
+    </div>
+
+    <div class="scene">
+        <div class="hall" id="hall">
+            <!-- Ceiling -->
+            <div class="ceiling"></div>
+            
+            <!-- Floor -->
+            <div class="floor"></div>
+            <div class="floor-reflection"></div>
+
+            <!-- Back Wall with Window -->
+            <div class="back-wall">
+                <div class="arch-frame">
+                    <div class="window">
+                        <div class="mullion-v"></div>
+                        <div class="mullion-v"></div>
+                        <div class="mullion-h"></div>
+                        <div class="mullion-h two"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Side Arches for Depth -->
+            <div class="side-arch left"></div>
+            <div class="side-arch right"></div>
+            <div class="side-arch left" style="transform: rotateY(90deg) translateZ(-800px); width: 800px;"></div>
+            <div class="side-arch right" style="transform: rotateY(-90deg) translateZ(-800px); width: 800px;"></div>
+
+            <!-- Light Beams -->
+            <div class="light-beam" id="beam"></div>
+
+            <!-- Artifacts -->
+            <div class="artifact left" onclick="openModal('The Tablet of Silence', 'In the quiet spaces between thoughts, wisdom grows like moss on stone. Listen not to the noise of the world, but to the echo of your own being.')">
+                <div class="artifact-content">📜</div>
+            </div>
+            
+            <div class="artifact right" onclick="openModal('The Mirror of Time', 'Light shifts, shadows lengthen, yet the stone remains. Be like the stone: grounded, yet warmed by the passing sun.')">
+                <div class="artifact-content">⏳</div>
+            </div>
+
+            <div class="artifact center-left" onclick="openModal('The Architect\'s Vision', 'This hall was built not to house gods, but to house the light itself. Notice how the angle changes the feeling of the space.')">
+                <div class="artifact-content">📐</div>
+            </div>
+
+            <!-- Dust Particles Container -->
+            <div id="dust-container"></div>
+        </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="ui-layer">
+        <div class="control-group">
+            <label>Time of Day</label>
+            <input type="range" min="0" max="100" value="50" id="timeSlider">
+        </div>
+        <div class="control-group">
+            <label>Atmosphere</label>
+            <input type="range" min="0" max="100" value="30" id="fogSlider">
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal" id="modal" onclick="closeModal(event)">
+        <div class="modal-card">
+            <h2 id="modalTitle">Title</h2>
+            <p id="modalText">Content goes here.</p>
+            <button class="close-btn" onclick="closeModalForce()">Close</button>
+        </div>
+    </div>
+
+    <script>
+        const hall = document.getElementById('hall');
+        const timeSlider = document.getElementById('timeSlider');
+        const fogSlider = document.getElementById('fogSlider');
+        const beam = document.getElementById('beam');
+        const root = document.documentElement;
+        const titleOverlay = document.getElementById('titleOverlay');
+
+        // Reveal title
+        setTimeout(() => {
+            titleOverlay.classList.add('visible');
+            setTimeout(() => {
+                titleOverlay.classList.remove('visible');
+            }, 4000);
+        }, 500);
+
+        // Mouse Parallax
+        document.addEventListener('mousemove', (e) => {
+            const x = (e.clientX / window.innerWidth - 0.5) * 2; // -1 to 1
+            const y = (e.clientY / window.innerHeight - 0.5) * 2; // -1 to 1
+
+            // Subtle rotation of the entire hall
+            hall.style.transform = `rotateY(${x * 5}deg) rotateX(${-y * 2}deg) translateZ(0)`;
+        });
+
+        // Time of Day Logic
+        timeSlider.addEventListener('input', (e) => {
+            const val = e.target.value; // 0 to 100
+            
+            // Calculate Beam Angle (-40deg to 40deg)
+            const angle = (val - 50) * 1.5;
+            root.style.setProperty('--beam-angle', `${angle}deg`);
+
+            // Calculate Colors
+            // 0 = Morning (Cool/Pink), 50 = Noon (White/Gold), 100 = Evening (Orange/Purple)
+            let hue, sat, light, glowColor;
+            
+            if (val < 50) {
+                // Morning to Noon
+                const progress = val / 50;
+                hue = 200 + (40 - 200) * progress; // Blue to Gold
+                sat = 50 + (80 - 50) * progress;
+                light = 80 + (95 - 80) * progress;
+                glowColor = `hsl(${hue}, ${sat}%, ${light}%)`;
+            } else {
+                // Noon to Evening
+                const progress = (val - 50) / 50;
+                hue = 40 + (10 - 40) * progress; // Gold to Orange/Red
+                sat = 80 + (90 - 80) * progress;
+                light = 95 + (60 - 95) * progress;
+                glowColor = `hsl(${hue}, ${sat}%, ${light}%)`;
+            }
+
+            root.style.setProperty('--window-glow', glowColor);
+            root.style.setProperty('--light-color', glowColor);
+            
+            // Shadow intensity based on distance from noon
+            const distFromNoon = Math.abs(val - 50);
+            const shadowOpacity = 0.2 + (distFromNoon / 50) * 0.6;
+            
+            // Beam intensity
+            const beamOpacity = 0.3 + (1 - (distFromNoon / 60));
+            root.style.setProperty('--sun-intensity', beamOpacity);
+
+            // Background ambient adjustment
+            const bgLightness = 20 - (distFromNoon / 50) * 15;
+            document.querySelector('.scene').style.background = `radial-gradient(circle at 50% 30%, hsl(${hue}, 30%, ${bgLightness}%), #000)`;
+        });
+
+        // Fog/Atmosphere Logic
+        fogSlider.addEventListener('input', (e) => {
+            const val = e.target.value;
+            const blur = val / 5;
+            beam.style.filter = `blur(${10 + blur}px)`;
+            
+            // Update dust opacity
+            const dusts = document.querySelectorAll('.dust');
+            dusts.forEach(d => d.style.opacity = val / 100);
+        });
+
+        // Generate Dust Particles
+        const dustContainer = document.getElementById('dust-container');
+        for(let i=0; i<50; i++) {
+            const d = document.createElement('div');
+            d.classList.add('dust');
+            d.style.left = Math.random() * 100 + '%';
+            d.style.top = Math.random() * 100 + '%';
+            d.style.animationDuration = (5 + Math.random() * 10) + 's';
+            d.style.animationDelay = (Math.random() * 5) + 's';
+            // Random depth
+            const z = Math.random() * -800;
+            d.style.transform = `translateZ(${z}px)`;
+            dustContainer.appendChild(d);
+        }
+
+        // Modal Logic
+        const modal = document.getElementById('modal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalText = document.getElementById('modalText');
+
+        window.openModal = (title, text) => {
+            modalTitle.innerText = title;
+            modalText.innerText = text;
+            modal.classList.add('active');
+        };
+
+        window.closeModal = (e) => {
+            if (e.target === modal) {
+                modal.classList.remove('active');
+            }
+        };
+
+        window.closeModalForce = () => {
+            modal.classList.remove('active');
+        }
+
+        // Initialize lighting
+        timeSlider.dispatchEvent(new Event('input'));
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyber-Relic Restoration Protocol</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Cinzel:wght@400;700&display=swap');
+
+        :root {
+            --neon-cyan: #00f3ff;
+            --neon-pink: #ff00ff;
+            --stone-dark: #1a1c20;
+            --stone-light: #2d3138;
+            --glow-cyan: 0 0 10px #00f3ff, 0 0 20px #00f3ff;
+            --glow-pink: 0 0 10px #ff00ff, 0 0 20px #ff00ff;
+        }
+
+        body {
+            background-color: #0f1115;
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0.2) 0%, #0f1115 100%),
+                url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.1'/%3E%3C/svg%3E");
+            color: #e0e0e0;
+            font-family: 'Orbitron', sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .title-font {
+            font-family: 'Cinzel', serif;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+        }
+
+        /* The Game Board - Stone Tablet Look */
+        #game-board {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 4px;
+            padding: 10px;
+            background: #1a1a1a;
+            border: 2px solid #444;
+            box-shadow: 
+                0 0 0 4px #111,
+                0 0 30px rgba(0, 243, 255, 0.1);
+            border-radius: 8px;
+            position: relative;
+            transition: box-shadow 0.5s ease;
+        }
+
+        #game-board.restored {
+            box-shadow: 
+                0 0 0 4px #111,
+                0 0 50px rgba(0, 243, 255, 0.4),
+                inset 0 0 60px rgba(255, 0, 255, 0.1);
+            border-color: var(--neon-cyan);
+        }
+
+        /* The Crack Overlay */
+        .crack-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 20;
+            opacity: 0.7;
+            mix-blend-mode: overlay;
+        }
+
+        /* Individual Tiles */
+        .tile {
+            width: 70px;
+            height: 70px;
+            background: var(--stone-light);
+            border-radius: 4px;
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.2s ease, background-color 0.3s;
+            box-shadow: inset 2px 2px 5px rgba(255,255,255,0.05), inset -2px -2px 5px rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .tile:hover {
+            background: #363b44;
+        }
+
+        /* Ancient Carvings (Background Emojis) */
+        .carving {
+            position: absolute;
+            font-size: 2rem;
+            opacity: 0.15;
+            filter: grayscale(100%);
+            z-index: 1;
+            pointer-events: none;
+            transition: opacity 0.5s, filter 0.5s;
+        }
+        
+        .tile.powered .carving {
+            opacity: 0.4;
+            filter: drop-shadow(0 0 5px var(--neon-cyan));
+        }
+
+        /* Circuit Lines (SVG) */
+        .circuit-svg {
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+
+        .circuit-path {
+            fill: none;
+            stroke: #4a5568; /* Unpowered dark grey */
+            stroke-width: 6;
+            stroke-linecap: round;
+            transition: stroke 0.3s, filter 0.3s;
+        }
+
+        .tile.powered .circuit-path {
+            stroke: var(--neon-cyan);
+            filter: drop-shadow(0 0 4px var(--neon-cyan));
+            animation: pulse 2s infinite;
+        }
+
+        .tile.powered.endpoint .circuit-path {
+            stroke: var(--neon-pink);
+            filter: drop-shadow(0 0 6px var(--neon-pink));
+        }
+
+        @keyframes pulse {
+            0% { stroke-opacity: 0.8; }
+            50% { stroke-opacity: 1; }
+            100% { stroke-opacity: 0.8; }
+        }
+
+        /* UI Elements */
+        .hud-panel {
+            background: rgba(10, 10, 15, 0.9);
+            border: 1px solid #333;
+            border-left: 4px solid var(--neon-pink);
+            padding: 1rem;
+            margin-top: 1rem;
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+
+        .scan-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: var(--neon-cyan);
+            opacity: 0.5;
+            box-shadow: 0 0 10px var(--neon-cyan);
+            animation: scan 4s linear infinite;
+            pointer-events: none;
+            z-index: 30;
+            display: none;
+        }
+        .restored .scan-line {
+            display: block;
+        }
+
+        @keyframes scan {
+            0% { top: -5%; opacity: 0; }
+            10% { opacity: 0.8; }
+            90% { opacity: 0.8; }
+            100% { top: 105%; opacity: 0; }
+        }
+
+        .glitch-text {
+            position: relative;
+        }
+        
+        .btn {
+            background: transparent;
+            border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            padding: 8px 16px;
+            font-family: 'Orbitron', sans-serif;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn:hover {
+            background: var(--neon-cyan);
+            color: #000;
+            box-shadow: 0 0 15px var(--neon-cyan);
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="text-center mb-6 relative z-10">
+        <h1 class="text-4xl md:text-5xl title-font text-gray-300 mb-1 tracking-widest">RELIC<span style="color:var(--neon-pink)">.OS</span></h1>
+        <p class="text-xs text-cyan-400 tracking-[0.3em] uppercase opacity-80">Neural Link Restoration Required</p>
+    </div>
+
+    <div class="relative">
+        <div id="game-board">
+            <!-- Grid generated by JS -->
+            <div class="scan-line"></div>
+            <svg class="crack-overlay" viewBox="0 0 100 100" preserveAspectRatio="none">
+                <path d="M40,0 L45,20 L35,40 L55,60 L50,80 L60,100" stroke="black" stroke-width="0.5" fill="none" stroke-opacity="0.6" />
+                <path d="M40,0 L45,20 L35,40 L55,60 L50,80 L60,100" stroke="rgba(255,255,255,0.1)" stroke-width="0.2" fill="none" />
+            </svg>
+        </div>
+    </div>
+
+    <div class="hud-panel rounded">
+        <div>
+            <div class="text-xs text-gray-500 uppercase">System Integrity</div>
+            <div id="integrity-display" class="text-xl font-bold text-pink-500">CRITICAL</div>
+        </div>
+        <div>
+            <div class="text-xs text-gray-500 uppercase">Power Flow</div>
+            <div id="power-display" class="text-xl font-bold text-cyan-400">0%</div>
+        </div>
+        <button class="btn" onclick="initGame()">Reset</button>
+    </div>
+
+    <div id="message-log" class="mt-4 text-xs font-mono text-gray-500 h-6">
+        > Initializing diagnostic scan...
+    </div>
+
+    <script>
+        // --- Game Configuration ---
+        const GRID_SIZE = 5;
+        const TILE_TYPES = {
+            STRAIGHT: 'straight',
+            ELBOW: 'elbow',
+            TEE: 'tee',
+            CROSS: 'cross',
+            START: 'start',
+            END: 'end',
+            EMPTY: 'empty'
+        };
+
+        // Ancient carving emojis to place in background
+        const CARVINGS = ['🏯', '🛖', '🏮', '🐉', '🎋', '⛩️', '🏺', '📜', '🍵', '⚔️'];
+
+        // --- SVG Paths for Pipes ---
+        // Coordinates based on 100x100 viewBox
+        const PATHS = {
+            straight: "M50,0 L50,100",
+            elbow: "M50,0 L50,50 L100,50",
+            tee: "M50,0 L50,100 M50,50 L100,50",
+            cross: "M50,0 L50,100 M0,50 L100,50",
+            start: "M50,50 L50,100 M50,50 L50,50", // Start node visual (power core)
+            end: "M50,0 L50,50" // End node visual (terminal)
+        };
+
+        // Connection definitions (North, East, South, West) - 1 means connects
+        const CONNECTIONS = {
+            straight: [1, 0, 1, 0],
+            elbow: [1, 1, 0, 0],
+            tee: [1, 1, 1, 0],
+            cross: [1, 1, 1, 1],
+            start: [0, 0, 1, 0], // Start points South by default
+            end: [1, 0, 0, 0],   // End accepts from North by default
+            empty: [0, 0, 0, 0]
+        };
+
+        // --- Level Data (A guaranteed solvable layout before scrambling) ---
+        // 0: Straight, 1: Elbow, 2: Tee, 3: Cross
+        // This is a hardcoded path to ensure solvability for the demo
+        // S = Start, E = End, X = Empty/Decoy
+        // Layout: 
+        // S  L  -  7  X
+        // |  |  |  |  X
+        // L--J  L--J  X
+        // |           |
+        // L-----------E
+        
+        // Simplified Logic: We will generate a spanning tree or just use a fixed grid and randomize rotations.
+        // Let's use a fixed grid of types that forms a nice picture.
+        // Grid 5x5
+        const LEVEL_LAYOUT = [
+            ['start', 'elbow', 'straight', 'elbow', 'empty'],
+            ['straight', 'tee', 'elbow', 'tee', 'elbow'],
+            ['elbow', 'cross', 'straight', 'cross', 'elbow'],
+            ['straight', 'elbow', 'straight', 'elbow', 'straight'],
+            ['elbow', 'straight', 'tee', 'straight', 'end']
+        ];
+
+        let grid = [];
+        let isRestored = false;
+
+        class Tile {
+            constructor(type, r, c) {
+                this.type = type;
+                this.row = r;
+                this.col = c;
+                this.rotation = Math.floor(Math.random() * 4); // 0, 1, 2, 3 (x90 deg)
+                this.powered = false;
+                this.element = null;
+                
+                // Assign a random carving
+                this.carving = CARVINGS[Math.floor(Math.random() * CARVINGS.length)];
+                
+                // Force Start and End to specific rotations initially? 
+                // No, let the user figure it out, but visual cues help.
+            }
+
+            getConnections() {
+                // Rotate the base connections array
+                const base = CONNECTIONS[this.type];
+                // Shift array right by rotation amount
+                // e.g. rot 1 (90deg): [N,E,S,W] -> [W,N,E,S] (Clockwise visual, so connections shift right)
+                // Actually: Visual Rotate 90deg CW means North becomes East.
+                // So index 0 (North) moves to index 1 (East).
+                
+                let rotated = [0, 0, 0, 0];
+                for(let i=0; i<4; i++) {
+                    if(base[i] === 1) {
+                        rotated[(i + this.rotation) % 4] = 1;
+                    }
+                }
+                return rotated;
+            }
+
+            rotate() {
+                if (isRestored) return;
+                this.rotation = (this.rotation + 1) % 4;
+                this.updateVisuals();
+                checkSystemPower();
+                playSound('click');
+            }
+
+            updateVisuals() {
+                const svg = this.element.querySelector('.circuit-svg');
+                svg.style.transform = `rotate(${this.rotation * 90}deg)`;
+                
+                if (this.powered) {
+                    this.element.classList.add('powered');
+                } else {
+                    this.element.classList.remove('powered');
+                }
+            }
+
+            createDOM() {
+                const div = document.createElement('div');
+                div.className = 'tile';
+                if (this.type === 'start') div.style.boxShadow = "inset 0 0 10px var(--neon-cyan)";
+                if (this.type === 'end') {
+                    div.classList.add('endpoint');
+                    div.style.boxShadow = "inset 0 0 10px var(--neon-pink)";
+                }
+
+                // Background Carving
+                const carvingSpan = document.createElement('span');
+                carvingSpan.className = 'carving';
+                carvingSpan.innerText = this.carving;
+                div.appendChild(carvingSpan);
+
+                // SVG Circuit
+                const svgNS = "http://www.w3.org/2000/svg";
+                const svg = document.createElementNS(svgNS, "svg");
+                svg.setAttribute("viewBox", "0 0 100 100");
+                svg.setAttribute("class", "circuit-svg");
+                svg.style.transform = `rotate(${this.rotation * 90}deg)`;
+
+                // Special visual for Start (Power Source)
+                if(this.type === 'start') {
+                    const circle = document.createElementNS(svgNS, "circle");
+                    circle.setAttribute("cx", "50");
+                    circle.setAttribute("cy", "50");
+                    circle.setAttribute("r", "15");
+                    circle.setAttribute("fill", "var(--neon-cyan)");
+                    circle.setAttribute("filter", "drop-shadow(0 0 5px var(--neon-cyan))");
+                    svg.appendChild(circle);
+                }
+                
+                // Special visual for End (Temple)
+                if(this.type === 'end') {
+                    const rect = document.createElementNS(svgNS, "rect");
+                    rect.setAttribute("x", "35");
+                    rect.setAttribute("y", "35");
+                    rect.setAttribute("width", "30");
+                    rect.setAttribute("height", "30");
+                    rect.setAttribute("fill", "none");
+                    rect.setAttribute("stroke", "var(--neon-pink)");
+                    rect.setAttribute("stroke-width", "4");
+                    svg.appendChild(rect);
+                }
+
+                if (PATHS[this.type]) {
+                    const path = document.createElementNS(svgNS, "path");
+                    path.setAttribute("d", PATHS[this.type]);
+                    path.setAttribute("class", "circuit-path");
+                    svg.appendChild(path);
+                }
+
+                div.appendChild(svg);
+                div.addEventListener('click', () => this.rotate());
+                
+                this.element = div;
+                return div;
+            }
+        }
+
+        function initGame() {
+            const board = document.getElementById('game-board');
+            // Clear board except overlay
+            const overlay = board.querySelector('.crack-overlay');
+            const scan = board.querySelector('.scan-line');
+            board.innerHTML = '';
+            board.appendChild(scan);
+            board.appendChild(overlay);
+            
+            board.classList.remove('restored');
+            document.getElementById('integrity-display').innerText = "CRITICAL";
+            document.getElementById('integrity-display').className = "text-xl font-bold text-pink-500";
+            document.getElementById('message-log').innerText = "> System compromised. Realign circuits.";
+            
+            grid = [];
+            isRestored = false;
+
+            for (let r = 0; r < GRID_SIZE; r++) {
+                let row = [];
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    const type = LEVEL_LAYOUT[r][c];
+                    const tile = new Tile(type, r, c);
+                    row.push(tile);
+                    board.appendChild(tile.createDOM());
+                }
+                grid.push(row);
+            }
+            
+            checkSystemPower();
+        }
+
+        function checkSystemPower() {
+            // Reset power
+            let poweredCount = 0;
+            for(let r=0; r<GRID_SIZE; r++) {
+                for(let c=0; c<GRID_SIZE; c++) {
+                    grid[r][c].powered = false;
+                }
+            }
+
+            // BFS to find connected nodes from Start
+            // Find start node
+            let startNode = null;
+            let endNode = null;
+            for(let r=0; r<GRID_SIZE; r++) {
+                for(let c=0; c<GRID_SIZE; c++) {
+                    if(grid[r][c].type === 'start') startNode = {r, c};
+                    if(grid[r][c].type === 'end') endNode = {r, c};
+                }
+            }
+
+            if(!startNode) return;
+
+            let queue = [startNode];
+            grid[startNode.r][startNode.c].powered = true;
+
+            while(queue.length > 0) {
+                let current = queue.shift();
+                let r = current.r;
+                let c = current.c;
+                let tile = grid[r][c];
+                let conns = tile.getConnections(); // [N, E, S, W]
+
+                // Check Neighbors
+                const neighbors = [
+                    {r: r-1, c: c, dir: 0, opp: 2}, // North (Neighbor must connect South)
+                    {r: r, c: c+1, dir: 1, opp: 3}, // East (Neighbor must connect West)
+                    {r: r+1, c: c, dir: 2, opp: 0}, // South (Neighbor must connect North)
+                    {r: r, c: c-1, dir: 3, opp: 1}  // West (Neighbor must connect East)
+                ];
+
+                neighbors.forEach(n => {
+                    if (n.r >= 0 && n.r < GRID_SIZE && n.c >= 0 && n.c < GRID_SIZE) {
+                        let neighborTile = grid[n.r][n.c];
+                        if (!neighborTile.powered) {
+                            let neighborConns = neighborTile.getConnections();
+                            // Check if current tile outputs to neighbor AND neighbor accepts from current
+                            if (conns[n.dir] === 1 && neighborConns[n.opp] === 1) {
+                                neighborTile.powered = true;
+                                queue.push({r: n.r, c: n.c});
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Update Visuals & Stats
+            let totalTiles = GRID_SIZE * GRID_SIZE;
+            poweredCount = 0;
+            grid.forEach(row => row.forEach(t => {
+                t.updateVisuals();
+                if(t.powered) poweredCount++;
+            }));
+
+            let percent = Math.floor((poweredCount / totalTiles) * 100);
+            document.getElementById('power-display').innerText = percent + "%";
+
+            // Win Condition
+            if (grid[endNode.r][endNode.c].powered && !isRestored) {
+                triggerWin();
+            }
+        }
+
+        function triggerWin() {
+            isRestored = true;
+            const board = document.getElementById('game-board');
+            board.classList.add('restored');
+            
+            const integrity = document.getElementById('integrity-display');
+            integrity.innerText = "RESTORED";
+            integrity.className = "text-xl font-bold text-cyan-400";
+            
+            document.getElementById('message-log').innerText = "> CONNECTION ESTABLISHED. ANCIENT DATA UPLOADING...";
+            
+            playSound('win');
+        }
+
+        // Simple Audio Synth for feedback (No external files)
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            if (type === 'click') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.1);
+            } else if (type === 'win') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(220, audioCtx.currentTime);
+                osc.frequency.linearRampToValueAtTime(880, audioCtx.currentTime + 0.5);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 1.5);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 1.5);
+            }
+        }
+
+        // Start Game
+        initGame();
+
+    </script>
+</body>
+</html>

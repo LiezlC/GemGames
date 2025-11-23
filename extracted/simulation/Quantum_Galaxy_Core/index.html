@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Galaxy Core</title>
+    <style>
+        :root {
+            --gold: #ffd700;
+            --cyan: #00f3ff;
+            --purple: #bc13fe;
+            --dark-bg: #050510;
+            --chip-color: #1a1a20;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--dark-bg);
+            color: white;
+            font-family: 'Courier New', Courier, monospace;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            user-select: none;
+        }
+
+        /* --- UI Layer --- */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .hud-top {
+            display: flex;
+            justify-content: space-between;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 1px solid var(--cyan);
+            box-shadow: 0 0 10px var(--cyan);
+            pointer-events: auto;
+        }
+
+        .stat-box {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--gold);
+            text-shadow: 0 0 5px var(--gold);
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--cyan);
+            text-transform: uppercase;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            pointer-events: auto;
+            align-self: center;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background: rgba(20, 20, 30, 0.9);
+            border: 1px solid var(--purple);
+            color: var(--cyan);
+            padding: 10px 20px;
+            cursor: pointer;
+            font-family: inherit;
+            text-transform: uppercase;
+            font-weight: bold;
+            transition: all 0.2s;
+            box-shadow: 0 0 5px var(--purple);
+        }
+
+        button:hover {
+            background: var(--purple);
+            color: white;
+            box-shadow: 0 0 15px var(--purple);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            filter: grayscale(1);
+        }
+
+        /* --- Canvas Background (The Galaxy) --- */
+        #galaxy-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        /* --- 3D Circuit Board Scene --- */
+        #scene-container {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 50%;
+            perspective: 800px;
+            z-index: 5;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+        }
+
+        #circuit-board {
+            width: 120%;
+            height: 150%;
+            background: 
+                linear-gradient(rgba(5, 5, 16, 0.9), rgba(5, 5, 16, 0.2)),
+                repeating-linear-gradient(90deg, transparent 0, transparent 48px, rgba(255, 215, 0, 0.1) 49px, rgba(255, 215, 0, 0.1) 50px),
+                repeating-linear-gradient(0deg, transparent 0, transparent 48px, rgba(255, 215, 0, 0.1) 49px, rgba(255, 215, 0, 0.1) 50px);
+            background-color: #0a0a12;
+            transform: rotateX(60deg) translateY(100px);
+            transform-origin: bottom center;
+            position: relative;
+            box-shadow: 0 -20px 50px rgba(0, 243, 255, 0.2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* The Central Chip */
+        #cpu-core {
+            width: 120px;
+            height: 120px;
+            background: #111;
+            border: 2px solid var(--gold);
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%) translateZ(20px);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.3), inset 0 0 10px rgba(0,0,0,0.8);
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.1s;
+            z-index: 10;
+        }
+
+        #cpu-core:active {
+            transform: translate(-50%, -50%) translateZ(15px);
+        }
+
+        #cpu-core::after {
+            content: "CORE";
+            color: var(--gold);
+            font-size: 1.2rem;
+            font-weight: bold;
+            letter-spacing: 2px;
+            text-shadow: 0 0 5px var(--gold);
+        }
+
+        /* Circuit Traces (Decorations) */
+        .trace {
+            position: absolute;
+            background: var(--gold);
+            box-shadow: 0 0 5px var(--gold);
+            opacity: 0.6;
+        }
+        
+        /* Animated Energy Streams (SVG overlay) */
+        #energy-streams {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 4;
+            pointer-events: none;
+        }
+
+        /* Notifications */
+        .float-text {
+            position: absolute;
+            color: white;
+            font-weight: bold;
+            pointer-events: none;
+            animation: floatUp 1s ease-out forwards;
+            z-index: 20;
+            text-shadow: 0 0 5px var(--cyan);
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-50px) scale(1.5); opacity: 0; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Background Galaxy -->
+    <canvas id="galaxy-canvas"></canvas>
+
+    <!-- Midground Energy Waves -->
+    <svg id="energy-streams" xmlns="http://www.w3.org/2000/svg"></svg>
+
+    <!-- Foreground Circuit Board -->
+    <div id="scene-container">
+        <div id="circuit-board">
+            <!-- Decorative Traces generated by JS -->
+            <div id="cpu-core"></div>
+        </div>
+    </div>
+
+    <!-- UI Overlay -->
+    <div id="ui-layer">
+        <div class="hud-top">
+            <div class="stat-box">
+                <div class="stat-value" id="data-display">0 TB</div>
+                <div class="stat-label">Processed Data</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" id="energy-display">100%</div>
+                <div class="stat-label">Core Stability</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" id="stars-display">0</div>
+                <div class="stat-label">Stars Synthesized</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button id="btn-overclock" onclick="upgrade('overclock')">Overclock (Cost: 50 TB)</button>
+            <button id="btn-bandwidth" onclick="upgrade('bandwidth')">Widen Bus (Cost: 150 TB)</button>
+            <button id="btn-nebula" onclick="upgrade('nebula')">Inject Nebula Gas (Cost: 500 TB)</button>
+        </div>
+    </div>
+
+    <script>
+        /* --- Game State --- */
+        const state = {
+            data: 0,
+            stars: 0,
+            clickPower: 1,
+            autoClicker: 0,
+            bandwidth: 1, // Multiplier for visuals
+            nebulaDensity: 100,
+            colors: ['#ffffff', '#aaddff'], // Initial star colors
+            stability: 100
+        };
+
+        const costs = {
+            overclock: 50,
+            bandwidth: 150,
+            nebula: 500
+        };
+
+        /* --- Canvas Setup (The Galaxy) --- */
+        const canvas = document.getElementById('galaxy-canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Star Particle System
+        const particles = [];
+        
+        class Particle {
+            constructor(isCoreBlast = false) {
+                // Spiral Galaxy Logic
+                this.angle = Math.random() * Math.PI * 2;
+                this.radius = Math.random() * (Math.min(width, height) * 0.4); // Distance from center
+                this.x = width / 2 + Math.cos(this.angle) * this.radius;
+                this.y = height / 2 + Math.sin(this.angle) * this.radius * 0.6; // Flattened oval
+                
+                this.size = Math.random() * 2;
+                this.color = state.colors[Math.floor(Math.random() * state.colors.length)];
+                this.opacity = Math.random();
+                
+                // Velocity for rotation
+                const dist = this.radius / (width/2);
+                this.velocity = (0.001 + (1 - dist) * 0.005); 
+
+                if (isCoreBlast) {
+                    // Blast from bottom center
+                    this.x = width / 2;
+                    this.y = height;
+                    this.radius = 0;
+                    this.vx = (Math.random() - 0.5) * 10;
+                    this.vy = -(Math.random() * 10 + 5);
+                    this.isBlast = true;
+                    this.life = 100;
+                    this.color = Math.random() > 0.5 ? '#00f3ff' : '#bc13fe';
+                }
+            }
+
+            update() {
+                if (this.isBlast) {
+                    this.x += this.vx;
+                    this.y += this.vy;
+                    this.vy += 0.1; // gravity
+                    this.life--;
+                    this.size *= 0.95;
+                } else {
+                    // Rotate around center
+                    this.angle += this.velocity;
+                    this.x = width / 2 + Math.cos(this.angle) * this.radius;
+                    this.y = (height / 2 - 100) + Math.sin(this.angle) * this.radius * 0.6; // Shifted up slightly
+                }
+            }
+
+            draw() {
+                if (this.isBlast && this.life <= 0) return;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.globalAlpha = this.isBlast ? this.life / 100 : this.opacity;
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        function initGalaxy() {
+            for(let i=0; i<300; i++) {
+                particles.push(new Particle());
+            }
+        }
+        initGalaxy();
+
+        function animate() {
+            // Trail effect
+            ctx.fillStyle = 'rgba(5, 5, 16, 0.2)';
+            ctx.fillRect(0, 0, width, height);
+
+            particles.forEach((p, index) => {
+                p.update();
+                p.draw();
+                if (p.isBlast && p.life <= 0) {
+                    particles.splice(index, 1);
+                }
+            });
+
+            drawEnergyWaves();
+            requestAnimationFrame(animate);
+        }
+
+        /* --- SVG Energy Waves --- */
+        const svg = document.getElementById('energy-streams');
+        let waveOffset = 0;
+
+        function drawEnergyWaves() {
+            waveOffset += 0.1;
+            // We will draw 3 sine waves representing the energy flow in the image
+            const colors = ['#00f3ff', '#bc13fe', '#ffd700'];
+            let paths = '';
+
+            colors.forEach((col, i) => {
+                let path = `M 0 ${height/2 + 100}`;
+                for (let x = 0; x <= width; x += 20) {
+                    // Sine wave math: y = A * sin(B * x + C)
+                    // We want them to converge at the chip (bottom center roughly) and expand out
+                    
+                    // Fake perspective convergence
+                    const progress = x / width; // 0 to 1
+                    const amplitude = 50 + (progress * 100); 
+                    
+                    const y = (height/1.5) + Math.sin(x * 0.01 + waveOffset + i) * amplitude * Math.sin(progress * Math.PI);
+                    path += ` L ${x} ${y}`;
+                }
+                // Add a glowing stroke
+                paths += `<path d="${path}" stroke="${col}" stroke-width="${2 + i}" fill="none" stroke-opacity="0.5" style="filter: drop-shadow(0 0 5px ${col});" />`;
+            });
+
+            svg.innerHTML = paths;
+        }
+
+        /* --- Circuit Board Generation --- */
+        const board = document.getElementById('circuit-board');
+        function generateTraces() {
+            for(let i=0; i<20; i++) {
+                const trace = document.createElement('div');
+                trace.className = 'trace';
+                const w = Math.random() * 100 + 20;
+                const h = 2;
+                trace.style.width = w + 'px';
+                trace.style.height = h + 'px';
+                trace.style.top = Math.random() * 100 + '%';
+                trace.style.left = Math.random() * 100 + '%';
+                
+                // Random rotation to look like circuit paths
+                const rot = Math.random() > 0.5 ? 0 : 90;
+                trace.style.transform = `rotate(${rot}deg)`;
+                
+                board.appendChild(trace);
+            }
+            
+            // Add some "chips" (small squares)
+            for(let i=0; i<10; i++) {
+                const chip = document.createElement('div');
+                chip.style.position = 'absolute';
+                chip.style.width = '10px';
+                chip.style.height = '10px';
+                chip.style.background = '#222';
+                chip.style.border = '1px solid #555';
+                chip.style.top = Math.random() * 100 + '%';
+                chip.style.left = Math.random() * 100 + '%';
+                board.appendChild(chip);
+            }
+        }
+        generateTraces();
+
+        /* --- Interaction Logic --- */
+        const core = document.getElementById('cpu-core');
+        const dataDisplay = document.getElementById('data-display');
+        const starsDisplay = document.getElementById('stars-display');
+
+        core.addEventListener('click', (e) => {
+            processData(e);
+        });
+
+        function processData(e) {
+            // Logic
+            state.data += state.clickPower;
+            state.stars += 1;
+            
+            // Visuals
+            updateUI();
+            createFloatingText(e.clientX || width/2, e.clientY || height/2, `+${state.clickPower} TB`);
+            
+            // Core Pulse Animation
+            core.style.boxShadow = `0 0 50px ${state.colors[Math.floor(Math.random()*state.colors.length)]}`;
+            setTimeout(() => {
+                core.style.boxShadow = '0 0 20px rgba(255, 215, 0, 0.3), inset 0 0 10px rgba(0,0,0,0.8)';
+            }, 100);
+
+            // Shoot particles into galaxy
+            for(let i=0; i<5; i++) {
+                particles.push(new Particle(true));
+            }
+        }
+
+        function createFloatingText(x, y, text) {
+            const el = document.createElement('div');
+            el.className = 'float-text';
+            el.innerText = text;
+            el.style.left = x + 'px';
+            el.style.top = y + 'px';
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 1000);
+        }
+
+        function updateUI() {
+            dataDisplay.innerText = Math.floor(state.data) + " TB";
+            starsDisplay.innerText = state.stars;
+
+            // Enable/Disable buttons
+            document.getElementById('btn-overclock').disabled = state.data < costs.overclock;
+            document.getElementById('btn-bandwidth').disabled = state.data < costs.bandwidth;
+            document.getElementById('btn-nebula').disabled = state.data < costs.nebula;
+        }
+
+        /* --- Upgrades --- */
+        window.upgrade = function(type) {
+            if (state.data >= costs[type]) {
+                state.data -= costs[type];
+                costs[type] = Math.floor(costs[type] * 1.5); // Increase cost
+                
+                if (type === 'overclock') {
+                    state.autoClicker += 1;
+                    document.getElementById('btn-overclock').innerText = `Overclock (Cost: ${costs.overclock} TB)`;
+                    startAutoClicker();
+                } else if (type === 'bandwidth') {
+                    state.clickPower += 5;
+                    document.getElementById('btn-bandwidth').innerText = `Widen Bus (Cost: ${costs.bandwidth} TB)`;
+                    // Visual upgrade: Add more traces
+                    generateTraces();
+                } else if (type === 'nebula') {
+                    state.colors.push('#ff0055', '#00ff00'); // Add new colors
+                    document.getElementById('btn-nebula').innerText = `Inject Nebula (Cost: ${costs.nebula} TB)`;
+                    // Add lots of stars
+                    for(let i=0; i<50; i++) particles.push(new Particle());
+                }
+                updateUI();
+            }
+        };
+
+        let autoClickInterval;
+        function startAutoClicker() {
+            if (autoClickInterval) clearInterval(autoClickInterval);
+            if (state.autoClicker > 0) {
+                autoClickInterval = setInterval(() => {
+                    // Simulate click without event object
+                    state.data += state.autoClicker;
+                    updateUI();
+                    // Small visual pulse
+                    if(Math.random() > 0.7) {
+                        particles.push(new Particle(true));
+                    }
+                }, 1000);
+            }
+        }
+
+        // Start loop
+        animate();
+        updateUI();
+
+    </script>
+</body>
+</html>

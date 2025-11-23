@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Galaxy Generator</title>
+    <style>
+        :root {
+            --bg-color: #050b14;
+            --panel-bg: rgba(20, 30, 50, 0.7);
+            --accent: #4facfe;
+            --text: #ffffff;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--bg-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--text);
+        }
+
+        canvas {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 300px;
+            z-index: 10;
+            background: var(--panel-bg);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            transition: transform 0.3s ease;
+        }
+
+        h1 {
+            font-size: 1.2rem;
+            margin-top: 0;
+            margin-bottom: 5px;
+            background: linear-gradient(to right, #fbc2eb, #a6c1ee);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        p.subtitle {
+            font-size: 0.8rem;
+            color: #aaa;
+            margin-bottom: 20px;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            margin-bottom: 5px;
+            color: #ccc;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            -webkit-appearance: none;
+            background: rgba(255,255,255,0.1);
+            height: 4px;
+            border-radius: 2px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--accent);
+            transition: transform 0.1s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background: linear-gradient(45deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%);
+            border: none;
+            border-radius: 6px;
+            color: #333;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: filter 0.2s;
+        }
+
+        button:hover {
+            filter: brightness(1.1);
+        }
+
+        #warp-btn {
+            background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .stats {
+            margin-top: 15px;
+            font-size: 0.7rem;
+            color: #666;
+            text-align: center;
+        }
+
+        /* Mobile toggle */
+        #toggle-ui {
+            display: none;
+        }
+        
+        @media (max-width: 600px) {
+            #ui-layer {
+                width: calc(100% - 40px);
+                bottom: 20px;
+                top: auto;
+                max-height: 40vh;
+                overflow-y: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui-layer">
+        <h1>Nebula Forge</h1>
+        <p class="subtitle">Procedural Galaxy Simulation</p>
+
+        <div class="control-group">
+            <label>Star Count <span id="val-count">15000</span></label>
+            <input type="range" id="stars" min="1000" max="30000" value="15000">
+        </div>
+
+        <div class="control-group">
+            <label>Spiral Arms <span id="val-arms">3</span></label>
+            <input type="range" id="arms" min="2" max="10" value="3" step="1">
+        </div>
+
+        <div class="control-group">
+            <label>Arm Tightness <span id="val-twist">5</span></label>
+            <input type="range" id="twist" min="0" max="20" value="5" step="0.1">
+        </div>
+
+        <div class="control-group">
+            <label>Core Size <span id="val-core">15</span></label>
+            <input type="range" id="core" min="1" max="50" value="15">
+        </div>
+
+        <div class="control-group">
+            <label>Dust Spread <span id="val-spread">40</span></label>
+            <input type="range" id="spread" min="10" max="100" value="40">
+        </div>
+
+        <div class="control-group">
+            <label>Color Shift</label>
+            <input type="range" id="color" min="0" max="360" value="200">
+        </div>
+
+        <button id="warp-btn">WARP SPEED</button>
+        
+        <div class="stats">
+            Drag to Rotate • Scroll to Zoom
+        </div>
+    </div>
+
+    <canvas id="galaxyCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('galaxyCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // UI Elements
+        const inputs = {
+            stars: document.getElementById('stars'),
+            arms: document.getElementById('arms'),
+            twist: document.getElementById('twist'),
+            core: document.getElementById('core'),
+            spread: document.getElementById('spread'),
+            color: document.getElementById('color')
+        };
+        const labels = {
+            stars: document.getElementById('val-count'),
+            arms: document.getElementById('val-arms'),
+            twist: document.getElementById('val-twist'),
+            core: document.getElementById('val-core'),
+            spread: document.getElementById('val-spread')
+        };
+        const warpBtn = document.getElementById('warp-btn');
+
+        let width, height;
+        let stars = [];
+        let camera = { x: 0, y: 0, z: 800, pitch: 0.8, yaw: 0 };
+        let isDragging = false;
+        let lastMouse = { x: 0, y: 0 };
+        let warpMode = false;
+        let time = 0;
+
+        // Resize handler
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Star Class
+        class Star {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                const armCount = parseInt(inputs.arms.value);
+                const twist = parseFloat(inputs.twist.value);
+                const coreSize = parseInt(inputs.core.value);
+                const spread = parseInt(inputs.spread.value);
+                const baseHue = parseInt(inputs.color.value);
+
+                // Random distance from center (biased towards center)
+                this.r = Math.random() * Math.random() * 600 + coreSize;
+                
+                // Calculate angle based on spiral equation
+                // Logarithmic spiral approximation
+                const armIndex = Math.floor(Math.random() * armCount);
+                const armOffset = (Math.PI * 2 * armIndex) / armCount;
+                const curve = Math.pow(this.r / 600, 2) * twist;
+                
+                this.theta = this.r * 0.002 + armOffset + curve;
+
+                // Add randomness (Dust spread)
+                const randomOffset = (Math.random() - 0.5) * (spread * (this.r / 200));
+                const randomZ = (Math.random() - 0.5) * (spread * (this.r / 300));
+                
+                // Convert polar to cartesian
+                this.x = (this.r + randomOffset) * Math.cos(this.theta);
+                this.y = (this.r + randomOffset) * Math.sin(this.theta);
+                this.z = randomZ;
+
+                // Physics
+                this.size = Math.random() * 1.5 + 0.5;
+                
+                // Color Logic based on image analysis
+                // Core = Yellow/White, Outer = Blue/Purple, Dust = Orange/Brown
+                const distRatio = this.r / 600;
+                
+                if (Math.random() > 0.8) {
+                    // Dust/Gas particles (Orange/Brown like the image)
+                    this.color = `hsla(${baseHue - 180}, 70%, 60%, ${Math.random()})`;
+                    this.isDust = true;
+                } else {
+                    // Stars
+                    // Inner stars are hotter/brighter? Or older/yellower? 
+                    // Let's make inner yellow/white, outer blue
+                    let hue = baseHue + (distRatio * 60); 
+                    let sat = 80;
+                    let light = 90 - (distRatio * 40);
+                    this.color = `hsla(${hue}, ${sat}%, ${light}%, ${Math.random() * 0.8 + 0.2})`;
+                    this.isDust = false;
+                }
+                
+                // Animation offset
+                this.speed = (1000 / (this.r + 10)) * 0.01;
+            }
+
+            update() {
+                // Orbit
+                const orbitSpeed = warpMode ? 0.2 : this.speed;
+                const cos = Math.cos(orbitSpeed);
+                const sin = Math.sin(orbitSpeed);
+                
+                // Simple 2D rotation matrix on x/y plane
+                const nx = this.x * cos - this.y * sin;
+                const ny = this.x * sin + this.y * cos;
+                this.x = nx;
+                this.y = ny;
+
+                if (warpMode) {
+                    this.z += 10;
+                    if (this.z > 500) this.z = -500;
+                }
+            }
+
+            draw(ctx, cx, cy) {
+                // 3D Projection
+                // Rotate camera
+                let x = this.x;
+                let y = this.y;
+                let z = this.z;
+
+                // Rotate Y (Yaw)
+                let x1 = x * Math.cos(camera.yaw) - z * Math.sin(camera.yaw);
+                let z1 = x * Math.sin(camera.yaw) + z * Math.cos(camera.yaw);
+                
+                // Rotate X (Pitch)
+                let y2 = y * Math.cos(camera.pitch) - z1 * Math.sin(camera.pitch);
+                let z2 = y * Math.sin(camera.pitch) + z1 * Math.cos(camera.pitch);
+
+                // Perspective projection
+                const scale = 600 / (600 + z2 + camera.z); // FOV
+                const px = x1 * scale + cx;
+                const py = y2 * scale + cy;
+
+                if (scale < 0) return; // Behind camera
+
+                const size = this.size * scale;
+
+                ctx.fillStyle = this.color;
+                
+                if (warpMode) {
+                    // Draw streaks
+                    ctx.beginPath();
+                    ctx.moveTo(px, py);
+                    ctx.lineTo(cx + (px-cx)*1.1, cy + (py-cy)*1.1);
+                    ctx.strokeStyle = this.color;
+                    ctx.lineWidth = size;
+                    ctx.stroke();
+                } else {
+                    // Draw dots
+                    ctx.beginPath();
+                    ctx.arc(px, py, size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+        }
+
+        function initGalaxy() {
+            stars = [];
+            const count = parseInt(inputs.stars.value);
+            for (let i = 0; i < count; i++) {
+                stars.push(new Star());
+            }
+        }
+
+        // Animation Loop
+        function animate() {
+            // Clear with trail effect
+            ctx.fillStyle = warpMode ? 'rgba(5, 11, 20, 0.2)' : 'rgba(5, 11, 20, 1)';
+            ctx.fillRect(0, 0, width, height);
+
+            // Draw Background Stars (Static parallax)
+            ctx.fillStyle = 'white';
+            for(let i=0; i<100; i++) {
+                const x = (Math.sin(i * 132.1) * width + time * 0.1) % width;
+                const y = (Math.cos(i * 53.7) * height) % height;
+                // Wrap
+                const wx = x < 0 ? x + width : x;
+                const wy = y < 0 ? y + height : y;
+                ctx.fillRect(wx, wy, Math.random()*2, Math.random()*2);
+            }
+
+            // Center of screen
+            const cx = width / 2;
+            const cy = height / 2;
+
+            // Sort stars by Z depth for correct rendering order
+            // Note: Since we rotate points in draw(), sorting by raw Z isn't perfect but good enough for particles
+            // For better performance with 15k stars, we might skip sorting or sort every N frames.
+            // Let's do a simple painter's algorithm approximation based on the pitch.
+            
+            // Draw Core Glow
+            const coreScale = 600 / (600 + camera.z);
+            const coreRad = parseInt(inputs.core.value) * 4 * coreScale;
+            const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, coreRad);
+            grad.addColorStop(0, 'rgba(255, 240, 200, 0.8)');
+            grad.addColorStop(0.4, 'rgba(255, 200, 100, 0.2)');
+            grad.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(cx, cy, coreRad * 2, 0, Math.PI*2);
+            ctx.fill();
+
+            // Update and Draw Stars
+            stars.forEach(star => {
+                star.update();
+                star.draw(ctx, cx, cy);
+            });
+
+            time++;
+            requestAnimationFrame(animate);
+        }
+
+        // Event Listeners for UI
+        Object.keys(inputs).forEach(key => {
+            inputs[key].addEventListener('input', (e) => {
+                if (labels[key]) labels[key].innerText = e.target.value;
+                // Debounce regeneration for performance
+                if (key !== 'stars') {
+                    // For shape changes, we can just re-init
+                    initGalaxy();
+                }
+            });
+            // Only re-init star count on change (mouse up) to avoid lag
+            inputs[key].addEventListener('change', () => initGalaxy());
+        });
+
+        warpBtn.addEventListener('click', () => {
+            warpMode = !warpMode;
+            warpBtn.innerText = warpMode ? "DISENGAGE WARP" : "WARP SPEED";
+            warpBtn.style.background = warpMode ? "linear-gradient(45deg, #ff512f 0%, #dd2476 100%)" : "linear-gradient(45deg, #4facfe 0%, #00f2fe 100%)";
+        });
+
+        // Mouse Interaction
+        canvas.addEventListener('mousedown', e => {
+            isDragging = true;
+            lastMouse.x = e.clientX;
+            lastMouse.y = e.clientY;
+            canvas.style.cursor = 'grabbing';
+        });
+
+        window.addEventListener('mouseup', () => {
+            isDragging = false;
+            canvas.style.cursor = 'default';
+        });
+
+        window.addEventListener('mousemove', e => {
+            if (!isDragging) return;
+            const dx = e.clientX - lastMouse.x;
+            const dy = e.clientY - lastMouse.y;
+
+            camera.yaw += dx * 0.005;
+            camera.pitch += dy * 0.005;
+            
+            // Clamp pitch
+            camera.pitch = Math.max(-Math.PI/2, Math.min(Math.PI/2, camera.pitch));
+
+            lastMouse.x = e.clientX;
+            lastMouse.y = e.clientY;
+        });
+
+        canvas.addEventListener('wheel', e => {
+            e.preventDefault();
+            camera.z += e.deltaY;
+            camera.z = Math.max(100, Math.min(2000, camera.z));
+        }, { passive: false });
+
+        // Initialize
+        initGalaxy();
+        animate();
+
+    </script>
+</body>
+</html>

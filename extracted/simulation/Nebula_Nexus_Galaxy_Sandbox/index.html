@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nebula Nexus: Galaxy Sandbox</title>
+    <style>
+        :root {
+            --space-black: #050508;
+            --nebula-purple: rgba(138, 43, 226, 0.2);
+            --nebula-orange: rgba(255, 140, 0, 0.15);
+            --nebula-blue: rgba(0, 191, 255, 0.15);
+            --ui-bg: rgba(20, 20, 30, 0.6);
+            --ui-border: rgba(255, 255, 255, 0.2);
+            --accent: #00f3ff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--space-black);
+            color: white;
+            font-family: 'Courier New', Courier, monospace;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* Background Nebula Simulation using CSS Gradients */
+        .nebula-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            filter: blur(60px);
+            opacity: 0.8;
+            pointer-events: none;
+        }
+
+        .nebula-purple {
+            background: radial-gradient(circle at 20% 30%, #8a2be2 0%, transparent 50%);
+            animation: pulse 10s infinite alternate;
+        }
+
+        .nebula-orange {
+            background: radial-gradient(circle at 80% 40%, #ff8c00 0%, transparent 50%);
+            animation: pulse 12s infinite alternate-reverse;
+        }
+
+        .nebula-blue {
+            background: radial-gradient(circle at 50% 80%, #00bfff 0%, transparent 60%);
+            animation: pulse 15s infinite alternate;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.5; transform: scale(1); }
+            100% { opacity: 0.8; transform: scale(1.1); }
+        }
+
+        /* Canvas for Stars */
+        #galaxy-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        /* UI Overlay */
+        #ui-layer {
+            position: absolute;
+            z-index: 10;
+            top: 20px;
+            left: 20px;
+            width: 300px;
+            background: var(--ui-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--ui-border);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            transition: transform 0.3s ease;
+        }
+
+        h1 {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-bottom: 1px solid var(--ui-border);
+            padding-bottom: 10px;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.8rem;
+            margin-bottom: 5px;
+            color: #aaa;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            background: transparent;
+            -webkit-appearance: none;
+            margin: 5px 0;
+        }
+
+        input[type="range"]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 2px;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: var(--accent);
+            margin-top: -6px;
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--accent);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 10px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            font-family: inherit;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn:hover {
+            background: var(--accent);
+            color: #000;
+            box-shadow: 0 0 15px var(--accent);
+        }
+
+        /* Scanner HUD */
+        #scanner-hud {
+            position: absolute;
+            z-index: 5;
+            pointer-events: none;
+            display: none;
+            border: 1px solid var(--accent);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px;
+            width: 200px;
+            font-size: 0.8rem;
+            color: var(--accent);
+        }
+        
+        #scanner-hud::before {
+            content: '';
+            position: absolute;
+            top: -5px; left: -5px; right: -5px; bottom: -5px;
+            border: 1px dashed rgba(255,255,255,0.2);
+        }
+
+        .hud-line {
+            margin-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .value { color: white; }
+
+        /* Instructions */
+        .instructions {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            color: rgba(255,255,255,0.5);
+            font-size: 0.8rem;
+            text-align: right;
+            z-index: 2;
+        }
+
+        .key {
+            display: inline-block;
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin: 0 2px;
+            background: rgba(255,255,255,0.1);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Background Layers mimicking the image's nebula clouds -->
+    <div class="nebula-layer nebula-purple"></div>
+    <div class="nebula-layer nebula-orange"></div>
+    <div class="nebula-layer nebula-blue"></div>
+
+    <!-- Main Canvas -->
+    <canvas id="galaxy-canvas"></canvas>
+
+    <!-- Controls UI -->
+    <div id="ui-layer">
+        <h1>Galaxy Core</h1>
+        
+        <div class="control-group">
+            <label>Rotation Speed</label>
+            <input type="range" id="speed-slider" min="0" max="100" value="20">
+        </div>
+
+        <div class="control-group">
+            <label>Spiral Tightness</label>
+            <input type="range" id="spiral-slider" min="1" max="100" value="50">
+        </div>
+
+        <div class="control-group">
+            <label>Star Density</label>
+            <input type="range" id="density-slider" min="100" max="3000" value="1500">
+        </div>
+
+        <div class="control-group">
+            <label>Color Shift</label>
+            <input type="range" id="color-slider" min="0" max="360" value="0">
+        </div>
+
+        <button class="btn" id="warp-btn">Engage Warp</button>
+        <button class="btn" style="margin-top: 10px; border-color: #ff4444; color: #ff4444;" id="nova-btn">Supernova</button>
+    </div>
+
+    <!-- Scanner HUD Tooltip -->
+    <div id="scanner-hud">
+        <div class="hud-line"><span>ID:</span> <span class="value" id="hud-id">X-92</span></div>
+        <div class="hud-line"><span>Class:</span> <span class="value" id="hud-class">G-Type</span></div>
+        <div class="hud-line"><span>Temp:</span> <span class="value" id="hud-temp">5400K</span></div>
+        <div class="hud-line"><span>Life:</span> <span class="value" id="hud-life">Organic</span></div>
+    </div>
+
+    <div class="instructions">
+        Drag to Rotate • Scroll to Zoom • Click Stars to Scan<br>
+        Hold <span class="key">Space</span> for Warp Speed
+    </div>
+
+    <script>
+        const canvas = document.getElementById('galaxy-canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // UI Elements
+        const speedSlider = document.getElementById('speed-slider');
+        const spiralSlider = document.getElementById('spiral-slider');
+        const densitySlider = document.getElementById('density-slider');
+        const colorSlider = document.getElementById('color-slider');
+        const warpBtn = document.getElementById('warp-btn');
+        const novaBtn = document.getElementById('nova-btn');
+        const hud = document.getElementById('scanner-hud');
+
+        // State
+        let width, height;
+        let stars = [];
+        let angleX = 0;
+        let angleY = 0;
+        let zoom = 1;
+        let isWarping = false;
+        let mouseX = 0, mouseY = 0;
+        let isDragging = false;
+        let lastMouseX = 0, lastMouseY = 0;
+        let hueShift = 0;
+        let rotationSpeed = 0.002;
+        let spiralFactor = 0.5;
+
+        // Colors extracted from image concept
+        const baseColors = [
+            {r: 255, g: 255, b: 255}, // White core
+            {r: 138, g: 43,  b: 226}, // Purple
+            {r: 0,   g: 191, b: 255}, // Blue
+            {r: 255, g: 140, b: 0}    // Orange
+        ];
+
+        class Star {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                // Spiral Galaxy Math
+                // Random distance from center, biased towards center
+                const d = Math.random();
+                const dist = Math.pow(d, 2) * 800; 
+                
+                // Angle based on distance (spiral arms)
+                const arms = 2;
+                const spin = dist * (spiralFactor / 100); 
+                const armAngle = (Math.random() * Math.PI * 2) / arms; 
+                const angle = spin + armAngle + (Math.random() * 0.5); // Add randomness to scatter width
+
+                this.x = Math.cos(angle) * dist;
+                this.y = (Math.random() - 0.5) * (dist * 0.2); // Flattened disk
+                this.z = Math.sin(angle) * dist;
+
+                this.size = Math.random() * 2 + 0.5;
+                
+                // Color mapping based on distance
+                let colorIndex = 0;
+                if(dist > 100) colorIndex = 1; // Purple inner
+                if(dist > 300) colorIndex = 2; // Blue mid
+                if(dist > 600) colorIndex = 3; // Orange outer
+                
+                // Randomly mix colors
+                if(Math.random() > 0.7) colorIndex = Math.floor(Math.random() * 4);
+
+                this.baseColor = baseColors[colorIndex];
+                this.color = `rgb(${this.baseColor.r}, ${this.baseColor.g}, ${this.baseColor.b})`;
+                
+                // Physics
+                this.vx = 0;
+                this.vy = 0;
+                this.vz = 0;
+            }
+
+            update() {
+                // Rotation logic
+                const cosY = Math.cos(rotationSpeed);
+                const sinY = Math.sin(rotationSpeed);
+                
+                let x = this.x * cosY - this.z * sinY;
+                let z = this.z * cosY + this.x * sinY;
+                this.x = x;
+                this.z = z;
+
+                // Warp effect
+                if (isWarping) {
+                    this.z -= 50;
+                    if (this.z < -1000) this.z = 1000;
+                }
+            }
+
+            draw(cx, cy) {
+                // 3D Projection
+                const fov = 400 * zoom;
+                const scale = fov / (fov + this.z);
+                
+                if (scale < 0) return; // Behind camera
+
+                const x2d = cx + this.x * scale;
+                const y2d = cy + this.y * scale;
+
+                // Rotation by mouse drag
+                const rx = (x2d - cx) * Math.cos(angleY) - (y2d - cy) * Math.sin(angleY) + cx;
+                const ry = (x2d - cx) * Math.sin(angleY) + (y2d - cy) * Math.cos(angleY) + cy;
+
+                const size = this.size * scale;
+
+                ctx.fillStyle = this.color;
+                
+                // Apply Hue Shift
+                if(hueShift > 0) {
+                    ctx.filter = `hue-rotate(${hueShift}deg)`;
+                } else {
+                    ctx.filter = 'none';
+                }
+
+                // Draw Star
+                if (isWarping) {
+                    // Draw lines for warp
+                    ctx.beginPath();
+                    ctx.moveTo(rx, ry);
+                    ctx.lineTo(rx - (rx-cx)*0.1, ry - (ry-cy)*0.1);
+                    ctx.strokeStyle = this.color;
+                    ctx.lineWidth = size;
+                    ctx.stroke();
+                } else {
+                    // Draw dots
+                    ctx.beginPath();
+                    ctx.arc(rx, ry, size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                // Hover detection for HUD
+                const dx = mouseX - rx;
+                const dy = mouseY - ry;
+                if (!isDragging && Math.sqrt(dx*dx + dy*dy) < 10) {
+                    showHud(rx, ry, this);
+                }
+            }
+        }
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+
+        function init() {
+            resize();
+            const count = parseInt(densitySlider.value);
+            stars = [];
+            for (let i = 0; i < count; i++) {
+                stars.push(new Star());
+            }
+        }
+
+        function animate() {
+            // Clear with trail effect for warp
+            ctx.fillStyle = isWarping ? 'rgba(5, 5, 8, 0.2)' : 'rgba(5, 5, 8, 1)';
+            ctx.clearRect(0, 0, width, height); // Actually clear for crisp rendering
+            
+            // Re-draw background if not warping (to maintain transparency logic)
+            // But since we have CSS background, we just clear canvas.
+
+            const cx = width / 2;
+            const cy = height / 2;
+
+            // Global composite for glowing effect
+            ctx.globalCompositeOperation = 'lighter';
+
+            // Hide HUD by default, show if star hovered
+            hud.style.display = 'none';
+            document.body.style.cursor = 'default';
+
+            stars.forEach(star => {
+                star.update();
+                star.draw(cx, cy);
+            });
+
+            // Draw Central Black Hole / Core
+            const coreSize = 20 * zoom;
+            const coreGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, coreSize * 4);
+            coreGrad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+            coreGrad.addColorStop(0.1, 'rgba(255, 200, 100, 0.8)');
+            coreGrad.addColorStop(0.4, 'rgba(100, 0, 255, 0.2)');
+            coreGrad.addColorStop(1, 'transparent');
+            
+            ctx.fillStyle = coreGrad;
+            ctx.beginPath();
+            ctx.arc(cx, cy, coreSize * 4, 0, Math.PI * 2);
+            ctx.fill();
+
+            requestAnimationFrame(animate);
+        }
+
+        // HUD Logic
+        const starTypes = ['O-Type', 'B-Type', 'A-Type', 'F-Type', 'G-Type', 'K-Type', 'M-Type'];
+        const lifeTypes = ['None', 'Microbial', 'Vegetation', 'Intelligent', 'Ruins', 'Machine'];
+        
+        function showHud(x, y, star) {
+            hud.style.display = 'block';
+            hud.style.left = (x + 15) + 'px';
+            hud.style.top = (y - 15) + 'px';
+            document.body.style.cursor = 'crosshair';
+            
+            // Deterministic random based on position so it doesn't flicker
+            const seed = Math.abs(Math.floor(star.x + star.y));
+            
+            document.getElementById('hud-id').innerText = `S-${seed}`;
+            document.getElementById('hud-class').innerText = starTypes[seed % starTypes.length];
+            document.getElementById('hud-temp').innerText = (2000 + (seed % 8000)) + 'K';
+            document.getElementById('hud-life').innerText = lifeTypes[seed % lifeTypes.length];
+        }
+
+        // Event Listeners
+        window.addEventListener('resize', resize);
+        
+        // Controls
+        speedSlider.addEventListener('input', (e) => {
+            rotationSpeed = (e.target.value / 1000);
+        });
+
+        spiralSlider.addEventListener('input', (e) => {
+            spiralFactor = e.target.value / 100;
+            init(); // Re-generate galaxy shape
+        });
+
+        densitySlider.addEventListener('change', init); // Only re-gen on release to save perf
+
+        colorSlider.addEventListener('input', (e) => {
+            hueShift = e.target.value;
+        });
+
+        // Warp Button
+        warpBtn.addEventListener('mousedown', () => isWarping = true);
+        warpBtn.addEventListener('mouseup', () => isWarping = false);
+        warpBtn.addEventListener('mouseleave', () => isWarping = false);
+
+        // Spacebar Warp
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') isWarping = true;
+        });
+        window.addEventListener('keyup', (e) => {
+            if (e.code === 'Space') isWarping = false;
+        });
+
+        // Supernova
+        novaBtn.addEventListener('click', () => {
+            stars.forEach(star => {
+                star.vx = (Math.random() - 0.5) * 50;
+                star.vy = (Math.random() - 0.5) * 50;
+                star.vz = (Math.random() - 0.5) * 50;
+                
+                // Animation override
+                star.update = function() {
+                    this.x += this.vx;
+                    this.y += this.vy;
+                    this.z += this.vz;
+                    this.vx *= 0.95;
+                    this.vy *= 0.95;
+                    this.vz *= 0.95;
+                }
+            });
+            setTimeout(init, 2000); // Reset after 2 seconds
+        });
+
+        // Mouse Interaction
+        window.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            
+            if (isDragging) {
+                const dx = e.clientX - lastMouseX;
+                angleY += dx * 0.005;
+                lastMouseX = e.clientX;
+                lastMouseY = e.clientY;
+            }
+        });
+
+        window.addEventListener('mousedown', (e) => {
+            if(e.target.tagName !== 'CANVAS') return;
+            isDragging = true;
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
+        });
+
+        window.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+
+        window.addEventListener('wheel', (e) => {
+            zoom += e.deltaY * -0.001;
+            zoom = Math.min(Math.max(.1, zoom), 5);
+        });
+
+        // Start
+        init();
+        animate();
+
+    </script>
+</body>
+</html>

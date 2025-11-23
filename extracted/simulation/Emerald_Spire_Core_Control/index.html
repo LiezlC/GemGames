@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emerald Spire: Core Control</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+
+        :root {
+            --neon-green: #00ff9d;
+            --core-yellow: #ffcc00;
+            --danger-red: #ff003c;
+            --dark-metal: #0f1115;
+        }
+
+        body {
+            background-color: #050505;
+            color: var(--neon-green);
+            font-family: 'Orbitron', sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* --- Background & Atmosphere --- */
+        .bg-fog {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(180deg, #000000 0%, #022c1e 60%, #00ff9d 100%);
+            opacity: 0.2;
+            z-index: 0;
+            animation: fogPulse 5s infinite alternate;
+        }
+
+        .scanlines {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.2));
+            background-size: 100% 4px;
+            z-index: 50;
+            pointer-events: none;
+            opacity: 0.3;
+        }
+
+        /* --- The Structure --- */
+        .spire-container {
+            position: relative;
+            width: 600px;
+            height: 500px;
+            z-index: 10;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+        }
+
+        .building-base {
+            width: 300px;
+            height: 400px;
+            background: #1a1d21;
+            clip-path: polygon(20% 0%, 80% 0%, 100% 20%, 100% 100%, 0% 100%, 0% 20%);
+            position: relative;
+            box-shadow: inset 0 0 50px #000;
+        }
+
+        .window {
+            position: absolute;
+            background: #000;
+            box-shadow: 0 0 10px var(--core-yellow);
+        }
+        .w1 { top: 40px; left: 40px; width: 20px; height: 30px; }
+        .w2 { top: 40px; right: 40px; width: 20px; height: 30px; }
+        .w3 { top: 150px; left: 20px; width: 15px; height: 25px; }
+        .w4 { top: 150px; right: 20px; width: 15px; height: 25px; }
+
+        /* --- The Core (Clock/Eye) --- */
+        .core-housing {
+            position: absolute;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            background: #2a2a2a;
+            border: 5px solid #444;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+        }
+
+        .core-light {
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle, #fff 10%, var(--core-yellow) 60%, #ff8800 100%);
+            border-radius: 50%;
+            box-shadow: 0 0 30px var(--core-yellow);
+            animation: pulseCore 2s infinite ease-in-out;
+            position: relative;
+        }
+
+        .core-dial {
+            position: absolute;
+            width: 100%; height: 100%;
+            border: 2px dashed rgba(0,0,0,0.5);
+            border-radius: 50%;
+            animation: spin 10s linear infinite;
+        }
+
+        /* --- Pipes/Cannons --- */
+        .pipe {
+            position: absolute;
+            bottom: 50px;
+            width: 150px;
+            height: 40px;
+            background: linear-gradient(90deg, #222, #444, #222);
+            border: 2px solid #111;
+            z-index: 5;
+        }
+        .pipe-left {
+            left: -100px;
+            transform: rotate(-25deg);
+            border-right: none;
+        }
+        .pipe-right {
+            right: -100px;
+            transform: rotate(25deg);
+            border-left: none;
+        }
+        .steam {
+            position: absolute;
+            width: 20px; height: 20px;
+            background: rgba(255,255,255,0.4);
+            border-radius: 50%;
+            filter: blur(5px);
+            opacity: 0;
+        }
+
+        /* --- The Gate --- */
+        .gate {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 120px;
+            background: linear-gradient(to bottom, var(--neon-green), transparent);
+            border-radius: 40px 40px 0 0;
+            opacity: 0.6;
+            box-shadow: 0 0 20px var(--neon-green);
+        }
+
+        /* --- The Silhouette --- */
+        .watcher {
+            position: absolute;
+            bottom: 0;
+            left: 20%;
+            width: 30px;
+            height: 60px;
+            background: #000;
+            clip-path: polygon(20% 0%, 80% 0%, 100% 30%, 80% 100%, 20% 100%, 0% 30%);
+            z-index: 20;
+        }
+
+        /* --- UI Overlay --- */
+        .hud {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: 100;
+            pointer-events: none;
+            padding: 20px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .hud-top {
+            display: flex;
+            justify-content: space-between;
+            text-shadow: 0 0 10px var(--neon-green);
+        }
+
+        .hud-bottom {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            pointer-events: auto;
+            padding-bottom: 40px;
+        }
+
+        .btn {
+            background: rgba(0, 20, 10, 0.8);
+            border: 2px solid var(--neon-green);
+            color: var(--neon-green);
+            padding: 15px 30px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.2s;
+            box-shadow: 0 0 10px rgba(0, 255, 157, 0.2);
+        }
+
+        .btn:hover {
+            background: var(--neon-green);
+            color: #000;
+            box-shadow: 0 0 20px var(--neon-green);
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        .meter-container {
+            width: 300px;
+            height: 20px;
+            border: 2px solid var(--neon-green);
+            background: #000;
+            margin-top: 10px;
+            position: relative;
+        }
+
+        .meter-fill {
+            height: 100%;
+            background: var(--neon-green);
+            width: 50%;
+            transition: width 0.1s linear, background-color 0.3s;
+            box-shadow: 0 0 10px var(--neon-green);
+        }
+
+        /* --- Animations --- */
+        @keyframes pulseCore {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes fogPulse { 0% { opacity: 0.2; } 100% { opacity: 0.4; } }
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+        
+        .critical {
+            animation: shake 0.5s infinite;
+            border: 5px solid var(--danger-red);
+        }
+
+        .game-over-screen {
+            position: fixed;
+            top:0; left:0; width:100%; height:100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 200;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: var(--danger-red);
+        }
+        
+        .particle {
+            position: absolute;
+            background: var(--neon-green);
+            width: 4px; height: 4px;
+            pointer-events: none;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="bg-fog"></div>
+    <div class="scanlines"></div>
+
+    <!-- Game HUD -->
+    <div class="hud">
+        <div class="hud-top">
+            <div>
+                <h1 class="text-2xl font-bold">EMERALD SPIRE</h1>
+                <p class="text-sm opacity-70">SECTOR 7 REACTOR</p>
+            </div>
+            <div class="text-right">
+                <div class="text-xl">CORE TEMP</div>
+                <div class="meter-container">
+                    <div id="temp-meter" class="meter-fill"></div>
+                </div>
+                <div id="temp-text" class="text-2xl font-mono mt-1">3500 K</div>
+            </div>
+        </div>
+
+        <div class="hud-bottom">
+            <button class="btn" onclick="injectCoolant()">Inject Coolant</button>
+            <button class="btn" onclick="ventSteam()">Vent Steam</button>
+        </div>
+    </div>
+
+    <!-- Main Visual Composition -->
+    <div class="spire-container" id="main-view">
+        <!-- Pipes -->
+        <div class="pipe pipe-left"></div>
+        <div class="pipe pipe-right"></div>
+
+        <!-- Building -->
+        <div class="building-base">
+            <!-- Windows -->
+            <div class="window w1"></div>
+            <div class="window w2"></div>
+            <div class="window w3"></div>
+            <div class="window w4"></div>
+
+            <!-- The Core -->
+            <div class="core-housing">
+                <div class="core-light" id="core-visual">
+                    <div class="core-dial"></div>
+                </div>
+            </div>
+
+            <!-- The Gate -->
+            <div class="gate"></div>
+        </div>
+
+        <!-- The Watcher -->
+        <div class="watcher"></div>
+    </div>
+
+    <!-- Game Over Overlay -->
+    <div id="game-over" class="game-over-screen">
+        <h1 class="text-6xl font-black mb-4">CRITICAL FAILURE</h1>
+        <p class="text-2xl mb-8">THE SPIRE HAS MELTED DOWN</p>
+        <button class="btn" style="border-color: var(--danger-red); color: var(--danger-red);" onclick="location.reload()">REBOOT SYSTEM</button>
+    </div>
+
+    <script>
+        // Game State
+        let temperature = 3500; // Kelvin
+        let stability = 100;
+        let isGameOver = false;
+        const MAX_TEMP = 10000;
+        const OPTIMAL_TEMP = 3500;
+        
+        // Elements
+        const tempMeter = document.getElementById('temp-meter');
+        const tempText = document.getElementById('temp-text');
+        const coreVisual = document.getElementById('core-visual');
+        const mainView = document.getElementById('main-view');
+        const gameOverScreen = document.getElementById('game-over');
+
+        // Game Loop
+        setInterval(() => {
+            if (isGameOver) return;
+
+            // Natural heat rise
+            temperature += Math.random() * 30 + 10;
+
+            updateUI();
+            checkStatus();
+        }, 100);
+
+        function updateUI() {
+            // Update Text
+            tempText.innerText = Math.floor(temperature) + " K";
+
+            // Update Meter
+            let percentage = (temperature / MAX_TEMP) * 100;
+            tempMeter.style.width = percentage + "%";
+
+            // Visual Feedback based on Temp
+            if (temperature < 5000) {
+                tempMeter.style.backgroundColor = "var(--neon-green)";
+                tempMeter.style.boxShadow = "0 0 10px var(--neon-green)";
+                coreVisual.style.background = "radial-gradient(circle, #fff 10%, var(--core-yellow) 60%, #ff8800 100%)";
+                mainView.classList.remove("critical");
+            } else if (temperature < 8000) {
+                tempMeter.style.backgroundColor = "var(--core-yellow)";
+                tempMeter.style.boxShadow = "0 0 10px var(--core-yellow)";
+                coreVisual.style.background = "radial-gradient(circle, #fff 10%, #ff8800 60%, #ff0000 100%)";
+                mainView.classList.remove("critical");
+            } else {
+                tempMeter.style.backgroundColor = "var(--danger-red)";
+                tempMeter.style.boxShadow = "0 0 20px var(--danger-red)";
+                coreVisual.style.background = "radial-gradient(circle, #fff 0%, #ff0000 60%, #500000 100%)";
+                mainView.classList.add("critical");
+            }
+        }
+
+        function checkStatus() {
+            if (temperature >= MAX_TEMP) {
+                triggerGameOver();
+            }
+        }
+
+        function injectCoolant() {
+            if (isGameOver) return;
+            temperature -= 400;
+            if (temperature < 0) temperature = 0;
+            createParticles('coolant');
+            pulseEffect('cyan');
+        }
+
+        function ventSteam() {
+            if (isGameOver) return;
+            temperature -= 250;
+            if (temperature < 0) temperature = 0;
+            createParticles('steam');
+            pulseEffect('white');
+        }
+
+        function triggerGameOver() {
+            isGameOver = true;
+            gameOverScreen.style.display = 'flex';
+            mainView.style.filter = "blur(10px)";
+        }
+
+        function pulseEffect(color) {
+            const flash = document.createElement('div');
+            flash.style.position = 'absolute';
+            flash.style.top = '0';
+            flash.style.left = '0';
+            flash.style.width = '100%';
+            flash.style.height = '100%';
+            flash.style.background = color;
+            flash.style.opacity = '0.3';
+            flash.style.pointerEvents = 'none';
+            flash.style.zIndex = '90';
+            flash.style.transition = 'opacity 0.5s';
+            document.body.appendChild(flash);
+            
+            setTimeout(() => {
+                flash.style.opacity = '0';
+                setTimeout(() => flash.remove(), 500);
+            }, 50);
+        }
+
+        function createParticles(type) {
+            const count = 10;
+            for (let i = 0; i < count; i++) {
+                const p = document.createElement('div');
+                p.classList.add('particle');
+                
+                // Random starting position near pipes
+                const startX = type === 'steam' ? window.innerWidth * 0.3 : window.innerWidth * 0.7;
+                const startY = window.innerHeight * 0.8;
+                
+                p.style.left = startX + (Math.random() * 100 - 50) + 'px';
+                p.style.top = startY + 'px';
+                
+                if (type === 'coolant') {
+                    p.style.background = '#00ffff';
+                    p.style.boxShadow = '0 0 5px #00ffff';
+                } else {
+                    p.style.background = '#ffffff';
+                    p.style.opacity = '0.5';
+                }
+
+                document.body.appendChild(p);
+
+                // Animate
+                const angle = Math.random() * Math.PI;
+                const velocity = Math.random() * 5 + 2;
+                let x = 0;
+                let y = 0;
+                let opacity = 1;
+
+                const anim = setInterval(() => {
+                    x += Math.cos(angle) * velocity;
+                    y -= Math.sin(angle) * velocity; // Move up
+                    opacity -= 0.02;
+
+                    p.style.transform = `translate(${x}px, ${y}px)`;
+                    p.style.opacity = opacity;
+
+                    if (opacity <= 0) {
+                        clearInterval(anim);
+                        p.remove();
+                    }
+                }, 20);
+            }
+        }
+    </script>
+</body>
+</html>

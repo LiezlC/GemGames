@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canopy Sentinel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #87CEEB;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        /* Scene Container */
+        #scene {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: linear-gradient(to bottom, #a1c4fd 0%, #c2e9fb 100%);
+        }
+
+        /* Parallax Layers */
+        .layer {
+            position: absolute;
+            width: 110%;
+            height: 110%;
+            top: -5%;
+            left: -5%;
+            transition: transform 0.1s ease-out;
+        }
+
+        /* Sun & Sky */
+        .sun {
+            position: absolute;
+            top: 10%;
+            right: 15%;
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle, #fff9c4 20%, rgba(255, 255, 255, 0) 70%);
+            border-radius: 50%;
+            box-shadow: 0 0 50px #fff9c4;
+            z-index: 1;
+        }
+
+        /* Mountains */
+        .mountain-back {
+            position: absolute;
+            bottom: 20%;
+            left: 0;
+            width: 100%;
+            height: 50%;
+            background: linear-gradient(to bottom, #88aab6 0%, #a8c8d4 100%);
+            clip-path: polygon(0% 100%, 0% 20%, 20% 40%, 40% 10%, 60% 30%, 80% 15%, 100% 40%, 100% 100%);
+            z-index: 2;
+            opacity: 0.8;
+        }
+
+        .mountain-mid {
+            position: absolute;
+            bottom: 0;
+            left: -10%;
+            width: 120%;
+            height: 45%;
+            background: linear-gradient(to bottom, #5d8aa8 0%, #2f5e4e 100%);
+            clip-path: polygon(0% 100%, 0% 30%, 15% 50%, 35% 20%, 55% 45%, 75% 25%, 100% 60%, 100% 100%);
+            z-index: 3;
+        }
+
+        /* River */
+        .river {
+            position: absolute;
+            bottom: 0;
+            left: 30%;
+            width: 20%;
+            height: 40%;
+            background: linear-gradient(to bottom, #a1c4fd, #fff);
+            transform: skewX(40deg);
+            opacity: 0.6;
+            z-index: 3;
+            filter: blur(2px);
+        }
+
+        /* Trees in valley */
+        .valley-forest {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 30%;
+            background: #2e5a38;
+            clip-path: polygon(0 100%, 5% 80%, 10% 100%, 15% 85%, 20% 100%, 25% 80%, 30% 100%, 35% 85%, 40% 100%, 45% 80%, 50% 100%, 55% 85%, 60% 100%, 65% 80%, 70% 100%, 75% 85%, 80% 100%, 85% 80%, 90% 100%, 95% 85%, 100% 100%);
+            z-index: 4;
+        }
+
+        /* Foreground Tree (The Perch) */
+        .tree-container {
+            position: absolute;
+            bottom: -50px;
+            left: -50px;
+            width: 600px;
+            height: 800px;
+            z-index: 10;
+            pointer-events: none; /* Let clicks pass through to buttons if needed, but we want to click valley */
+        }
+
+        .tree-trunk {
+            width: 100%;
+            height: 100%;
+            background: #5D4037;
+            border-radius: 0 40% 0 0;
+            position: relative;
+            box-shadow: inset -20px 0 30px rgba(0,0,0,0.5);
+            overflow: hidden;
+        }
+        
+        /* Bark Texture */
+        .bark {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-image: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 10px,
+                rgba(0,0,0,0.1) 10px,
+                rgba(0,0,0,0.1) 20px
+            );
+        }
+
+        .branch {
+            position: absolute;
+            bottom: 200px;
+            left: 100px;
+            width: 400px;
+            height: 120px;
+            background: #5D4037;
+            border-radius: 20px;
+            transform: rotate(-10deg);
+            box-shadow: inset 0 -10px 20px rgba(0,0,0,0.4);
+            z-index: 11;
+        }
+
+        /* Leaves */
+        .leaf {
+            position: absolute;
+            background: rgba(76, 175, 80, 0.9);
+            border-radius: 0 50% 0 50%;
+            animation: sway 3s infinite ease-in-out alternate;
+            z-index: 12;
+        }
+
+        @keyframes sway {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(10deg); }
+        }
+
+        /* The Character (Boots & Legs) - First Person View */
+        .leg {
+            position: absolute;
+            bottom: 230px;
+            left: 200px;
+            width: 140px;
+            height: 50px;
+            background: #3e3e3e; /* Pants */
+            border-radius: 10px;
+            transform: rotate(-15deg);
+            z-index: 13;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.3);
+        }
+
+        .boot {
+            position: absolute;
+            bottom: 210px;
+            left: 320px;
+            width: 80px;
+            height: 50px;
+            background: #8D6E63; /* Leather */
+            border-radius: 10px 30px 10px 5px;
+            transform: rotate(-15deg);
+            z-index: 14;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+        }
+        
+        .boot::after { /* Laces */
+            content: '';
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 30px;
+            height: 20px;
+            background: repeating-linear-gradient(90deg, #3e2723, #3e2723 2px, transparent 2px, transparent 6px);
+        }
+
+        /* The Device (Cursor follower) */
+        #device {
+            position: absolute;
+            width: 60px;
+            height: 120px;
+            pointer-events: none;
+            z-index: 100;
+            transform-origin: bottom center;
+            transition: transform 0.05s linear;
+            bottom: 0;
+            right: 0;
+        }
+
+        .device-handle {
+            width: 15px;
+            height: 60px;
+            background: #555;
+            margin: 0 auto;
+            border-radius: 5px;
+            background: linear-gradient(90deg, #333, #777, #333);
+        }
+
+        .device-head {
+            width: 40px;
+            height: 40px;
+            background: #DAA520; /* Gold */
+            border-radius: 50%;
+            margin: -5px auto 0;
+            box-shadow: 0 0 10px #DAA520;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        
+        .device-lens {
+            width: 20px;
+            height: 20px;
+            background: #87CEEB;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            opacity: 0.8;
+        }
+
+        .device-antenna {
+            width: 4px;
+            height: 20px;
+            background: #DAA520;
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        /* HUD */
+        .hud {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.6);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            font-family: monospace;
+            z-index: 200;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+
+        /* Hidden Spirits */
+        .spirit {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 50%;
+            filter: blur(5px);
+            cursor: crosshair;
+            opacity: 0; /* Invisible until scanned */
+            transition: opacity 0.5s, transform 0.5s;
+            z-index: 5;
+            animation: floatSpirit 3s infinite ease-in-out;
+        }
+
+        .spirit.revealed {
+            opacity: 1;
+            background: radial-gradient(circle, #fff, #00ffcc);
+            box-shadow: 0 0 20px #00ffcc;
+        }
+
+        @keyframes floatSpirit {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* Scan Effect */
+        .scan-pulse {
+            position: absolute;
+            border: 2px solid rgba(218, 165, 32, 0.5);
+            border-radius: 50%;
+            width: 0;
+            height: 0;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 99;
+        }
+
+        @keyframes pulseExpand {
+            0% { width: 0; height: 0; opacity: 1; border-width: 5px; }
+            100% { width: 300px; height: 300px; opacity: 0; border-width: 0px; }
+        }
+
+        /* Falling Leaves */
+        .falling-leaf {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #8bc34a;
+            border-radius: 0 50% 0 50%;
+            z-index: 20;
+            pointer-events: none;
+            animation: fall linear forwards;
+        }
+
+        @keyframes fall {
+            to { transform: translateY(100vh) rotate(360deg); }
+        }
+
+    </style>
+</head>
+<body>
+
+<div id="scene">
+    <!-- Sky Layer -->
+    <div class="layer" data-speed="0.02">
+        <div class="sun"></div>
+    </div>
+
+    <!-- Background Mountains -->
+    <div class="layer" data-speed="0.05">
+        <div class="mountain-back"></div>
+    </div>
+
+    <!-- River & Mid Mountains -->
+    <div class="layer" data-speed="0.1">
+        <div class="river"></div>
+        <div class="mountain-mid"></div>
+        <div class="valley-forest"></div>
+    </div>
+
+    <!-- Interactive Area for Spirits (The Valley) -->
+    <div id="valley-click-area" class="absolute inset-0 z-20 cursor-crosshair"></div>
+
+    <!-- Foreground Tree & Character -->
+    <div class="layer" data-speed="0.2" style="z-index: 30;">
+        <div class="tree-container">
+            <div class="tree-trunk">
+                <div class="bark"></div>
+            </div>
+            <div class="branch"></div>
+            <!-- Character Legs -->
+            <div class="leg"></div>
+            <div class="boot"></div>
+            
+            <!-- Leaves on the tree -->
+            <div class="leaf" style="top: 100px; left: 50px; width: 80px; height: 40px;"></div>
+            <div class="leaf" style="top: 50px; left: 150px; width: 60px; height: 30px; animation-delay: 0.5s;"></div>
+            <div class="leaf" style="top: 150px; left: -20px; width: 100px; height: 50px; animation-delay: 1s;"></div>
+            <div class="leaf" style="top: 300px; left: 400px; width: 50px; height: 25px; background: #66bb6a;"></div>
+        </div>
+    </div>
+
+    <!-- The Device (Handheld) -->
+    <div id="device">
+        <div class="device-antenna"></div>
+        <div class="device-head">
+            <div class="device-lens"></div>
+        </div>
+        <div class="device-handle"></div>
+    </div>
+
+    <!-- HUD -->
+    <div class="hud">
+        <h2 class="text-xl font-bold text-yellow-400 mb-2">CANOPY SENTINEL</h2>
+        <p class="text-sm text-gray-300">Signal Strength: <span id="signal-strength">0%</span></p>
+        <p class="text-sm text-gray-300">Spirits Found: <span id="score">0</span>/5</p>
+        <div class="mt-2 text-xs text-gray-400">Move mouse to aim. Click to scan.</div>
+    </div>
+    
+    <!-- Completion Modal -->
+    <div id="win-modal" class="hidden absolute inset-0 flex items-center justify-center z-50 bg-black bg-opacity-70">
+        <div class="bg-white text-black p-8 rounded-lg text-center max-w-md shadow-2xl border-4 border-yellow-400">
+            <h2 class="text-3xl font-bold mb-4 text-green-700">Harmony Restored!</h2>
+            <p class="mb-6">You have located all the spirits of the valley. The forest sings in unison.</p>
+            <button onclick="location.reload()" class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 transition font-bold">Explore Again</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    const scene = document.getElementById('scene');
+    const layers = document.querySelectorAll('.layer');
+    const device = document.getElementById('device');
+    const valleyArea = document.getElementById('valley-click-area');
+    const signalDisplay = document.getElementById('signal-strength');
+    const scoreDisplay = document.getElementById('score');
+    const winModal = document.getElementById('win-modal');
+
+    let spirits = [];
+    let score = 0;
+    const totalSpirits = 5;
+
+    // Initialize Spirits
+    function initSpirits() {
+        for (let i = 0; i < totalSpirits; i++) {
+            const spirit = document.createElement('div');
+            spirit.classList.add('spirit');
+            // Random position within the valley area (approx middle of screen)
+            const top = 30 + Math.random() * 40; // 30% to 70% height
+            const left = 10 + Math.random() * 80; // 10% to 90% width
+            
+            spirit.style.top = top + '%';
+            spirit.style.left = left + '%';
+            
+            // Store data
+            spirit.dataset.found = "false";
+            spirit.dataset.x = left;
+            spirit.dataset.y = top;
+
+            valleyArea.appendChild(spirit);
+            spirits.push(spirit);
+        }
+    }
+
+    initSpirits();
+
+    // Parallax & Device Movement
+    document.addEventListener('mousemove', (e) => {
+        const x = e.clientX;
+        const y = e.clientY;
+        
+        const centerX = window.innerWidth / 2;
+        const centerY = window.innerHeight / 2;
+
+        // Move Layers
+        layers.forEach(layer => {
+            const speed = layer.getAttribute('data-speed');
+            const moveX = (x - centerX) * speed;
+            const moveY = (y - centerY) * speed;
+            layer.style.transform = `translate(${moveX}px, ${moveY}px)`;
+        });
+
+        // Move Device (Follow mouse with lag/offset to simulate holding it)
+        // We want the device to look like it's in the bottom right hand
+        const deviceX = x - 30; // Center offset
+        const deviceY = y - 60;
+        
+        // Limit device movement to look like it's held
+        // Actually, let's make it attached to the bottom right but angling towards mouse
+        const angle = Math.atan2(y - window.innerHeight, x - window.innerWidth) * (180 / Math.PI);
+        
+        // Simple follow for now, looks like a cursor replacement
+        device.style.left = (x) + 'px';
+        device.style.top = (y) + 'px';
+        
+        // Calculate Signal Strength (Proximity to nearest unfound spirit)
+        let maxSignal = 0;
+        spirits.forEach(spirit => {
+            if (spirit.dataset.found === "true") return;
+
+            const rect = spirit.getBoundingClientRect();
+            const spiritX = rect.left + rect.width / 2;
+            const spiritY = rect.top + rect.height / 2;
+            
+            const dist = Math.hypot(spiritX - x, spiritY - y);
+            const signal = Math.max(0, 100 - (dist / 3)); // Signal drops off after 300px
+            if (signal > maxSignal) maxSignal = signal;
+        });
+
+        signalDisplay.innerText = Math.round(maxSignal) + '%';
+        
+        // Visual feedback on device
+        const lens = device.querySelector('.device-lens');
+        if (maxSignal > 80) {
+            lens.style.background = '#ff4444'; // Hot!
+            lens.style.boxShadow = '0 0 15px #ff4444';
+        } else if (maxSignal > 40) {
+            lens.style.background = '#ffff00'; // Warm
+            lens.style.boxShadow = '0 0 10px #ffff00';
+        } else {
+            lens.style.background = '#87CEEB'; // Cold
+            lens.style.boxShadow = 'none';
+        }
+    });
+
+    // Click to Scan
+    document.addEventListener('click', (e) => {
+        // Create Pulse Effect
+        const pulse = document.createElement('div');
+        pulse.classList.add('scan-pulse');
+        pulse.style.left = e.clientX + 'px';
+        pulse.style.top = e.clientY + 'px';
+        pulse.style.animation = 'pulseExpand 0.6s ease-out forwards';
+        document.body.appendChild(pulse);
+        
+        setTimeout(() => pulse.remove(), 600);
+
+        // Check collision with spirits
+        spirits.forEach(spirit => {
+            if (spirit.dataset.found === "true") return;
+
+            const rect = spirit.getBoundingClientRect();
+            const spiritX = rect.left + rect.width / 2;
+            const spiritY = rect.top + rect.height / 2;
+            
+            const dist = Math.hypot(spiritX - e.clientX, spiritY - e.clientY);
+
+            // If clicked close enough (within 50px)
+            if (dist < 60) {
+                revealSpirit(spirit);
+            }
+        });
+    });
+
+    function revealSpirit(spirit) {
+        spirit.dataset.found = "true";
+        spirit.classList.add('revealed');
+        score++;
+        scoreDisplay.innerText = score;
+        
+        // Play sound effect (simulated visually via text flash)
+        const hud = document.querySelector('.hud h2');
+        hud.style.color = '#00ffcc';
+        setTimeout(() => hud.style.color = '#fbbf24', 300);
+
+        if (score === totalSpirits) {
+            setTimeout(() => {
+                winModal.classList.remove('hidden');
+            }, 1000);
+        }
+    }
+
+    // Ambient Effects (Falling Leaves)
+    setInterval(() => {
+        const leaf = document.createElement('div');
+        leaf.classList.add('falling-leaf');
+        leaf.style.left = Math.random() * 100 + 'vw';
+        leaf.style.top = '-10px';
+        leaf.style.animationDuration = (3 + Math.random() * 5) + 's';
+        leaf.style.backgroundColor = Math.random() > 0.5 ? '#8bc34a' : '#aed581';
+        scene.appendChild(leaf);
+
+        // Cleanup
+        setTimeout(() => leaf.remove(), 8000);
+    }, 2000);
+
+</script>
+</body>
+</html>

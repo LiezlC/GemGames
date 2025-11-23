@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cosmic Credit Collector 2019</title>
+    <style>
+        :root {
+            --bg-dark: #0a001a;
+            --purple-deep: #2d004d;
+            --purple-light: #8a2be2;
+            --pink-neon: #ff00ff;
+            --orange-glow: #ffaa00;
+            --blue-cyan: #00ffff;
+            --text-glow: 0 0 10px var(--blue-cyan);
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Courier New', Courier, monospace;
+            background-color: var(--bg-dark);
+            color: white;
+            user-select: none;
+        }
+
+        /* --- Background & Atmosphere --- */
+        .scene {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: radial-gradient(circle at 50% 30%, #1a0b2e 0%, #000000 100%);
+            overflow: hidden;
+        }
+
+        .stars {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(white, rgba(255,255,255,.2) 2px, transparent 3px),
+                radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 2px),
+                radial-gradient(white, rgba(255,255,255,.1) 2px, transparent 3px);
+            background-size: 550px 550px, 350px 350px, 250px 250px;
+            background-position: 0 0, 40px 60px, 130px 270px;
+            animation: twinkle 10s linear infinite;
+            opacity: 0.6;
+        }
+
+        @keyframes twinkle {
+            from { transform: translateY(0); }
+            to { transform: translateY(-550px); }
+        }
+
+        /* --- Floating Planets --- */
+        .planet {
+            position: absolute;
+            border-radius: 50%;
+            box-shadow: inset -10px -10px 20px rgba(0,0,0,0.5);
+        }
+        .planet-1 {
+            top: 10%; right: 15%;
+            width: 80px; height: 80px;
+            background: radial-gradient(circle at 30% 30%, #ffcc00, #ff6600);
+            animation: float 8s ease-in-out infinite;
+        }
+        .planet-2 {
+            top: 20%; right: 25%;
+            width: 40px; height: 40px;
+            background: radial-gradient(circle at 30% 30%, #00ccff, #003366);
+            animation: float 12s ease-in-out infinite reverse;
+        }
+
+        /* --- Terrain Layers --- */
+        .terrain {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            z-index: 1;
+        }
+        
+        .clouds {
+            position: absolute;
+            bottom: -50px;
+            width: 120%;
+            left: -10%;
+            height: 200px;
+            background: radial-gradient(circle, var(--orange-glow) 20%, transparent 70%),
+                        radial-gradient(circle, var(--pink-neon) 20%, transparent 70%);
+            background-size: 100px 100px;
+            filter: blur(20px);
+            opacity: 0.6;
+            animation: cloudShift 20s linear infinite;
+        }
+
+        .hills {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 40vh;
+            background: linear-gradient(to top, #ff6b6b, #5f27cd);
+            clip-path: polygon(0% 100%, 0% 40%, 20% 60%, 40% 30%, 60% 50%, 80% 20%, 100% 60%, 100% 100%);
+            z-index: 2;
+        }
+
+        /* --- The Surreal Tree (Left) --- */
+        .tree-container {
+            position: absolute;
+            left: -50px;
+            bottom: 0;
+            width: 300px;
+            height: 80vh;
+            z-index: 5;
+            filter: drop-shadow(5px 5px 10px rgba(0,0,0,0.5));
+        }
+        .tree-svg {
+            width: 100%;
+            height: 100%;
+            fill: var(--purple-light);
+            stroke: var(--purple-deep);
+            stroke-width: 2;
+        }
+        .tree-eye {
+            position: absolute;
+            top: 30%;
+            left: 40%;
+            width: 30px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            overflow: hidden;
+            animation: blink 4s infinite;
+        }
+        .tree-pupil {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 10px;
+            height: 10px;
+            background: black;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        /* --- The TV Head Character (Right) --- */
+        .tv-character {
+            position: absolute;
+            bottom: 10vh;
+            right: 15vw;
+            width: 120px;
+            height: 250px;
+            z-index: 6;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .tv-character:hover {
+            transform: scale(1.05);
+        }
+        .tv-head {
+            width: 100px;
+            height: 80px;
+            background: #333;
+            border: 4px solid #555;
+            border-radius: 10px;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 0 15px var(--orange-glow);
+        }
+        .tv-screen {
+            width: 80%;
+            height: 80%;
+            background: #000;
+            border-radius: 5px;
+            position: relative;
+            overflow: hidden;
+        }
+        .tv-eye {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 40px;
+            height: 40px;
+            background: radial-gradient(circle, #ff0000 20%, #ffff00 60%, transparent 70%);
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        .tv-body {
+            width: 40px;
+            height: 80px;
+            background: white;
+            margin-top: -5px;
+            z-index: -1;
+            border-radius: 5px;
+        }
+        .tv-legs {
+            display: flex;
+            gap: 10px;
+        }
+        .tv-leg {
+            width: 10px;
+            height: 60px;
+            background: #222;
+        }
+        .tv-holding-paper {
+            position: absolute;
+            left: -40px;
+            top: 80px;
+            width: 60px;
+            height: 80px;
+            background: #fff;
+            border: 1px solid #ccc;
+            transform: rotate(-10deg);
+            display: flex;
+            flex-direction: column;
+            padding: 5px;
+            font-size: 4px;
+            color: black;
+            box-shadow: 0 0 10px rgba(255,255,255,0.5);
+        }
+        .paper-line {
+            height: 2px;
+            background: #ccc;
+            margin-bottom: 2px;
+            width: 100%;
+        }
+        .paper-seal {
+            width: 15px;
+            height: 15px;
+            background: gold;
+            border-radius: 50%;
+            align-self: center;
+            margin-top: auto;
+        }
+
+        /* --- The Central Orb (Game Core) --- */
+        .orb-container {
+            position: absolute;
+            top: 30%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            text-align: center;
+        }
+        .orb {
+            width: 220px;
+            height: 220px;
+            background: radial-gradient(circle at 30% 30%, rgba(0,255,255,0.2), rgba(0,0,255,0.4));
+            border-radius: 50%;
+            border: 2px solid var(--blue-cyan);
+            box-shadow: 0 0 30px var(--blue-cyan), inset 0 0 20px var(--pink-neon);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.1s;
+            backdrop-filter: blur(5px);
+            position: relative;
+            overflow: hidden;
+        }
+        .orb:active {
+            transform: scale(0.95);
+            box-shadow: 0 0 50px var(--pink-neon);
+        }
+        .orb-text-year {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #ccff00;
+            text-shadow: 0 0 10px #ccff00;
+            z-index: 2;
+        }
+        .orb-text-label {
+            font-size: 1rem;
+            color: white;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            z-index: 2;
+        }
+        .orb-bar {
+            margin-top: 10px;
+            width: 60%;
+            height: 10px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            overflow: hidden;
+            z-index: 2;
+        }
+        .orb-bar-fill {
+            width: 0%;
+            height: 100%;
+            background: var(--pink-neon);
+            transition: width 0.2s;
+        }
+        
+        /* --- UI & Overlay --- */
+        .ui-stats {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.6);
+            padding: 15px;
+            border: 1px solid var(--blue-cyan);
+            border-radius: 10px;
+            z-index: 20;
+        }
+        .stat-row {
+            margin: 5px 0;
+            font-size: 1.2rem;
+        }
+        
+        .upgrade-menu {
+            position: absolute;
+            top: 50%;
+            right: -300px; /* Hidden initially */
+            transform: translateY(-50%);
+            width: 250px;
+            background: rgba(20, 0, 40, 0.9);
+            border: 2px solid var(--orange-glow);
+            border-radius: 10px 0 0 10px;
+            padding: 20px;
+            transition: right 0.3s ease;
+            z-index: 20;
+        }
+        .upgrade-menu.open {
+            right: 0;
+        }
+        .upgrade-item {
+            background: rgba(255,255,255,0.1);
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .upgrade-item:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        .upgrade-item.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* --- Particles --- */
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            font-weight: bold;
+            color: var(--blue-cyan);
+            animation: floatUp 1s ease-out forwards;
+            z-index: 15;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-50px) scale(1.5); opacity: 0; }
+        }
+        @keyframes pulse {
+            0% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.2); }
+            100% { transform: translate(-50%, -50%) scale(1); }
+        }
+        @keyframes blink {
+            0%, 90%, 100% { height: 20px; }
+            95% { height: 2px; }
+        }
+        @keyframes cloudShift {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50px); }
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 600px) {
+            .orb { width: 180px; height: 180px; }
+            .tv-character { right: 5vw; transform: scale(0.8); }
+            .tree-container { left: -100px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="scene">
+    <!-- Background Elements -->
+    <div class="stars"></div>
+    <div class="planet planet-1"></div>
+    <div class="planet planet-2"></div>
+
+    <!-- Terrain -->
+    <div class="hills"></div>
+    <div class="clouds"></div>
+
+    <!-- Left Side: The Watcher Tree -->
+    <div class="tree-container">
+        <svg class="tree-svg" viewBox="0 0 100 300" preserveAspectRatio="none">
+            <path d="M0,300 Q50,250 20,200 T40,100 T10,0 L0,0 Z" />
+            <path d="M0,300 Q60,280 40,220 T60,120 T30,20" fill="none" stroke="#5f27cd" stroke-width="3"/>
+        </svg>
+        <div class="tree-eye">
+            <div class="tree-pupil"></div>
+        </div>
+    </div>
+
+    <!-- Right Side: The TV Broker -->
+    <div class="tv-character" id="tvBroker" onclick="toggleShop()">
+        <div class="tv-head">
+            <div class="tv-screen">
+                <div class="tv-eye"></div>
+            </div>
+        </div>
+        <div class="tv-body"></div>
+        <div class="tv-legs">
+            <div class="tv-leg"></div>
+            <div class="tv-leg"></div>
+        </div>
+        <!-- The Document -->
+        <div class="tv-holding-paper">
+            <div class="paper-line"></div>
+            <div class="paper-line"></div>
+            <div class="paper-line"></div>
+            <div class="paper-seal"></div>
+        </div>
+    </div>
+
+    <!-- Center: The Game Orb -->
+    <div class="orb-container">
+        <div class="orb" id="mainOrb" onclick="clickOrb(event)">
+            <div class="orb-text-year" id="scoreDisplay">2019</div>
+            <div class="orb-text-label">Credits</div>
+            <div class="orb-bar">
+                <div class="orb-bar-fill" id="xpBar"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- UI Layers -->
+    <div class="ui-stats">
+        <div class="stat-row">⚡ Rate: <span id="rateDisplay">0</span>/sec</div>
+        <div class="stat-row" style="font-size: 0.8rem; color: #aaa;">Click TV for Upgrades</div>
+    </div>
+
+    <div class="upgrade-menu" id="shopPanel">
+        <h3 style="color: var(--orange-glow); margin-top:0;">BROKER UPGRADES</h3>
+        
+        <div class="upgrade-item" id="upg1" onclick="buyUpgrade(1)">
+            <div>
+                <div style="font-weight:bold;">Eye Drone</div>
+                <div style="font-size:0.8rem; color:#aaa;">+1/sec</div>
+            </div>
+            <div style="color: var(--blue-cyan);">50 cr</div>
+        </div>
+
+        <div class="upgrade-item" id="upg2" onclick="buyUpgrade(2)">
+            <div>
+                <div style="font-weight:bold;">Cloud Miner</div>
+                <div style="font-size:0.8rem; color:#aaa;">+5/sec</div>
+            </div>
+            <div style="color: var(--blue-cyan);">250 cr</div>
+        </div>
+
+        <div class="upgrade-item" id="upg3" onclick="buyUpgrade(3)">
+            <div>
+                <div style="font-weight:bold;">Reality Warper</div>
+                <div style="font-size:0.8rem; color:#aaa;">+20/sec</div>
+            </div>
+            <div style="color: var(--blue-cyan);">1000 cr</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Game State
+    let credits = 2019;
+    let autoRate = 0;
+    let clickPower = 1;
+    let xp = 0; // For visual bar
+    
+    // Upgrade Costs & Data
+    const upgrades = {
+        1: { cost: 50, rate: 1, name: "Eye Drone" },
+        2: { cost: 250, rate: 5, name: "Cloud Miner" },
+        3: { cost: 1000, rate: 20, name: "Reality Warper" }
+    };
+
+    // DOM Elements
+    const scoreEl = document.getElementById('scoreDisplay');
+    const rateEl = document.getElementById('rateDisplay');
+    const xpBar = document.getElementById('xpBar');
+    const shopPanel = document.getElementById('shopPanel');
+    const tvBroker = document.getElementById('tvBroker');
+    
+    // Audio Context for synth sounds (optional polish)
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    const audioCtx = new AudioContext();
+
+    function playSound(type) {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        if (type === 'click') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.1);
+        } else if (type === 'buy') {
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+            osc.frequency.linearRampToValueAtTime(600, audioCtx.currentTime + 0.2);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.2);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.2);
+        }
+    }
+
+    function updateUI() {
+        scoreEl.innerText = Math.floor(credits);
+        rateEl.innerText = autoRate;
+        
+        // Visual XP bar loop
+        xp = (credits % 100);
+        xpBar.style.width = xp + '%';
+
+        // Update Shop Availability
+        for (let i = 1; i <= 3; i++) {
+            const el = document.getElementById('upg' + i);
+            const costDiv = el.lastElementChild;
+            costDiv.innerText = upgrades[i].cost + ' cr';
+            
+            if (credits >= upgrades[i].cost) {
+                el.classList.remove('disabled');
+                el.style.borderColor = 'var(--blue-cyan)';
+            } else {
+                el.classList.add('disabled');
+                el.style.borderColor = 'transparent';
+            }
+        }
+    }
+
+    function clickOrb(e) {
+        credits += clickPower;
+        playSound('click');
+        
+        // Spawn Particle
+        const rect = e.target.getBoundingClientRect();
+        // If click event has coordinates (mouse), use them, else center
+        const x = e.clientX || (rect.left + rect.width/2);
+        const y = e.clientY || (rect.top + rect.height/2);
+        
+        spawnParticle(x, y, "+" + clickPower);
+        updateUI();
+    }
+
+    function spawnParticle(x, y, text) {
+        const p = document.createElement('div');
+        p.className = 'particle';
+        p.innerText = text;
+        p.style.left = x + 'px';
+        p.style.top = y + 'px';
+        document.body.appendChild(p);
+        setTimeout(() => p.remove(), 1000);
+    }
+
+    function toggleShop() {
+        shopPanel.classList.toggle('open');
+    }
+
+    function buyUpgrade(id) {
+        const item = upgrades[id];
+        if (credits >= item.cost) {
+            credits -= item.cost;
+            autoRate += item.rate;
+            item.cost = Math.floor(item.cost * 1.5); // Increase cost
+            playSound('buy');
+            spawnParticle(window.innerWidth - 150, window.innerHeight/2, "UPGRADE!");
+            updateUI();
+        }
+    }
+
+    // Game Loop
+    setInterval(() => {
+        if (autoRate > 0) {
+            credits += autoRate;
+            updateUI();
+        }
+    }, 1000);
+
+    // Eye Tracking Logic
+    document.addEventListener('mousemove', (e) => {
+        const eyes = document.querySelectorAll('.tree-pupil');
+        eyes.forEach(eye => {
+            const rect = eye.getBoundingClientRect();
+            const x = (rect.left + rect.width / 2);
+            const y = (rect.top + rect.height / 2);
+            const rad = Math.atan2(e.pageX - x, e.pageY - y);
+            const rot = (rad * (180 / Math.PI) * -1) + 180;
+            eye.style.transform = `translate(-50%, -50%) rotate(${rot}deg) translateY(3px)`;
+        });
+    });
+
+    // Initial Render
+    updateUI();
+
+</script>
+</body>
+</html>

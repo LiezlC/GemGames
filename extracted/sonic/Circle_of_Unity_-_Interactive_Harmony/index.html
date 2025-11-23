@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Circle of Unity - Interactive Harmony</title>
+    <style>
+        :root {
+            --bg-color: #fdfbf7;
+            --core-color: #4a6fa5;
+            --accent-1: #d35400;
+            --accent-2: #2980b9;
+            --accent-3: #8e44ad;
+            --skin-1: #8d5524;
+            --skin-2: #c68642;
+            --skin-3: #e0ac69;
+            --skin-4: #f1c27d;
+            --skin-5: #ffdbac;
+            --sleeve-1: #34495e;
+            --sleeve-2: #e67e22;
+            --sleeve-3: #95a5a6;
+            --sleeve-4: #27ae60;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: radial-gradient(circle at center, #eef2f3 0%, #8e9eab 100%);
+            user-select: none;
+            touch-action: none;
+        }
+
+        #app {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 1000px;
+        }
+
+        /* Background texture simulation */
+        .texture-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.05;
+            background-image: repeating-linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%, #000), repeating-linear-gradient(45deg, #000 25%, #f0f0f0 25%, #f0f0f0 75%, #000 75%, #000);
+            background-position: 0 0, 10px 10px;
+            background-size: 20px 20px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* The Central Vortex */
+        .core-container {
+            position: absolute;
+            width: 200px;
+            height: 200px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            animation: breathe 6s ease-in-out infinite;
+        }
+
+        .core {
+            width: 100px;
+            height: 100px;
+            background: conic-gradient(from 0deg, var(--accent-2), var(--bg-color), var(--accent-2));
+            border-radius: 50%;
+            box-shadow: 0 0 30px rgba(41, 128, 185, 0.5), inset 0 0 20px rgba(255,255,255,0.8);
+            animation: spinCore 20s linear infinite;
+            position: relative;
+        }
+
+        .core::after {
+            content: '';
+            position: absolute;
+            top: 10%;
+            left: 10%;
+            width: 80%;
+            height: 80%;
+            border-radius: 50%;
+            background: radial-gradient(circle, #fff 20%, transparent 70%);
+            mix-blend-mode: overlay;
+        }
+
+        .core-ring {
+            position: absolute;
+            border: 2px solid rgba(255,255,255,0.5);
+            border-radius: 50%;
+            animation: ripple 3s infinite;
+        }
+
+        /* Hands Container */
+        #hands-layer {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Clicks pass through to logic layer */
+            z-index: 5;
+            /* The kaleidoscope effect */
+            transform-style: preserve-3d;
+        }
+
+        .hand-wrapper {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            transform-origin: 0 0;
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        /* The SVG Hand */
+        .svg-hand {
+            position: absolute;
+            /* Anchor the hand so it reaches inwards */
+            left: 80px; /* Offset from center */
+            top: -30px; /* Center vertically on the axis */
+            width: 300px;
+            height: 60px;
+            filter: drop-shadow(5px 5px 10px rgba(0,0,0,0.2));
+            opacity: 0;
+            animation: reachIn 0.8s forwards ease-out;
+            mix-blend-mode: multiply; /* Painterly effect */
+        }
+
+        @keyframes reachIn {
+            0% { transform: translateX(100px) scale(0.8); opacity: 0; }
+            100% { transform: translateX(0) scale(1); opacity: 0.9; }
+        }
+
+        @keyframes spinCore {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes breathe {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        @keyframes ripple {
+            0% { width: 100px; height: 100px; opacity: 0.8; border-width: 5px; }
+            100% { width: 300px; height: 300px; opacity: 0; border-width: 0px; }
+        }
+
+        /* UI Overlay */
+        #ui-layer {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.2rem;
+            color: #333;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        p {
+            margin: 0;
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            border: none;
+            background: #333;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+            background: #000;
+        }
+
+        button.secondary {
+            background: transparent;
+            border: 2px solid #333;
+            color: #333;
+        }
+
+        button.secondary:hover {
+            background: #333;
+            color: #fff;
+        }
+
+        .progress-container {
+            width: 200px;
+            height: 6px;
+            background: #ddd;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--accent-1), var(--accent-3));
+            transition: width 0.3s ease;
+        }
+
+        /* Click target */
+        #click-surface {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: 20;
+            cursor: pointer;
+        }
+
+        /* Floating particles */
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.6);
+            pointer-events: none;
+            animation: floatUp 4s linear forwards;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-100px) scale(0); opacity: 0; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="app">
+        <div class="texture-overlay"></div>
+        
+        <div class="core-container">
+            <div class="core"></div>
+            <div class="core-ring" style="animation-delay: 0s;"></div>
+            <div class="core-ring" style="animation-delay: 1s;"></div>
+        </div>
+
+        <div id="hands-layer">
+            <!-- SVGs will be injected here -->
+        </div>
+
+        <div id="click-surface"></div>
+
+        <div id="ui-layer">
+            <h1>Unity Mandala</h1>
+            <p>Click around the circle to contribute hands.<br>Build the community.</p>
+            <div class="progress-container">
+                <div class="progress-bar" id="progress"></div>
+            </div>
+            <div class="controls">
+                <button onclick="autoPopulate()">Auto-Join</button>
+                <button class="secondary" onclick="resetCanvas()">Clear</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const handsLayer = document.getElementById('hands-layer');
+        const clickSurface = document.getElementById('click-surface');
+        const progressBar = document.getElementById('progress');
+        
+        // Palette extracted from the image
+        const skinTones = ['#8d5524', '#c68642', '#e0ac69', '#f1c27d', '#ffdbac', '#5d4037'];
+        const sleeveColors = ['#2c3e50', '#e67e22', '#27ae60', '#8e44ad', '#f39c12', '#bdc3c7', '#34495e', '#95a5a6', '#16a085'];
+
+        let handCount = 0;
+        const maxHands = 50;
+
+        function getRandomColor(array) {
+            return array[Math.floor(Math.random() * array.length)];
+        }
+
+        function createHandSVG(skinColor, sleeveColor) {
+            // Abstract arm/hand shape
+            // Using SVG path to create a tapered limb look
+            const width = 200 + Math.random() * 150; // Random length
+            
+            return `
+                <svg viewBox="0 0 400 100" preserveAspectRatio="none" style="width: ${width}px; height: 100%;">
+                    <defs>
+                        <linearGradient id="grad-${handCount}" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:${sleeveColor};stop-opacity:1" />
+                            <stop offset="60%" style="stop-color:${sleeveColor};stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:${skinColor};stop-opacity:1" />
+                        </linearGradient>
+                        <filter id="noise-${handCount}">
+                            <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch"/>
+                            <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.5 0"/>
+                            <feComposite operator="in" in2="SourceGraphic" result="monoNoise"/>
+                            <feBlend in="SourceGraphic" in2="monoNoise" mode="multiply" />
+                        </filter>
+                    </defs>
+                    <!-- Sleeve -->
+                    <path d="M0,20 L250,30 L250,70 L0,80 Z" fill="${sleeveColor}" opacity="0.9" />
+                    <!-- Arm/Hand -->
+                    <path d="M240,32 L340,38 L380,45 L390,50 L380,55 L340,62 L240,68 Z" fill="${skinColor}" />
+                    <!-- Abstract Fingers -->
+                    <ellipse cx="390" cy="50" rx="10" ry="8" fill="${skinColor}" />
+                </svg>
+            `;
+        }
+
+        function addHand(angle) {
+            if (handCount >= maxHands) return;
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'hand-wrapper';
+            
+            // Rotate the wrapper to the correct angle
+            wrapper.style.transform = `rotate(${angle}deg)`;
+            
+            const skin = getRandomColor(skinTones);
+            const sleeve = getRandomColor(sleeveColors);
+            
+            const handDiv = document.createElement('div');
+            handDiv.className = 'svg-hand';
+            handDiv.innerHTML = createHandSVG(skin, sleeve);
+            
+            // Add slight random rotation to the hand itself for natural variation
+            const randomTilt = (Math.random() - 0.5) * 10;
+            handDiv.style.transform = `rotate(${randomTilt}deg)`;
+
+            wrapper.appendChild(handDiv);
+            handsLayer.appendChild(wrapper);
+
+            handCount++;
+            updateProgress();
+            createParticles();
+            playSound();
+        }
+
+        function updateProgress() {
+            const pct = (handCount / maxHands) * 100;
+            progressBar.style.width = `${pct}%`;
+            
+            // Intensify core animation based on progress
+            const core = document.querySelector('.core');
+            const speed = 20 - (pct / 100 * 18); // Speed up from 20s to 2s
+            core.style.animationDuration = `${speed}s`;
+        }
+
+        function getAngle(x, y) {
+            const cx = window.innerWidth / 2;
+            const cy = window.innerHeight / 2;
+            const dy = y - cy;
+            const dx = x - cx;
+            let theta = Math.atan2(dy, dx); // range (-PI, PI]
+            theta *= 180 / Math.PI; // rads to degs, range (-180, 180]
+            return theta - 180; // Adjust so hands point inward
+        }
+
+        clickSurface.addEventListener('mousedown', (e) => {
+            const angle = getAngle(e.clientX, e.clientY);
+            addHand(angle);
+        });
+
+        // Touch support
+        clickSurface.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const angle = getAngle(touch.clientX, touch.clientY);
+            addHand(angle);
+        }, {passive: false});
+
+        function autoPopulate() {
+            if (handCount >= maxHands) return;
+            let i = 0;
+            const interval = setInterval(() => {
+                if (handCount >= maxHands) {
+                    clearInterval(interval);
+                    return;
+                }
+                // Random angle
+                const angle = Math.random() * 360;
+                addHand(angle);
+                i++;
+                if (i > 10) clearInterval(interval); // Add 10 at a time
+            }, 100);
+        }
+
+        function resetCanvas() {
+            handsLayer.innerHTML = '';
+            handCount = 0;
+            updateProgress();
+        }
+
+        function createParticles() {
+            // Create a burst of particles at the center
+            for(let i=0; i<5; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                const size = Math.random() * 10 + 5;
+                p.style.width = `${size}px`;
+                p.style.height = `${size}px`;
+                p.style.left = '50%';
+                p.style.top = '50%';
+                
+                // Random direction
+                const angle = Math.random() * Math.PI * 2;
+                const velocity = Math.random() * 100 + 50;
+                const tx = Math.cos(angle) * velocity;
+                const ty = Math.sin(angle) * velocity;
+                
+                p.animate([
+                    { transform: 'translate(-50%, -50%) scale(1)', opacity: 1 },
+                    { transform: `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px)) scale(0)`, opacity: 0 }
+                ], {
+                    duration: 1000 + Math.random() * 1000,
+                    easing: 'cubic-bezier(0, .9, .57, 1)',
+                    fill: 'forwards'
+                });
+                
+                document.body.appendChild(p);
+                setTimeout(() => p.remove(), 2000);
+            }
+        }
+
+        // Simple synth sound simulation using Web Audio API
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioContext();
+
+        function playSound() {
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            oscillator.type = 'sine';
+            // Random pentatonic note
+            const notes = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25]; 
+            oscillator.frequency.setValueAtTime(notes[Math.floor(Math.random() * notes.length)], audioCtx.currentTime);
+
+            gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1);
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + 1);
+        }
+
+        // Initial animation
+        setTimeout(() => {
+            addHand(0);
+            addHand(120);
+            addHand(240);
+        }, 500);
+
+    </script>
+</body>
+</html>

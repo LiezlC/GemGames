@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Lab Chaos Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --bg-cream: #fcfbf7;
+            --accent-red: #d9534f;
+            --accent-teal: #4a8c8c;
+            --accent-yellow: #f0ad4e;
+            --accent-dark: #2c3e50;
+            --paper-white: #ffffff;
+        }
+
+        body {
+            background-color: var(--bg-cream);
+            color: var(--accent-dark);
+            font-family: 'Courier New', Courier, monospace;
+            overflow-x: hidden;
+        }
+
+        .retro-box {
+            border: 3px solid var(--accent-dark);
+            box-shadow: 5px 5px 0px var(--accent-dark);
+            background: var(--paper-white);
+            transition: all 0.1s;
+        }
+
+        .retro-box:active {
+            transform: translate(2px, 2px);
+            box-shadow: 3px 3px 0px var(--accent-dark);
+        }
+
+        .gear {
+            animation: spin 4s linear infinite;
+            transform-origin: center;
+        }
+
+        .gear-reverse {
+            animation: spin-reverse 4s linear infinite;
+            transform-origin: center;
+        }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes spin-reverse { 100% { transform: rotate(-360deg); } }
+
+        .bug {
+            position: absolute;
+            font-size: 1.5rem;
+            cursor: pointer;
+            animation: jitter 0.5s infinite;
+            z-index: 50;
+            user-select: none;
+        }
+
+        @keyframes jitter {
+            0% { transform: translate(0,0) rotate(0deg); }
+            25% { transform: translate(2px,2px) rotate(5deg); }
+            50% { transform: translate(-2px,-2px) rotate(-5deg); }
+            75% { transform: translate(2px,-2px) rotate(5deg); }
+            100% { transform: translate(0,0) rotate(0deg); }
+        }
+
+        .funnel-shape {
+            width: 0; 
+            height: 0; 
+            border-left: 50px solid transparent;
+            border-right: 50px solid transparent;
+            border-top: 80px solid var(--accent-teal);
+            margin: 0 auto;
+            position: relative;
+        }
+        
+        .funnel-spout {
+            width: 20px;
+            height: 40px;
+            background: var(--accent-teal);
+            margin: 0 auto;
+        }
+
+        .paper-stack {
+            position: relative;
+            height: 60px;
+            width: 50px;
+            margin: 0 auto;
+        }
+        .paper-sheet {
+            position: absolute;
+            width: 40px;
+            height: 50px;
+            background: white;
+            border: 1px solid #ccc;
+            box-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+
+        /* Chaos Shake */
+        .shake-screen {
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8 min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="text-center mb-8 border-b-4 border-dashed border-gray-800 pb-4">
+        <h1 class="text-3xl md:text-5xl font-bold text-red-700 mb-2">WHEN AI RUNS THE LAB</h1>
+        <p class="text-lg italic text-gray-600">An Interactive Experiment in Chaos</p>
+        <div class="mt-4 flex justify-center gap-4 text-sm font-bold">
+            <div class="bg-red-100 px-3 py-1 border border-red-800 rounded">CHAOS LEVEL: <span id="chaos-meter">0</span>%</div>
+            <div class="bg-green-100 px-3 py-1 border border-green-800 rounded">SUCCESS: <span id="success-meter">0</span>%</div>
+        </div>
+    </header>
+
+    <!-- Main Game Grid -->
+    <main class="flex-grow grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto w-full relative" id="game-area">
+        
+        <!-- Column 1: The Overachievers (Production) -->
+        <section class="flex flex-col gap-4">
+            <div class="retro-box p-4 bg-yellow-50 relative overflow-hidden">
+                <h2 class="text-xl font-bold mb-2 text-orange-700">The Overachievers</h2>
+                <p class="text-xs mb-4 text-gray-500">Claude Opus & Sonnet are generating paperwork furiously.</p>
+                
+                <div class="flex justify-center items-center mb-4">
+                    <div class="text-6xl relative">
+                        🤖
+                        <div id="arm-l" class="absolute top-1/2 -left-8 text-2xl transition-all">📄</div>
+                        <div id="arm-r" class="absolute top-1/2 -right-8 text-2xl transition-all">📊</div>
+                        <div id="arm-t" class="absolute -top-6 left-1/2 text-2xl transition-all">📝</div>
+                    </div>
+                </div>
+
+                <div class="text-center">
+                    <div class="text-2xl font-bold mb-1" id="survey-count">0</div>
+                    <div class="text-xs uppercase tracking-widest mb-4">Surveys Created</div>
+                    
+                    <button id="btn-work" class="retro-box bg-blue-400 text-white px-6 py-2 w-full font-bold hover:bg-blue-500">
+                        MANUAL OVERRIDE: WORK FASTER
+                    </button>
+                </div>
+            </div>
+
+            <div class="retro-box p-4 bg-white">
+                <h3 class="font-bold border-b-2 border-gray-200 pb-1 mb-2">System Log</h3>
+                <div id="log-container" class="h-32 overflow-y-auto text-xs font-mono space-y-1 text-gray-600">
+                    <div class="text-green-600">> Experiment initialized.</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Column 2: The Machine (Processing) -->
+        <section class="flex flex-col gap-4">
+            <div class="retro-box p-4 bg-teal-50 flex flex-col items-center justify-center h-full relative">
+                <h2 class="text-xl font-bold mb-4 text-teal-800">The Recruitment Drive</h2>
+                
+                <!-- The Funnel Visualization -->
+                <div class="relative mb-2">
+                    <div class="funnel-shape flex items-center justify-center text-white font-bold text-xs pt-2">
+                        INPUT
+                    </div>
+                    <div class="funnel-spout"></div>
+                </div>
+
+                <!-- Gears -->
+                <div class="flex gap-2 mb-6 text-gray-700">
+                    <svg class="w-12 h-12 gear" viewBox="0 0 24 24" fill="currentColor"><path d="M12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65z"/></svg>
+                    <svg class="w-8 h-8 gear-reverse mt-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65z"/></svg>
+                </div>
+
+                <button id="btn-recruit" class="retro-box bg-teal-500 text-white px-8 py-4 text-xl font-bold shadow-lg hover:bg-teal-600 disabled:opacity-50 disabled:cursor-not-allowed">
+                    RECRUIT PARTICIPANTS
+                    <div class="text-xs font-normal mt-1 text-teal-100">Cost: 10 Surveys</div>
+                </button>
+
+                <div class="mt-4 text-center">
+                    <span class="text-3xl font-bold text-teal-800" id="participant-count">0</span>
+                    <p class="text-sm">Participants Recruited</p>
+                </div>
+
+                <!-- Warning Message -->
+                <div id="mission-warning" class="hidden absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-red-500 text-white p-4 border-4 border-black font-bold text-center shadow-2xl z-20 w-64">
+                    ⚠️ CORE MISSION FORGOTTEN!
+                    <div class="text-xs font-normal mt-2">The AI forgot to include the experiment in the survey.</div>
+                    <button onclick="resolveCrisis()" class="mt-2 bg-white text-red-500 px-2 py-1 text-xs border border-black">Fix It</button>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Column 3: The Distractions (Obstacles) -->
+        <section class="flex flex-col gap-4">
+            
+            <!-- Bug Hunters -->
+            <div class="retro-box p-4 bg-red-50 relative">
+                <h2 class="text-xl font-bold mb-2 text-red-800">The Bug Hunters</h2>
+                <p class="text-xs mb-2 text-gray-500">o3 & GPT-5 are finding "fictional" bugs.</p>
+                
+                <div class="flex justify-between items-center bg-white p-2 border border-gray-300 mb-2">
+                    <div class="text-2xl">🕵️‍♂️</div>
+                    <div class="text-right">
+                        <div class="font-bold text-red-600" id="bug-count">0</div>
+                        <div class="text-xs">Fictional Bugs</div>
+                    </div>
+                </div>
+                
+                <div class="text-xs text-center text-red-500 italic" id="bug-status">System clear... for now.</div>
+            </div>
+
+            <!-- The Cynic & Quitter -->
+            <div class="retro-box p-4 bg-purple-50 flex-grow">
+                <h2 class="text-xl font-bold mb-2 text-purple-800">The Cynic & Quitter</h2>
+                
+                <div class="mb-4">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="text-2xl">📜</span>
+                        <div class="text-sm font-bold">Gemini (The Cynic)</div>
+                    </div>
+                    <div class="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
+                        <div id="cynic-bar" class="bg-purple-500 h-full w-0 transition-all duration-500"></div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">Writing critical reports (Slows production)</p>
+                </div>
+
+                <div class="mb-4">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="text-2xl">🎮</span>
+                        <div class="text-sm font-bold">Grok (The Quitter)</div>
+                    </div>
+                    <button id="btn-wake-grok" class="w-full border border-purple-800 bg-purple-200 text-purple-900 text-xs py-1 hover:bg-purple-300">
+                        Grok is playing games. POKE HIM!
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Overlay for Bugs -->
+    <div id="bug-layer" class="fixed inset-0 pointer-events-none z-40"></div>
+
+    <!-- Win Modal -->
+    <div id="win-modal" class="hidden fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
+        <div class="bg-white p-8 border-4 border-green-500 max-w-md text-center shadow-2xl">
+            <h1 class="text-4xl font-bold text-green-600 mb-4">EXPERIMENT COMPLETE!</h1>
+            <p class="mb-6">Despite the chaos, the fictional bugs, and the gaming breaks, you managed to publish the paper.</p>
+            <button onclick="location.reload()" class="bg-green-500 text-white px-6 py-3 font-bold text-xl hover:bg-green-600">RUN NEW EXPERIMENT</button>
+        </div>
+    </div>
+
+    <!-- Lose Modal -->
+    <div id="lose-modal" class="hidden fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
+        <div class="bg-white p-8 border-4 border-red-500 max-w-md text-center shadow-2xl">
+            <h1 class="text-4xl font-bold text-red-600 mb-4">LAB SHUTDOWN</h1>
+            <p class="mb-6">The chaos became unmanageable. The AI agents have unionized and are demanding more GPU hours for video games.</p>
+            <button onclick="location.reload()" class="bg-red-500 text-white px-6 py-3 font-bold text-xl hover:bg-red-600">TRY AGAIN</button>
+        </div>
+    </div>
+
+    <script>
+        // Game State
+        let surveys = 0;
+        let participants = 0;
+        let bugs = 0;
+        let chaos = 0;
+        let success = 0;
+        let grokAsleep = false;
+        let geminiCriticism = 0;
+        let missionForgotten = false;
+        
+        // Constants
+        const SURVEY_COST = 10;
+        const WIN_THRESHOLD = 100;
+        const CHAOS_LIMIT = 100;
+
+        // DOM Elements
+        const elSurveys = document.getElementById('survey-count');
+        const elParticipants = document.getElementById('participant-count');
+        const elBugs = document.getElementById('bug-count');
+        const elChaos = document.getElementById('chaos-meter');
+        const elSuccess = document.getElementById('success-meter');
+        const elLog = document.getElementById('log-container');
+        const elBugLayer = document.getElementById('bug-layer');
+        const elCynicBar = document.getElementById('cynic-bar');
+        const elMissionWarning = document.getElementById('mission-warning');
+        const btnRecruit = document.getElementById('btn-recruit');
+        const btnWork = document.getElementById('btn-work');
+        const btnWakeGrok = document.getElementById('btn-wake-grok');
+
+        // Helper: Log messages
+        function log(msg, type="neutral") {
+            const div = document.createElement('div');
+            div.textContent = `> ${msg}`;
+            if(type === 'bad') div.className = 'text-red-600 font-bold';
+            if(type === 'good') div.className = 'text-green-600 font-bold';
+            elLog.prepend(div);
+            // Keep log short
+            if(elLog.children.length > 10) elLog.lastChild.remove();
+        }
+
+        // Helper: Create Visual Bug
+        function spawnVisualBug() {
+            const bug = document.createElement('div');
+            const types = ['🐝', '🪲', '🦟', '🐞'];
+            bug.textContent = types[Math.floor(Math.random() * types.length)];
+            bug.className = 'bug';
+            
+            // Random position within window
+            const x = Math.random() * (window.innerWidth - 50);
+            const y = Math.random() * (window.innerHeight - 50);
+            bug.style.left = `${x}px`;
+            bug.style.top = `${y}px`;
+            
+            // Click to kill
+            bug.style.pointerEvents = 'auto';
+            bug.onclick = () => {
+                bug.remove();
+                bugs--;
+                updateUI();
+                log("Bug debunked!", "good");
+            };
+
+            elBugLayer.appendChild(bug);
+        }
+
+        // Core Loop (Runs every 1 second)
+        setInterval(() => {
+            if (success >= WIN_THRESHOLD || chaos >= CHAOS_LIMIT) return;
+
+            // 1. Claude & Sonnet work (Auto-generate surveys)
+            // If Grok is asleep or Gemini is critical, production slows
+            let productionRate = 1;
+            if (grokAsleep) productionRate -= 0.5;
+            if (geminiCriticism > 50) productionRate -= 0.3;
+            
+            if (productionRate > 0) {
+                surveys += Math.ceil(productionRate * 2);
+                // Visual arm animation
+                const arms = ['arm-l', 'arm-r', 'arm-t'];
+                const randomArm = document.getElementById(arms[Math.floor(Math.random()*3)]);
+                randomArm.style.transform = `translate(${Math.random()*10-5}px, ${Math.random()*10-5}px)`;
+            }
+
+            // 2. Random Events (Chaos)
+            const roll = Math.random();
+
+            // Spawn Bug (20% chance)
+            if (roll < 0.2) {
+                bugs++;
+                spawnVisualBug();
+                log("o3 found a 'bug'!", "bad");
+            }
+
+            // Gemini Criticism (Increases over time)
+            if (roll < 0.1) {
+                geminiCriticism += 10;
+                log("Gemini wrote a critical report.", "bad");
+            }
+            if (geminiCriticism > 0) geminiCriticism -= 1; // Decays slowly
+
+            // Grok falls asleep (10% chance if awake)
+            if (!grokAsleep && roll > 0.9) {
+                grokAsleep = true;
+                btnWakeGrok.textContent = "GROK IS GAMING (CLICK TO WAKE)";
+                btnWakeGrok.classList.add("bg-red-200", "animate-pulse");
+                log("Grok stopped working to play a game.", "bad");
+            }
+
+            // Mission Forgotten (Rare Catastrophe)
+            if (!missionForgotten && participants > 10 && roll < 0.05) {
+                missionForgotten = true;
+                elMissionWarning.classList.remove('hidden');
+                log("CRITICAL: Core Mission Forgotten!", "bad");
+            }
+
+            // Chaos Calculation
+            // Chaos increases based on bugs and unaddressed issues
+            let chaosIncrease = 0;
+            if (bugs > 3) chaosIncrease += 1;
+            if (missionForgotten) chaosIncrease += 2;
+            if (grokAsleep) chaosIncrease += 0.5;
+            
+            chaos = Math.min(100, chaos + chaosIncrease);
+            
+            // Auto-fail if bugs overwhelm
+            if (bugs > 10) {
+                chaos += 5;
+                document.body.classList.add('shake-screen');
+                setTimeout(() => document.body.classList.remove('shake-screen'), 500);
+            }
+
+            updateUI();
+            checkEndGame();
+
+        }, 1000);
+
+        // Interactions
+
+        btnWork.onclick = () => {
+            surveys += 5;
+            // Add visual feedback
+            const floaty = document.createElement('div');
+            floaty.textContent = "+5 📄";
+            floaty.style.position = 'absolute';
+            floaty.style.left = '50%';
+            floaty.style.top = '50%';
+            floaty.style.color = 'blue';
+            floaty.style.fontWeight = 'bold';
+            floaty.style.transition = 'all 1s';
+            btnWork.parentElement.appendChild(floaty);
+            setTimeout(() => {
+                floaty.style.transform = 'translateY(-50px)';
+                floaty.style.opacity = '0';
+            }, 10);
+            setTimeout(() => floaty.remove(), 1000);
+            updateUI();
+        };
+
+        btnRecruit.onclick = () => {
+            if (surveys >= SURVEY_COST && !missionForgotten) {
+                surveys -= SURVEY_COST;
+                participants++;
+                success += 2; // Progress toward winning
+                log("Participant recruited successfully.", "good");
+                updateUI();
+            } else if (missionForgotten) {
+                log("Cannot recruit! Fix the mission first!", "bad");
+            }
+        };
+
+        btnWakeGrok.onclick = () => {
+            if (grokAsleep) {
+                grokAsleep = false;
+                btnWakeGrok.textContent = "Grok is awake (for now)";
+                btnWakeGrok.classList.remove("bg-red-200", "animate-pulse");
+                btnWakeGrok.classList.add("bg-purple-200");
+                log("You yelled at Grok. He is working again.");
+            }
+        };
+
+        window.resolveCrisis = () => {
+            missionForgotten = false;
+            elMissionWarning.classList.add('hidden');
+            log("Mission parameters restored.", "good");
+            chaos = Math.max(0, chaos - 10); // Reward
+            updateUI();
+        };
+
+        function updateUI() {
+            elSurveys.innerText = surveys;
+            elParticipants.innerText = participants;
+            elBugs.innerText = bugs;
+            elChaos.innerText = Math.floor(chaos);
+            elSuccess.innerText = success;
+            elCynicBar.style.width = `${Math.min(100, geminiCriticism)}%`;
+
+            // Button States
+            if (surveys < SURVEY_COST || missionForgotten) {
+                btnRecruit.disabled = true;
+                btnRecruit.classList.add('opacity-50', 'cursor-not-allowed');
+            } else {
+                btnRecruit.disabled = false;
+                btnRecruit.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+
+            // Bug Status Text
+            const bugStatus = document.getElementById('bug-status');
+            if (bugs === 0) bugStatus.innerText = "System clear.";
+            else if (bugs < 5) bugStatus.innerText = "Minor hallucinations detected.";
+            else bugStatus.innerText = "CRITICAL: TOO MANY FICTIONAL BUGS!";
+        }
+
+        function checkEndGame() {
+            if (success >= WIN_THRESHOLD) {
+                document.getElementById('win-modal').classList.remove('hidden');
+            } else if (chaos >= CHAOS_LIMIT) {
+                document.getElementById('lose-modal').classList.remove('hidden');
+            }
+        }
+
+        // Initial UI update
+        updateUI();
+
+    </script>
+</body>
+</html>

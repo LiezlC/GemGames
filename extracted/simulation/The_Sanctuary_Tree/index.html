@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Sanctuary Tree</title>
+    <style>
+        :root {
+            --leaf-color: #2d5a27;
+            --wood-color: #3e2723;
+            --sky-top: #4facfe;
+            --sky-bottom: #00f2fe;
+            --sun-color: #ffeb3b;
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(to bottom, var(--sky-top), var(--sky-bottom));
+            transition: background 1s ease;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+        }
+
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* UI Overlay */
+        #ui-layer {
+            position: absolute;
+            z-index: 10;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+            padding: 20px;
+            border-radius: 20px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.8;
+        }
+
+        input[type="range"] {
+            width: 120px;
+            cursor: pointer;
+        }
+
+        button {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.4);
+            transform: translateY(-2px);
+        }
+
+        /* Thought Bubble */
+        #thought-modal {
+            position: absolute;
+            top: 20%;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 20;
+            background: white;
+            color: #333;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+            display: none;
+            width: 300px;
+            text-align: center;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        #thought-modal::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            border-width: 10px 10px 0;
+            border-style: solid;
+            border-color: white transparent;
+            transform: translateX(-50%);
+        }
+
+        textarea {
+            width: 100%;
+            height: 80px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 8px;
+            margin-bottom: 10px;
+            resize: none;
+            font-family: inherit;
+        }
+
+        .sun {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            background: var(--sun-color);
+            border-radius: 50%;
+            top: 10%;
+            left: 50%;
+            transform: translate(-50%, 0);
+            box-shadow: 0 0 60px var(--sun-color);
+            z-index: 0;
+            transition: top 1s, background 1s, box-shadow 1s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(-50%, 0); }
+            50% { transform: translate(-50%, -10px); }
+        }
+
+        /* Floating particles */
+        .particle {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            pointer-events: none;
+            opacity: 0;
+            animation: rise 4s linear forwards;
+        }
+
+        @keyframes rise {
+            0% { transform: translateY(0) scale(1); opacity: 0.8; }
+            100% { transform: translateY(-100px) scale(0); opacity: 0; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="sun" id="sun"></div>
+    <div id="canvas-container">
+        <canvas id="treeCanvas"></canvas>
+    </div>
+
+    <!-- Thought Input -->
+    <div id="thought-modal">
+        <h3>Reflect</h3>
+        <p style="font-size: 0.9em; color: #666; margin-bottom: 10px;">What is on your mind in this quiet place?</p>
+        <textarea id="thought-input" placeholder="I am grateful for..."></textarea>
+        <button onclick="submitThought()" style="background: #2d5a27; width: 100%;">Release Thought</button>
+    </div>
+
+    <!-- Controls -->
+    <div id="ui-layer">
+        <div class="control-group">
+            <label>Time of Day</label>
+            <input type="range" id="timeSlider" min="0" max="100" value="50" oninput="updateTime()">
+        </div>
+        <div class="control-group">
+            <label>Growth</label>
+            <input type="range" id="growthSlider" min="5" max="12" value="9" oninput="updateTree()">
+        </div>
+        <div class="control-group">
+            <label>Wind</label>
+            <input type="range" id="windSlider" min="0" max="20" value="5">
+        </div>
+        <button onclick="toggleThought()">📝 Journal</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('treeCanvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        
+        // State
+        let treeDepth = 9;
+        let wind = 0;
+        let time = 0; // animation time
+        let characterPos = { x: 0, y: 0 };
+        let thoughts = []; // Stores floating thoughts
+
+        // Resize handling
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+            draw();
+        }
+        window.addEventListener('resize', resize);
+
+        // Tree Generation Logic
+        function drawTree(x, y, len, angle, depth, branchWidth) {
+            ctx.beginPath();
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle * Math.PI / 180);
+            
+            // Draw Branch
+            ctx.moveTo(0, 0);
+            
+            // Curved branches for organic look
+            ctx.quadraticCurveTo(0, -len/2, 0, -len);
+            
+            ctx.lineWidth = branchWidth;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            // Color based on depth (darker wood at bottom)
+            const darkness = 20 + (depth * 5);
+            ctx.strokeStyle = `rgb(${40 + darkness}, ${20 + darkness}, ${10})`;
+            ctx.stroke();
+
+            // Save position for character (sitting on a specific low branch)
+            // We choose a branch at depth 3 on the left side roughly
+            if (depth === treeDepth - 3 && angle < 0) {
+                characterPos = {
+                    x: x + Math.cos((angle - 90) * Math.PI / 180) * (len * 0.5),
+                    y: y + Math.sin((angle - 90) * Math.PI / 180) * (len * 0.5),
+                    angle: angle
+                };
+            }
+
+            if (depth < 2) {
+                // Draw Leaves
+                ctx.beginPath();
+                ctx.fillStyle = `rgba(45, ${90 + Math.random()*40}, 39, 0.7)`;
+                ctx.arc(0, -len, 5 + Math.random() * 5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+                return;
+            }
+
+            // Recursive calls
+            // Add wind effect
+            const windEffect = Math.sin(time * 0.002 + depth) * (document.getElementById('windSlider').value * 0.1 * (10 - depth));
+            
+            ctx.translate(0, -len);
+            
+            // Branch split
+            const subLen = len * 0.75;
+            const subWidth = branchWidth * 0.7;
+            
+            drawTree(0, 0, subLen, -25 + windEffect + (Math.random() * 10), depth - 1, subWidth);
+            drawTree(0, 0, subLen, 25 + windEffect + (Math.random() * 10), depth - 1, subWidth);
+            
+            // Occasional third branch for density
+            if (Math.random() > 0.6) {
+                drawTree(0, 0, subLen * 0.8, windEffect, depth - 1, subWidth);
+            }
+
+            ctx.restore();
+        }
+
+        function drawCharacter(x, y) {
+            // Draw the girl silhouette sitting
+            ctx.save();
+            ctx.translate(x, y);
+            
+            // Flip context if on right side of tree, but we hardcoded left branch logic mostly
+            // Drawing relative to the branch tip
+            
+            ctx.fillStyle = '#1a1a1a'; // Silhouette color
+            
+            // Legs dangling
+            ctx.beginPath();
+            ctx.ellipse(5, 15, 4, 12, 0.2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Body
+            ctx.beginPath();
+            ctx.ellipse(0, 0, 8, 14, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Head
+            ctx.beginPath();
+            ctx.arc(0, -16, 7, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Hair (long)
+            ctx.beginPath();
+            ctx.moveTo(-5, -20);
+            ctx.quadraticCurveTo(-15, -10, -10, 5);
+            ctx.lineTo(5, -15);
+            ctx.fill();
+
+            // Arms resting
+            ctx.beginPath();
+            ctx.ellipse(6, 2, 3, 10, -0.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function drawRope(startX, startY) {
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            // Catenary curve simulation
+            ctx.quadraticCurveTo(startX + 20, startY + 100, startX + 40, startY + 10);
+            ctx.strokeStyle = '#5d4037';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+
+        function drawThoughts() {
+            thoughts.forEach((t, i) => {
+                t.y -= 0.5; // Float up
+                t.alpha -= 0.002; // Fade out
+                
+                if(t.alpha <= 0) {
+                    thoughts.splice(i, 1);
+                    return;
+                }
+
+                ctx.save();
+                ctx.fillStyle = `rgba(255, 255, 210, ${t.alpha})`;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = "white";
+                ctx.beginPath();
+                ctx.arc(t.x, t.y, 4, 0, Math.PI*2);
+                ctx.fill();
+                
+                // Text
+                ctx.font = "14px Arial";
+                ctx.fillStyle = `rgba(255, 255, 255, ${t.alpha})`;
+                ctx.textAlign = "center";
+                ctx.fillText(t.text, t.x, t.y - 10);
+                ctx.restore();
+            });
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, width, height);
+            
+            // Draw Landscape (Mountains)
+            ctx.fillStyle = 'rgba(20, 40, 20, 0.3)';
+            ctx.beginPath();
+            ctx.moveTo(0, height);
+            ctx.lineTo(0, height * 0.6);
+            ctx.lineTo(width * 0.3, height * 0.3);
+            ctx.lineTo(width * 0.6, height * 0.7);
+            ctx.lineTo(width, height * 0.4);
+            ctx.lineTo(width, height);
+            ctx.fill();
+
+            // Draw Tree
+            // Start from bottom center
+            drawTree(width / 2, height, height * 0.22, 0, treeDepth, 25);
+
+            // Draw Character
+            // We convert the saved characterPos (which was relative to canvas transform) 
+            // Actually, the recursive function transforms the context. 
+            // To simplify, we will draw the character AFTER the tree at a fixed calculated position 
+            // or approximate it based on screen size for robustness.
+            
+            // Let's approximate a nice branch position based on the image composition
+            const charX = width / 2 - (width * 0.15); 
+            const charY = height * 0.55;
+            
+            // Draw a specific "sitting branch" manually to ensure she has a seat
+            ctx.beginPath();
+            ctx.moveTo(width/2, height * 0.65); // Trunk mid-point
+            ctx.quadraticCurveTo(width/2 - 50, height * 0.6, charX, charY + 20);
+            ctx.lineWidth = 15;
+            ctx.strokeStyle = '#3e2723';
+            ctx.stroke();
+
+            drawCharacter(charX, charY);
+
+            // Draw hanging rope
+            drawRope(charX + 50, charY);
+
+            // Draw Thoughts
+            drawThoughts();
+
+            time++;
+            requestAnimationFrame(draw);
+        }
+
+        // UI Logic
+        function updateTime() {
+            const val = document.getElementById('timeSlider').value;
+            const sun = document.getElementById('sun');
+            
+            // Map 0-100 to Day -> Sunset -> Night
+            if (val < 50) {
+                // Day to Sunset
+                const p = val / 50; // 0 to 1
+                document.body.style.background = `linear-gradient(to bottom, rgb(${79 + (255-79)*p}, ${172 + (100-172)*p}, ${254 + (100-254)*p}), rgb(${0 + (255-0)*p}, ${242 + (165-242)*p}, ${254 + (0-254)*p}))`;
+                sun.style.background = '#ffeb3b';
+                sun.style.boxShadow = '0 0 60px #ffeb3b';
+                sun.style.top = `${10 + p * 60}%`;
+            } else {
+                // Sunset to Night
+                const p = (val - 50) / 50; // 0 to 1
+                document.body.style.background = `linear-gradient(to bottom, rgb(${255 - 230*p}, ${100 - 90*p}, ${100 - 50*p}), rgb(${255 - 240*p}, ${165 - 150*p}, 0))`;
+                sun.style.background = '#ff8c00'; // Orange sun
+                sun.style.boxShadow = '0 0 40px #ff4500';
+                sun.style.top = `${70 + p * 40}%`; // Sun sets below horizon
+                
+                if(p > 0.8) {
+                    // Moon logic could go here, but let's keep it simple sunset focus
+                    sun.style.opacity = 1 - ((p-0.8)*5);
+                } else {
+                    sun.style.opacity = 1;
+                }
+            }
+        }
+
+        function updateTree() {
+            treeDepth = parseInt(document.getElementById('growthSlider').value);
+        }
+
+        function toggleThought() {
+            const modal = document.getElementById('thought-modal');
+            modal.style.display = modal.style.display === 'block' ? 'none' : 'block';
+        }
+
+        function submitThought() {
+            const text = document.getElementById('thought-input').value;
+            if(text.trim() !== "") {
+                // Add particle
+                const charX = width / 2 - (width * 0.15); 
+                const charY = height * 0.55;
+                
+                thoughts.push({
+                    x: charX,
+                    y: charY - 20,
+                    text: text,
+                    alpha: 1
+                });
+
+                // Create visual burst
+                for(let i=0; i<5; i++) {
+                    createParticle(charX, charY - 20);
+                }
+            }
+            document.getElementById('thought-input').value = "";
+            toggleThought();
+        }
+
+        function createParticle(x, y) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            p.style.left = x + 'px';
+            p.style.top = y + 'px';
+            p.style.width = (Math.random() * 5 + 2) + 'px';
+            p.style.height = p.style.width;
+            p.style.animationDuration = (Math.random() * 2 + 2) + 's';
+            document.body.appendChild(p);
+            setTimeout(() => p.remove(), 4000);
+        }
+
+        // Initial setup
+        resize();
+        updateTime(); // Set initial colors
+
+    </script>
+</body>
+</html>

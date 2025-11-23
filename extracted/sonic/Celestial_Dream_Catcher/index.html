@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Celestial Dream Catcher</title>
+    <style>
+        :root {
+            --color-bg-dark: #0a0a1a;
+            --color-bg-purple: #2d1b4e;
+            --color-cloud-pink: #b56576;
+            --color-cloud-orange: #e5989b;
+            --color-light: #ffcdb2;
+            --glow-cyan: #80ffdb;
+            --glow-pink: #ffb3c6;
+            --glow-orange: #ffc8dd;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--color-bg-dark);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+        }
+
+        /* The Background / Sky Tunnel */
+        #sky-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 50% 60%, 
+                var(--color-light) 0%, 
+                var(--color-cloud-orange) 15%, 
+                var(--color-cloud-pink) 30%, 
+                var(--color-bg-purple) 50%, 
+                var(--color-bg-dark) 80%);
+            z-index: 0;
+        }
+
+        /* Stars */
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            opacity: 0.8;
+            animation: twinkle var(--twinkle-duration) infinite ease-in-out;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; transform: scale(0.8); }
+            50% { opacity: 1; transform: scale(1.2); box-shadow: 0 0 5px white; }
+        }
+
+        /* Clouds (CSS Blobs) */
+        .cloud {
+            position: absolute;
+            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.1), transparent);
+            border-radius: 50%;
+            filter: blur(20px);
+            opacity: 0.7;
+            transition: transform 0.2s;
+        }
+        
+        /* More solid cloud layers */
+        .cloud-layer {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        /* The Light Beam */
+        .beam {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 60%;
+            background: linear-gradient(to top, rgba(255, 205, 178, 0.6), transparent);
+            filter: blur(30px);
+            z-index: 1;
+        }
+
+        /* Butterfly Styles */
+        .butterfly-container {
+            position: absolute;
+            transform-style: preserve-3d;
+            cursor: pointer;
+            z-index: 10;
+            /* Will be positioned via JS */
+        }
+
+        .butterfly-svg {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 0 5px currentColor);
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .wing {
+            transform-origin: center;
+        }
+
+        .wing-left {
+            animation: flap-left 0.2s infinite alternate;
+        }
+        .wing-right {
+            animation: flap-right 0.2s infinite alternate;
+        }
+
+        @keyframes flap-left {
+            0% { transform: scaleX(1) rotateY(0deg); }
+            100% { transform: scaleX(0.8) rotateY(60deg); }
+        }
+        @keyframes flap-right {
+            0% { transform: scaleX(1) rotateY(0deg); }
+            100% { transform: scaleX(0.8) rotateY(-60deg); }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* UI Overlay */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 100;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        #score-board {
+            color: white;
+            font-size: 24px;
+            text-shadow: 0 0 10px rgba(255,255,255,0.5);
+            pointer-events: auto;
+        }
+
+        #start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            color: white;
+            backdrop-filter: blur(5px);
+        }
+
+        button {
+            background: linear-gradient(45deg, var(--color-cloud-pink), var(--color-cloud-orange));
+            border: none;
+            padding: 15px 40px;
+            font-size: 20px;
+            color: white;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(229, 152, 155, 0.6);
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 20px;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(229, 152, 155, 0.9);
+        }
+
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: fadeOut 1s forwards;
+        }
+
+        @keyframes fadeOut {
+            0% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(0); }
+        }
+
+        .message {
+            position: absolute;
+            color: white;
+            font-size: 20px;
+            pointer-events: none;
+            animation: floatUp 1s forwards;
+            text-shadow: 0 0 5px white;
+        }
+
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-50px); }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="sky-container">
+        <div class="beam"></div>
+        <!-- Stars and Clouds generated by JS -->
+    </div>
+
+    <div id="ui-layer">
+        <div id="score-board">
+            Dreams Collected: <span id="score">0</span>
+        </div>
+    </div>
+
+    <div id="start-screen">
+        <h1 style="font-size: 3rem; text-shadow: 0 0 20px #ffcdb2; text-align: center;">Celestial Dreamscape</h1>
+        <p style="max-width: 400px; text-align: center; line-height: 1.5;">
+            The portal is open. Glowing butterflies are emerging from the dream realm.<br><br>
+            Click them to collect their essence before they fade away. 
+        </p>
+        <button id="start-btn">Enter the Dream</button>
+    </div>
+
+    <script>
+        /* --- Audio Context --- */
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new AudioContext();
+            }
+        }
+
+        function playSparkleSound(type) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            // Pentatonic scale frequencies roughly
+            const freqs = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25]; 
+            const randomFreq = freqs[Math.floor(Math.random() * freqs.length)];
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(type === 'spawn' ? randomFreq * 2 : randomFreq, audioCtx.currentTime);
+            
+            // Envelope
+            gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+            gainNode.gain.linearRampToValueAtTime(type === 'spawn' ? 0.05 : 0.2, audioCtx.currentTime + 0.05);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + (type === 'spawn' ? 0.5 : 1));
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + 1);
+        }
+
+        /* --- Game Logic --- */
+        const container = document.getElementById('sky-container');
+        const scoreEl = document.getElementById('score');
+        let score = 0;
+        let isPlaying = false;
+        let butterflies = [];
+        let lastTime = 0;
+        let spawnTimer = 0;
+        let spawnInterval = 2000; // Start slow
+
+        // Colors from the image
+        const colors = ['#80ffdb', '#ffb3c6', '#ffc8dd', '#aaddff', '#ffffff'];
+
+        /* --- Procedural Background Generation --- */
+        function generateStars() {
+            for(let i=0; i<100; i++) {
+                const star = document.createElement('div');
+                star.classList.add('star');
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 80 + '%'; // Keep mostly in sky
+                const size = Math.random() * 3 + 1;
+                star.style.width = size + 'px';
+                star.style.height = size + 'px';
+                star.style.setProperty('--twinkle-duration', (Math.random() * 3 + 2) + 's');
+                container.appendChild(star);
+            }
+        }
+
+        function generateClouds() {
+            // Create some large blurry blobs to mimic the cloud tunnel
+            const cloudColors = ['#2d1b4e', '#4c2a68', '#b56576', '#6d597a'];
+            
+            for(let i=0; i<15; i++) {
+                const cloud = document.createElement('div');
+                cloud.classList.add('cloud');
+                
+                // Position around the edges to create a tunnel effect
+                const isLeft = Math.random() > 0.5;
+                const xPos = isLeft ? Math.random() * 40 - 20 : Math.random() * 40 + 80;
+                const yPos = Math.random() * 100;
+                const size = Math.random() * 400 + 200;
+
+                cloud.style.left = xPos + '%';
+                cloud.style.top = yPos + '%';
+                cloud.style.width = size + 'px';
+                cloud.style.height = size + 'px';
+                cloud.style.background = cloudColors[Math.floor(Math.random() * cloudColors.length)];
+                cloud.style.opacity = Math.random() * 0.4 + 0.2;
+                
+                // Parallax factor
+                cloud.dataset.speed = Math.random() * 0.05;
+
+                container.appendChild(cloud);
+            }
+        }
+
+        /* --- Butterfly Entity --- */
+        class Butterfly {
+            constructor() {
+                this.element = document.createElement('div');
+                this.element.classList.add('butterfly-container');
+                
+                // Random Color
+                this.color = colors[Math.floor(Math.random() * colors.length)];
+                
+                // SVG Structure
+                this.element.innerHTML = `
+                    <svg class="butterfly-svg" viewBox="0 0 100 100" style="color: ${this.color}">
+                        <defs>
+                            <filter id="glow-${this.color}">
+                                <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+                                <feMerge>
+                                    <feMergeNode in="coloredBlur"/>
+                                    <feMergeNode in="SourceGraphic"/>
+                                </feMerge>
+                            </filter>
+                        </defs>
+                        <g class="wing wing-left">
+                            <path d="M50 50 C 20 20, 0 10, 10 50 C 15 70, 40 60, 50 50 Z" fill="${this.color}" opacity="0.8" />
+                            <path d="M50 50 C 20 60, 10 90, 30 80 C 40 75, 45 60, 50 50 Z" fill="${this.color}" opacity="0.6" />
+                        </g>
+                        <g class="wing wing-right">
+                            <path d="M50 50 C 80 20, 100 10, 90 50 C 85 70, 60 60, 50 50 Z" fill="${this.color}" opacity="0.8" />
+                            <path d="M50 50 C 80 60, 90 90, 70 80 C 60 75, 55 60, 50 50 Z" fill="${this.color}" opacity="0.6" />
+                        </g>
+                        <circle cx="50" cy="50" r="3" fill="white" />
+                    </svg>
+                `;
+
+                // Initial Position (Center of screen, "far away")
+                this.x = window.innerWidth / 2;
+                this.y = window.innerHeight * 0.6; // Horizon line
+                this.z = 0.1; // Depth (scale)
+                
+                // Trajectory
+                const angle = Math.random() * Math.PI * 2;
+                // They fly outwards from center
+                this.vx = Math.cos(angle) * (Math.random() * 2 + 1);
+                this.vy = Math.sin(angle) * (Math.random() * 2 + 1) - 1; // Slight upward bias
+
+                this.growthRate = 0.005 + Math.random() * 0.005;
+                
+                this.element.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.collect(e.clientX, e.clientY);
+                });
+
+                container.appendChild(this.element);
+                playSparkleSound('spawn');
+            }
+
+            update(dt) {
+                // Move "closer" (scale up)
+                this.z += this.growthRate * dt * 0.1;
+                
+                // Move in X/Y
+                this.x += this.vx * this.z * dt * 0.1;
+                this.y += this.vy * this.z * dt * 0.1;
+
+                // Apply styles
+                const scale = Math.max(0, this.z);
+                this.element.style.left = (this.x - 50) + 'px';
+                this.element.style.top = (this.y - 50) + 'px';
+                this.element.style.width = (100 * scale) + 'px';
+                this.element.style.height = (100 * scale) + 'px';
+                this.element.style.opacity = Math.min(1, this.z * 2); // Fade in
+
+                // Check bounds (if too big or off screen, remove)
+                if (this.z > 2.5 || this.x < -100 || this.x > window.innerWidth + 100 || this.y < -100 || this.y > window.innerHeight + 100) {
+                    this.remove();
+                    return false; // Dead
+                }
+                return true; // Alive
+            }
+
+            collect(x, y) {
+                score += 10;
+                scoreEl.innerText = score;
+                createParticles(x, y, this.color);
+                showFloatingText(x, y, "+10");
+                playSparkleSound('collect');
+                this.remove();
+                // Remove from array logic handled in loop
+                const index = butterflies.indexOf(this);
+                if (index > -1) butterflies.splice(index, 1);
+            }
+
+            remove() {
+                if (this.element.parentNode) {
+                    this.element.parentNode.removeChild(this.element);
+                }
+            }
+        }
+
+        /* --- Particle Effects --- */
+        function createParticles(x, y, color) {
+            for (let i = 0; i < 10; i++) {
+                const p = document.createElement('div');
+                p.classList.add('particle');
+                p.style.backgroundColor = color;
+                p.style.left = x + 'px';
+                p.style.top = y + 'px';
+                const size = Math.random() * 5 + 2;
+                p.style.width = size + 'px';
+                p.style.height = size + 'px';
+                
+                // Random explosion direction
+                const angle = Math.random() * Math.PI * 2;
+                const velocity = Math.random() * 100 + 50;
+                const tx = Math.cos(angle) * velocity;
+                const ty = Math.sin(angle) * velocity;
+                
+                p.animate([
+                    { transform: `translate(0,0) scale(1)`, opacity: 1 },
+                    { transform: `translate(${tx}px, ${ty}px) scale(0)`, opacity: 0 }
+                ], {
+                    duration: 800,
+                    easing: 'ease-out'
+                }).onfinish = () => p.remove();
+                
+                document.body.appendChild(p);
+            }
+        }
+
+        function showFloatingText(x, y, text) {
+            const el = document.createElement('div');
+            el.classList.add('message');
+            el.innerText = text;
+            el.style.left = x + 'px';
+            el.style.top = y + 'px';
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 1000);
+        }
+
+        /* --- Main Loop --- */
+        function gameLoop(timestamp) {
+            if (!isPlaying) return;
+            
+            const dt = timestamp - lastTime;
+            lastTime = timestamp;
+
+            // Spawn logic
+            spawnTimer += dt;
+            // Difficulty ramping: spawn faster as score increases
+            const currentInterval = Math.max(500, spawnInterval - (score * 5));
+            
+            if (spawnTimer > currentInterval) {
+                butterflies.push(new Butterfly());
+                spawnTimer = 0;
+            }
+
+            // Update entities
+            for (let i = butterflies.length - 1; i >= 0; i--) {
+                const alive = butterflies[i].update(dt);
+                if (!alive) {
+                    butterflies.splice(i, 1);
+                }
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        /* --- Initialization --- */
+        generateStars();
+        generateClouds();
+
+        // Mouse interaction for parallax (subtle)
+        document.addEventListener('mousemove', (e) => {
+            const mx = (e.clientX / window.innerWidth - 0.5) * 20;
+            const my = (e.clientY / window.innerHeight - 0.5) * 20;
+            
+            document.querySelectorAll('.cloud').forEach(cloud => {
+                const speed = parseFloat(cloud.dataset.speed || 0.01);
+                cloud.style.transform = `translate(${mx * speed * 100}px, ${my * speed * 100}px)`;
+            });
+        });
+
+        document.getElementById('start-btn').addEventListener('click', () => {
+            document.getElementById('start-screen').style.opacity = 0;
+            setTimeout(() => {
+                document.getElementById('start-screen').style.display = 'none';
+            }, 500);
+            
+            initAudio();
+            isPlaying = true;
+            lastTime = performance.now();
+            requestAnimationFrame(gameLoop);
+        });
+
+    </script>
+</body>
+</html>

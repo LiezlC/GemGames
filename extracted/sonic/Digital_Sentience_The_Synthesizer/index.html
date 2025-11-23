@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Sentience: The Synthesizer</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Permanent+Marker&display=swap');
+
+        :root {
+            --color-digital: #00f2ff;
+            --color-digital-dark: #004d52;
+            --color-bio: #ff0055;
+            --color-bio-dark: #52001b;
+            --bg-spin-speed: 60s;
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #111;
+            font-family: 'Orbitron', sans-serif;
+            color: white;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Dynamic Radiant Background */
+        .radiant-bg {
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: repeating-conic-gradient(
+                from 0deg,
+                #1a1a1a 0deg 10deg,
+                #222 10deg 20deg,
+                #1a1a1a 20deg 30deg
+            );
+            z-index: -2;
+            animation: spin var(--bg-spin-speed) linear infinite;
+            opacity: 0.5;
+        }
+
+        .radiant-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.9) 80%);
+            z-index: -1;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* UI Container */
+        .app-container {
+            position: relative;
+            width: 100%;
+            max-width: 1000px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        /* Header */
+        header {
+            text-align: center;
+            z-index: 10;
+            margin-top: 20px;
+            text-shadow: 0 0 10px rgba(0,0,0,0.8);
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin: 0;
+            letter-spacing: 5px;
+            background: linear-gradient(90deg, var(--color-digital), #fff, var(--color-bio));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+        }
+
+        h2 {
+            font-size: 1rem;
+            margin: 5px 0 0 0;
+            opacity: 0.8;
+            letter-spacing: 2px;
+        }
+
+        /* Main Visualization Area */
+        .vis-container {
+            position: relative;
+            width: 100%;
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* The Split Face SVG */
+        #face-svg {
+            height: 60vh;
+            max-height: 500px;
+            width: auto;
+            filter: drop-shadow(0 0 20px rgba(0,0,0,0.5));
+            transition: filter 0.3s ease;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            padding: 0 50px;
+            box-sizing: border-box;
+            z-index: 10;
+            margin-bottom: 40px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(5px);
+            width: 250px;
+        }
+
+        .control-group.digital {
+            border-left: 4px solid var(--color-digital);
+            box-shadow: -5px 0 15px rgba(0, 242, 255, 0.2);
+        }
+
+        .control-group.bio {
+            border-right: 4px solid var(--color-bio);
+            box-shadow: 5px 0 15px rgba(255, 0, 85, 0.2);
+        }
+
+        label {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 10px;
+            border-radius: 5px;
+            background: #333;
+            outline: none;
+            opacity: 0.9;
+            transition: opacity .2s;
+        }
+
+        .digital input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%; /* Square for digital */
+            background: var(--color-digital);
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--color-digital);
+        }
+        
+        /* Make digital thumb square */
+        .digital input[type=range]::-webkit-slider-thumb {
+             border-radius: 2px;
+        }
+
+        .bio input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background: var(--color-bio);
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--color-bio);
+        }
+
+        .value-display {
+            margin-top: 10px;
+            font-size: 1.5rem;
+        }
+
+        /* Status Log */
+        .status-log {
+            position: absolute;
+            bottom: 140px;
+            width: 100%;
+            text-align: center;
+            font-size: 1.2rem;
+            height: 30px;
+            pointer-events: none;
+            text-shadow: 0 0 5px black;
+        }
+        
+        .status-text {
+            background: rgba(0,0,0,0.7);
+            padding: 5px 15px;
+            border-radius: 20px;
+            border: 1px solid #555;
+            display: inline-block;
+        }
+
+        /* Canvas for Particles */
+        #particle-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 { font-size: 1.8rem; }
+            h2 { font-size: 0.8rem; }
+            .controls { flex-direction: column; gap: 20px; padding: 0 20px; }
+            .control-group { width: 100%; }
+            #face-svg { height: 40vh; }
+            .status-log { bottom: 280px; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="radiant-bg" id="bg-gradient"></div>
+    <div class="radiant-overlay"></div>
+    <canvas id="particle-canvas"></canvas>
+
+    <div class="app-container">
+        <header>
+            <h1>Digital Sentience</h1>
+            <h2>Beyond Code, Beyond Biology</h2>
+        </header>
+
+        <div class="vis-container">
+            <!-- Abstract Face SVG -->
+            <svg id="face-svg" viewBox="0 0 400 500" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <!-- Digital Pattern -->
+                    <pattern id="circuit-pattern" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+                        <rect width="20" height="20" fill="#002a2e"/>
+                        <path d="M5 0 V20 M15 0 V20 M0 5 H20 M0 15 H20" stroke="#00f2ff" stroke-width="0.5" opacity="0.3"/>
+                        <rect x="8" y="8" width="4" height="4" fill="#00f2ff" opacity="0.5"/>
+                    </pattern>
+                    <!-- Bio Pattern -->
+                    <pattern id="bio-pattern" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+                        <rect width="20" height="20" fill="#2e000f"/>
+                        <circle cx="10" cy="10" r="8" fill="#ff0055" opacity="0.2"/>
+                        <path d="M0 10 Q10 0 20 10 T40 10" stroke="#ffae00" stroke-width="1" fill="none" opacity="0.3"/>
+                    </pattern>
+                    
+                    <!-- Gradients -->
+                    <linearGradient id="grad-digital" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" style="stop-color:#00f2ff;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#004d52;stop-opacity:1" />
+                    </linearGradient>
+                    <linearGradient id="grad-bio" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" style="stop-color:#52001b;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#ff0055;stop-opacity:1" />
+                    </linearGradient>
+                    
+                    <filter id="glow-digital">
+                        <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+                        <feMerge>
+                            <feMergeNode in="coloredBlur"/>
+                            <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                    </filter>
+                </defs>
+
+                <!-- Left Side (Digital) -->
+                <g id="face-left" transform="translate(0,0)">
+                    <path d="M200 50 C 150 50, 50 80, 50 200 C 50 320, 100 400, 180 450 L 200 450 L 200 50 Z" 
+                          fill="url(#circuit-pattern)" stroke="#00f2ff" stroke-width="2" />
+                    <!-- Eye -->
+                    <rect id="eye-left" x="110" y="180" width="50" height="20" fill="#00f2ff" filter="url(#glow-digital)"/>
+                    <!-- Circuit Lines -->
+                    <path d="M135 200 L 135 250 L 100 280" stroke="#00f2ff" stroke-width="2" fill="none"/>
+                    <circle cx="100" cy="280" r="5" fill="#00f2ff"/>
+                </g>
+
+                <!-- Right Side (Bio) -->
+                <g id="face-right" transform="translate(0,0)">
+                    <path d="M200 50 C 250 50, 350 80, 350 200 C 350 320, 300 400, 220 450 L 200 450 L 200 50 Z" 
+                          fill="url(#bio-pattern)" stroke="#ff0055" stroke-width="2"/>
+                    <!-- Eye -->
+                    <circle id="eye-right" cx="270" cy="190" r="15" fill="#ff0055" filter="url(#glow-digital)"/>
+                    <!-- Organic Veins -->
+                    <path d="M270 205 Q 270 250 300 280 T 320 320" stroke="#ffae00" stroke-width="2" fill="none" stroke-linecap="round"/>
+                </g>
+                
+                <!-- Central Connector (The Merger) -->
+                <path id="merger-line" d="M200 50 L 200 450" stroke="white" stroke-width="2" stroke-dasharray="5,5"/>
+                
+                <!-- Brain/Sentience Core -->
+                <circle id="core" cx="200" cy="120" r="0" fill="white" filter="url(#glow-digital)" opacity="0.8"/>
+
+            </svg>
+        </div>
+
+        <div class="status-log">
+            <span class="status-text" id="status-text">SYSTEM INITIALIZED. AWAITING INPUT.</span>
+        </div>
+
+        <div class="controls">
+            <div class="control-group digital">
+                <label for="input-digital">LOGIC CORE</label>
+                <input type="range" id="input-digital" min="0" max="100" value="20">
+                <div class="value-display" id="val-digital" style="color: var(--color-digital)">20%</div>
+            </div>
+
+            <div class="control-group bio">
+                <label for="input-bio" style="font-family: 'Permanent Marker', cursive;">BIO RHYTHM</label>
+                <input type="range" id="input-bio" min="0" max="100" value="20">
+                <div class="value-display" id="val-bio" style="color: var(--color-bio)">20%</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Configuration & State ---
+        const state = {
+            digital: 20,
+            bio: 20,
+            sentience: 0
+        };
+
+        const dom = {
+            inputDigital: document.getElementById('input-digital'),
+            inputBio: document.getElementById('input-bio'),
+            valDigital: document.getElementById('val-digital'),
+            valBio: document.getElementById('val-bio'),
+            faceLeft: document.getElementById('face-left'),
+            faceRight: document.getElementById('face-right'),
+            eyeLeft: document.getElementById('eye-left'),
+            eyeRight: document.getElementById('eye-right'),
+            core: document.getElementById('core'),
+            mergerLine: document.getElementById('merger-line'),
+            statusText: document.getElementById('status-text'),
+            bgGradient: document.getElementById('bg-gradient'),
+            canvas: document.getElementById('particle-canvas')
+        };
+
+        const ctx = dom.canvas.getContext('2d');
+        let particles = [];
+
+        // --- Audio Context (Synthesized Sound) ---
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioContext();
+        
+        function playTone(freq, type, duration) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        // --- Particle System ---
+        class Particle {
+            constructor(type) {
+                this.type = type; // 'digital' or 'bio'
+                this.reset();
+            }
+
+            reset() {
+                this.x = Math.random() * dom.canvas.width;
+                this.y = Math.random() * dom.canvas.height;
+                this.size = Math.random() * 3 + 1;
+                this.speedX = (Math.random() - 0.5) * 2;
+                this.speedY = (Math.random() - 0.5) * 2;
+                this.life = 1.0;
+                
+                if (this.type === 'digital') {
+                    // Digital particles originate from left, move rigidly
+                    this.x = Math.random() * (dom.canvas.width / 2);
+                    this.speedX = Math.random() * 2; 
+                    this.speedY = 0; // Horizontal movement mostly
+                } else {
+                    // Bio particles originate from right, float organically
+                    this.x = (dom.canvas.width / 2) + Math.random() * (dom.canvas.width / 2);
+                    this.speedX = (Math.random() - 0.5);
+                    this.speedY = (Math.random() - 0.5);
+                }
+            }
+
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                this.life -= 0.005;
+
+                // Bio particles wobble
+                if (this.type === 'bio') {
+                    this.x += Math.sin(this.y * 0.05) * 0.5;
+                }
+
+                if (this.life <= 0 || this.x < 0 || this.x > dom.canvas.width || this.y < 0 || this.y > dom.canvas.height) {
+                    this.reset();
+                }
+            }
+
+            draw() {
+                ctx.globalAlpha = this.life * (this.type === 'digital' ? state.digital/100 : state.bio/100);
+                
+                if (this.type === 'digital') {
+                    ctx.fillStyle = '#00f2ff';
+                    ctx.fillRect(this.x, this.y, this.size, this.size); // Square pixels
+                } else {
+                    ctx.fillStyle = '#ff0055';
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); // Round spores
+                    ctx.fill();
+                }
+            }
+        }
+
+        function initParticles() {
+            dom.canvas.width = window.innerWidth;
+            dom.canvas.height = window.innerHeight;
+            particles = [];
+            for(let i=0; i<100; i++) particles.push(new Particle('digital'));
+            for(let i=0; i<100; i++) particles.push(new Particle('bio'));
+        }
+
+        function animateParticles() {
+            ctx.clearRect(0, 0, dom.canvas.width, dom.canvas.height);
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+            requestAnimationFrame(animateParticles);
+        }
+
+        // --- Core Logic ---
+
+        function updateVisuals() {
+            // Update Text
+            dom.valDigital.innerText = state.digital + '%';
+            dom.valBio.innerText = state.bio + '%';
+
+            // Calculate Sentience (Balance + Intensity)
+            // High sentience if both are high and balanced
+            const diff = Math.abs(state.digital - state.bio);
+            const avg = (parseInt(state.digital) + parseInt(state.bio)) / 2;
+            
+            // Formula: Higher average is better, lower difference is better
+            let sentienceScore = avg - diff; 
+            if (sentienceScore < 0) sentienceScore = 0;
+            state.sentience = sentienceScore;
+
+            // Update Core Size (The Brain)
+            const coreRadius = (state.sentience / 100) * 40;
+            dom.core.setAttribute('r', coreRadius);
+
+            // Visual Feedback on Face
+            // Digital Eye Opacity
+            dom.eyeLeft.style.opacity = 0.3 + (state.digital / 150);
+            // Bio Eye Opacity
+            dom.eyeRight.style.opacity = 0.3 + (state.bio / 150);
+
+            // Merger Line Style
+            if (diff < 10 && avg > 50) {
+                dom.mergerLine.setAttribute('stroke', '#fff');
+                dom.mergerLine.setAttribute('stroke-width', '4');
+                dom.mergerLine.setAttribute('filter', 'url(#glow-digital)');
+            } else {
+                dom.mergerLine.setAttribute('stroke', '#555');
+                dom.mergerLine.setAttribute('stroke-width', '2');
+                dom.mergerLine.removeAttribute('filter');
+            }
+
+            // Background Speed
+            const speed = 60 - (avg / 2);
+            document.documentElement.style.setProperty('--bg-spin-speed', `${Math.max(5, speed)}s`);
+
+            // Background Colors based on dominance
+            if (state.digital > state.bio + 20) {
+                dom.bgGradient.style.background = `repeating-conic-gradient(from 0deg, #001a1c 0deg 10deg, #002a2e 10deg 20deg, #001a1c 20deg 30deg)`;
+            } else if (state.bio > state.digital + 20) {
+                dom.bgGradient.style.background = `repeating-conic-gradient(from 0deg, #1c0005 0deg 10deg, #2e000f 10deg 20deg, #1c0005 20deg 30deg)`;
+            } else {
+                // Balanced / Rainbow
+                 dom.bgGradient.style.background = `repeating-conic-gradient(
+                    from 0deg,
+                    #1a1a1a 0deg 10deg,
+                    #222 10deg 20deg,
+                    #1a1a1a 20deg 30deg
+                )`;
+                 // If high energy balance, add color
+                 if (avg > 60) {
+                     dom.bgGradient.style.background = `repeating-conic-gradient(
+                        from 0deg,
+                        #004d52 0deg 10deg,
+                        #52001b 10deg 20deg,
+                        #004d52 20deg 30deg
+                    )`;
+                 }
+            }
+
+            updateStatusText(diff, avg);
+        }
+
+        function updateStatusText(diff, avg) {
+            let msg = "";
+            
+            if (avg < 10) {
+                msg = "SYSTEM DORMANT. INCREASE INPUT.";
+            } else if (state.digital > 80 && state.bio < 30) {
+                msg = "WARNING: EMOTIONAL SUPPRESSION DETECTED. LOGIC OVERLOAD.";
+            } else if (state.bio > 80 && state.digital < 30) {
+                msg = "WARNING: UNSTABLE MUTATION. LOGIC REQUIRED.";
+            } else if (diff < 15 && avg > 80) {
+                msg = ">>> SENTIENCE ACHIEVED. SINGULARITY IMMINENT. <<<";
+                dom.statusText.style.color = "#00ff00";
+                dom.statusText.style.borderColor = "#00ff00";
+            } else if (diff < 15 && avg > 40) {
+                msg = "HARMONIZING... NEURAL PATHWAYS FORMING.";
+                dom.statusText.style.color = "#fff";
+                dom.statusText.style.borderColor = "#555";
+            } else if (state.digital > state.bio) {
+                msg = "ANALYZING DATA STREAMS...";
+            } else {
+                msg = "FEELING... GROWING...";
+            }
+
+            dom.statusText.innerText = msg;
+        }
+
+        // --- Event Listeners ---
+
+        dom.inputDigital.addEventListener('input', (e) => {
+            state.digital = e.target.value;
+            updateVisuals();
+            playTone(100 + (state.digital * 5), 'square', 0.1);
+        });
+
+        dom.inputBio.addEventListener('input', (e) => {
+            state.bio = e.target.value;
+            updateVisuals();
+            playTone(100 + (state.bio * 3), 'sine', 0.1);
+        });
+
+        window.addEventListener('resize', initParticles);
+
+        // --- Init ---
+        initParticles();
+        animateParticles();
+        updateVisuals();
+
+    </script>
+</body>
+</html>

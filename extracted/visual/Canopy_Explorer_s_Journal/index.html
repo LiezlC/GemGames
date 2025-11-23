@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canopy Explorer's Journal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Indie+Flower&family=Nunito:wght@400;700&display=swap');
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(180deg, #e0f7fa 0%, #a5d6a7 100%);
+            height: 100vh;
+            user-select: none;
+        }
+
+        /* Layers */
+        .layer {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        /* The Tree Structure */
+        .tree-branch {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 60%;
+            z-index: 10;
+            filter: drop-shadow(5px 5px 10px rgba(0,0,0,0.3));
+        }
+
+        /* Leaves */
+        .leaf {
+            position: absolute;
+            background: #2e7d32;
+            border-radius: 0 50% 0 50%;
+            opacity: 0.9;
+            animation: sway 3s infinite ease-in-out alternate;
+            z-index: 15;
+            cursor: pointer;
+            pointer-events: auto;
+            transition: transform 0.2s;
+        }
+        .leaf:hover {
+            transform: scale(1.1) rotate(5deg);
+            background: #4caf50;
+        }
+        .leaf.bg-layer {
+            filter: blur(2px);
+            z-index: 5;
+            background: #1b5e20;
+        }
+
+        @keyframes sway {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(5deg); }
+        }
+
+        /* The Explorer Character */
+        .explorer {
+            position: absolute;
+            bottom: 25%;
+            left: 30%;
+            width: 120px;
+            height: 150px;
+            z-index: 12;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            animation: breathe 4s infinite ease-in-out;
+        }
+        @keyframes breathe {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-3px); }
+        }
+
+        /* Wildlife */
+        .wildlife {
+            position: absolute;
+            font-size: 2rem;
+            cursor: pointer;
+            pointer-events: auto;
+            z-index: 8;
+            transition: transform 0.2s;
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .wildlife:hover {
+            transform: scale(1.3);
+        }
+        .wildlife.hidden-animal {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .wildlife.revealed {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        @keyframes popIn {
+            from { transform: scale(0); }
+            to { transform: scale(1); }
+        }
+
+        /* UI Elements */
+        .journal-btn {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            z-index: 50;
+            background: #8d6e63;
+            color: #fff;
+            padding: 15px 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            cursor: pointer;
+            font-family: 'Indie Flower', cursive;
+            font-size: 1.2rem;
+            border: 2px solid #5d4037;
+            transition: transform 0.1s;
+        }
+        .journal-btn:active {
+            transform: scale(0.95);
+        }
+
+        .binoculars-btn {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            z-index: 50;
+            background: #455a64;
+            color: #fff;
+            padding: 15px;
+            border-radius: 50%;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            cursor: pointer;
+            font-size: 1.5rem;
+            border: 2px solid #263238;
+            transition: all 0.2s;
+        }
+        .binoculars-btn.active {
+            background: #ff7043;
+            transform: scale(1.1);
+        }
+
+        /* Binocular View Overlay */
+        .binocular-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 40;
+            pointer-events: none;
+            background: radial-gradient(circle 150px at var(--x) var(--y), transparent 0%, rgba(0, 20, 0, 0.95) 100%);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .binocular-overlay.active {
+            opacity: 1;
+            /* Allow clicks to pass through the transparent part? No, we need JS for that usually, 
+               but here we just want the visual effect while clicking elements underneath. 
+               pointer-events: none handles the click-through. */
+        }
+
+        /* Journal Modal */
+        .journal-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            width: 90%;
+            max-width: 500px;
+            height: 70vh;
+            background: #fdf5e6;
+            z-index: 60;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            display: none;
+            flex-direction: column;
+            padding: 20px;
+            font-family: 'Indie Flower', cursive;
+            border: 10px solid #8d6e63;
+            background-image: linear-gradient(#e0e0e0 1px, transparent 1px);
+            background-size: 100% 1.5em;
+        }
+        .journal-modal.open {
+            display: flex;
+            animation: openBook 0.3s forwards;
+        }
+        @keyframes openBook {
+            to { transform: translate(-50%, -50%) scale(1); }
+        }
+
+        .close-journal {
+            position: absolute;
+            top: -15px;
+            right: -15px;
+            background: #d32f2f;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 30px;
+            cursor: pointer;
+            font-family: sans-serif;
+            font-weight: bold;
+            border: 2px solid white;
+        }
+
+        .speech-bubble {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 10px;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+        .speech-bubble::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: white transparent transparent transparent;
+        }
+        .speech-bubble.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(-10px);
+        }
+
+        /* Treehouse Background */
+        .treehouse {
+            position: absolute;
+            top: 20%;
+            right: 10%;
+            width: 100px;
+            height: 120px;
+            opacity: 0.7;
+            z-index: 2;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Background Ambience -->
+    <div class="layer" id="sky-layer">
+        <!-- Sun rays via CSS gradients -->
+        <div style="position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(255,255,200,0.3) 0%, transparent 60%);"></div>
+    </div>
+
+    <!-- Background Treehouse (SVG) -->
+    <div class="treehouse">
+        <svg viewBox="0 0 100 120" fill="#8d6e63">
+            <polygon points="50,0 100,40 0,40" fill="#a1887f"/>
+            <rect x="10" y="40" width="80" height="60" fill="#8d6e63"/>
+            <rect x="30" y="50" width="40" height="30" fill="#5d4037"/>
+            <rect x="20" y="100" width="5" height="20" fill="#5d4037"/>
+            <rect x="75" y="100" width="5" height="20" fill="#5d4037"/>
+        </svg>
+    </div>
+
+    <!-- Wildlife Container (Animals spawn here) -->
+    <div id="wildlife-container" class="layer"></div>
+
+    <!-- Main Tree Branch (SVG) -->
+    <div class="tree-branch">
+        <svg width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 1000 600">
+            <!-- Main thick branch -->
+            <path d="M-50,600 C100,500 200,400 400,450 S700,300 1050,100 L1050,650 L-50,650 Z" fill="#5d4037"/>
+            <!-- Secondary branch -->
+            <path d="M400,450 Q600,550 800,500" fill="none" stroke="#5d4037" stroke-width="40" stroke-linecap="round"/>
+            <!-- Texture -->
+            <path d="M100,550 Q200,500 300,520" fill="none" stroke="#4e342e" stroke-width="5"/>
+            <path d="M450,420 Q550,400 650,410" fill="none" stroke="#4e342e" stroke-width="5"/>
+        </svg>
+    </div>
+
+    <!-- Leaves Container -->
+    <div id="leaves-container" class="layer"></div>
+
+    <!-- The Explorer -->
+    <div class="explorer">
+        <div class="speech-bubble" id="explorer-speech">I wonder what's hiding in the leaves?</div>
+        <!-- CSS/SVG Character -->
+        <svg viewBox="0 0 100 150" width="100%" height="100%">
+            <!-- Legs -->
+            <rect x="25" y="90" width="20" height="40" fill="#d7ccc8" transform="rotate(20 25 90)"/>
+            <rect x="55" y="90" width="20" height="40" fill="#d7ccc8" transform="rotate(-10 55 90)"/>
+            <!-- Boots -->
+            <path d="M10,125 L35,125 L35,140 L10,140 Z" fill="#3e2723" transform="rotate(20 25 90)"/>
+            <path d="M50,125 L75,125 L75,140 L50,140 Z" fill="#3e2723" transform="rotate(-10 55 90)"/>
+            <!-- Shorts -->
+            <rect x="25" y="80" width="50" height="25" fill="#558b2f" rx="5"/>
+            <!-- Torso -->
+            <rect x="30" y="40" width="40" height="50" fill="#81c784" rx="5"/>
+            <!-- Backpack straps -->
+            <rect x="32" y="40" width="5" height="50" fill="#37474f"/>
+            <rect x="63" y="40" width="5" height="50" fill="#37474f"/>
+            <!-- Head -->
+            <circle cx="50" cy="30" r="18" fill="#ffccbc"/>
+            <!-- Hair -->
+            <path d="M30,20 Q50,0 70,20 L75,40 Q50,50 25,40 Z" fill="#5d4037"/>
+            <circle cx="70" cy="25" r="10" fill="#5d4037"/> <!-- Ponytail -->
+            <!-- Notebook in hand -->
+            <rect x="40" y="60" width="30" height="25" fill="#8d6e63" transform="rotate(-10)"/>
+            <rect x="42" y="62" width="26" height="21" fill="#fff"/>
+        </svg>
+    </div>
+
+    <!-- Binocular Overlay -->
+    <div class="binocular-overlay" id="binocular-view"></div>
+
+    <!-- Controls -->
+    <div class="binoculars-btn" id="toggle-binoculars" title="Use Binoculars">
+        🔭
+    </div>
+
+    <div class="journal-btn" id="open-journal">
+        📖 Field Journal (<span id="count">0</span>)
+    </div>
+
+    <!-- Journal Modal -->
+    <div class="journal-modal" id="journal">
+        <div class="close-journal" id="close-journal">X</div>
+        <h2 class="text-2xl font-bold text-amber-900 mb-2 border-b-2 border-amber-900 pb-2">My Discoveries</h2>
+        <div class="flex-1 overflow-y-auto pr-2" id="journal-entries">
+            <p class="text-gray-500 italic mt-4 text-center">The pages are empty. Look around the tree to find wildlife!</p>
+        </div>
+        <div class="mt-4 pt-4 border-t-2 border-amber-900">
+            <textarea class="w-full bg-transparent border-none focus:ring-0 text-lg" rows="3" placeholder="Write your observation notes here..."></textarea>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const animals = ['🦜', '🦋', '🐞', '🐒', '🦉', '🦎', '🐝', '🐿️', '🐍', '🕷️'];
+        const animalNames = ['Parrot', 'Butterfly', 'Ladybug', 'Monkey', 'Owl', 'Lizard', 'Bee', 'Squirrel', 'Snake', 'Spider'];
+        const colors = ['#4caf50', '#66bb6a', '#81c784', '#388e3c'];
+        
+        // State
+        let discoveries = [];
+        let isBinocularsActive = false;
+
+        // DOM Elements
+        const leavesContainer = document.getElementById('leaves-container');
+        const wildlifeContainer = document.getElementById('wildlife-container');
+        const binocularOverlay = document.getElementById('binocular-view');
+        const journalModal = document.getElementById('journal');
+        const journalEntries = document.getElementById('journal-entries');
+        const countSpan = document.getElementById('count');
+        const speechBubble = document.getElementById('explorer-speech');
+
+        // Initialize Scene
+        function init() {
+            createCanopy();
+            spawnWildlife();
+            setupEvents();
+        }
+
+        // Create Leaves (Procedural Generation)
+        function createCanopy() {
+            // Background leaves (blurry)
+            for(let i=0; i<30; i++) {
+                createLeaf(true);
+            }
+            // Foreground leaves
+            for(let i=0; i<50; i++) {
+                createLeaf(false);
+            }
+        }
+
+        function createLeaf(isBackground) {
+            const leaf = document.createElement('div');
+            leaf.className = `leaf ${isBackground ? 'bg-layer' : ''}`;
+            
+            // Random Position (concentrated top and right)
+            const top = Math.random() * 60 - 10; 
+            const left = Math.random() * 100;
+            
+            leaf.style.top = `${top}%`;
+            leaf.style.left = `${left}%`;
+            
+            // Random Size
+            const size = Math.random() * 30 + 20;
+            leaf.style.width = `${size}px`;
+            leaf.style.height = `${size}px`;
+            
+            // Random Rotation
+            leaf.style.transform = `rotate(${Math.random() * 360}deg)`;
+            
+            // Random Color variant
+            leaf.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+
+            // Interaction: Rustle
+            leaf.addEventListener('mouseenter', () => {
+                leaf.style.transform = `scale(1.2) rotate(${Math.random() * 360}deg)`;
+                playSound('rustle');
+            });
+
+            leavesContainer.appendChild(leaf);
+        }
+
+        // Spawn Hidden Wildlife
+        function spawnWildlife() {
+            animals.forEach((emoji, index) => {
+                const animal = document.createElement('div');
+                animal.className = 'wildlife hidden-animal'; // Start hidden? Or just small?
+                animal.textContent = emoji;
+                
+                // Random Position within canopy area
+                const top = Math.random() * 50 + 5;
+                const left = Math.random() * 90 + 5;
+                
+                animal.style.top = `${top}%`;
+                animal.style.left = `${left}%`;
+                
+                // Initially hidden behind leaves or just small opacity
+                animal.style.opacity = '0.6';
+                animal.style.transform = 'scale(0.5)';
+                
+                animal.dataset.name = animalNames[index];
+                animal.dataset.id = index;
+
+                // Click to discover
+                animal.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Prevent clicking leaf underneath
+                    discoverAnimal(animal);
+                });
+
+                // Hover reveals slightly
+                animal.addEventListener('mouseenter', () => {
+                    if(!discoveries.includes(index)) {
+                        animal.style.transform = 'scale(1.2)';
+                        animal.style.opacity = '1';
+                    }
+                });
+
+                wildlifeContainer.appendChild(animal);
+            });
+        }
+
+        // Discovery Logic
+        function discoverAnimal(element) {
+            const id = parseInt(element.dataset.id);
+            const name = element.dataset.name;
+
+            if (discoveries.includes(id)) {
+                speak(`I already found that ${name}!`);
+                return;
+            }
+
+            discoveries.push(id);
+            element.classList.add('revealed');
+            element.style.transform = 'scale(1.5)';
+            element.style.opacity = '1';
+            
+            // Update UI
+            countSpan.textContent = discoveries.length;
+            speak(`Wow! A ${name}!`);
+            
+            // Add to Journal
+            addToJournal(element.textContent, name);
+            
+            // Celebration effect
+            createConfetti(element.getBoundingClientRect());
+        }
+
+        function addToJournal(emoji, name) {
+            // Clear empty state if first item
+            if (discoveries.length === 1) {
+                journalEntries.innerHTML = '';
+            }
+
+            const entry = document.createElement('div');
+            entry.className = 'flex items-center p-2 border-b border-amber-200 animate-pulse';
+            entry.innerHTML = `
+                <div class="text-4xl mr-4">${emoji}</div>
+                <div>
+                    <h3 class="font-bold text-amber-900">${name}</h3>
+                    <p class="text-xs text-gray-600">Found at ${new Date().toLocaleTimeString()}</p>
+                </div>
+            `;
+            // Remove animation after a bit
+            setTimeout(() => entry.classList.remove('animate-pulse'), 1000);
+            
+            journalEntries.appendChild(entry);
+        }
+
+        function speak(text) {
+            speechBubble.textContent = text;
+            speechBubble.classList.add('show');
+            setTimeout(() => {
+                speechBubble.classList.remove('show');
+            }, 3000);
+        }
+
+        // Binoculars Logic
+        function setupEvents() {
+            const btn = document.getElementById('toggle-binoculars');
+            
+            btn.addEventListener('click', () => {
+                isBinocularsActive = !isBinocularsActive;
+                btn.classList.toggle('active');
+                binocularOverlay.classList.toggle('active');
+                
+                if(isBinocularsActive) {
+                    document.body.style.cursor = 'none';
+                    speak("Let's look closer...");
+                } else {
+                    document.body.style.cursor = 'default';
+                }
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (isBinocularsActive) {
+                    const x = e.clientX;
+                    const y = e.clientY;
+                    binocularOverlay.style.setProperty('--x', `${x}px`);
+                    binocularOverlay.style.setProperty('--y', `${y}px`);
+                }
+            });
+
+            // Journal Controls
+            document.getElementById('open-journal').addEventListener('click', () => {
+                journalModal.classList.add('open');
+            });
+            document.getElementById('close-journal').addEventListener('click', () => {
+                journalModal.classList.remove('open');
+            });
+        }
+
+        // Simple Particle Effect for discovery
+        function createConfetti(rect) {
+            for(let i=0; i<10; i++) {
+                const p = document.createElement('div');
+                p.style.position = 'absolute';
+                p.style.left = (rect.left + rect.width/2) + 'px';
+                p.style.top = (rect.top + rect.height/2) + 'px';
+                p.style.width = '5px';
+                p.style.height = '5px';
+                p.style.background = '#ffd700';
+                p.style.borderRadius = '50%';
+                p.style.pointerEvents = 'none';
+                p.style.zIndex = 100;
+                document.body.appendChild(p);
+
+                const angle = Math.random() * Math.PI * 2;
+                const velocity = Math.random() * 50 + 20;
+                const tx = Math.cos(angle) * velocity;
+                const ty = Math.sin(angle) * velocity;
+
+                p.animate([
+                    { transform: 'translate(0,0)', opacity: 1 },
+                    { transform: `translate(${tx}px, ${ty}px)`, opacity: 0 }
+                ], {
+                    duration: 800,
+                    easing: 'ease-out'
+                }).onfinish = () => p.remove();
+            }
+        }
+
+        // Mock Sound (Visual feedback only since audio requires user interaction policies usually)
+        function playSound(type) {
+            // In a real app, new Audio().play()
+            // Here we just rely on visual feedback
+        }
+
+        // Run
+        init();
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neural Root Access | Data Harvester</title>
+    <style>
+        :root {
+            --bg-color: #050505;
+            --neon-green: #00ff41;
+            --neon-blue: #00f3ff;
+            --neon-purple: #bc13fe;
+            --neon-pink: #ff0055;
+            --glass: rgba(255, 255, 255, 0.05);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: white;
+            font-family: 'Courier New', Courier, monospace;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            user-select: none;
+        }
+
+        /* Background Effects */
+        .bg-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, #1a1a2e 0%, #000000 100%);
+            z-index: 0;
+        }
+
+        .scanline {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, transparent 50%, rgba(0, 0, 0, 0.5) 51%);
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 10;
+            opacity: 0.3;
+        }
+
+        /* Rotating Rings representing the circular aura in the image */
+        .ring {
+            position: absolute;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            transform: translate(-50%, -50%);
+            top: 50%;
+            left: 50%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .ring-1 {
+            width: 600px;
+            height: 600px;
+            border-top: 2px solid var(--neon-green);
+            border-left: 2px solid transparent;
+            border-right: 2px solid var(--neon-green);
+            box-shadow: 0 0 15px var(--neon-green);
+            animation: spin 20s linear infinite;
+        }
+
+        .ring-2 {
+            width: 700px;
+            height: 700px;
+            border-bottom: 4px solid var(--neon-purple);
+            border-right: 1px solid transparent;
+            box-shadow: 0 0 20px var(--neon-purple);
+            animation: spin-reverse 30s linear infinite;
+        }
+
+        .ring-3 {
+            width: 850px;
+            height: 850px;
+            border: 1px dashed var(--neon-blue);
+            opacity: 0.3;
+            animation: spin 60s linear infinite;
+        }
+
+        /* Lightning Effect */
+        .lightning {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            opacity: 0;
+            background: radial-gradient(circle at 20% 20%, rgba(0, 255, 65, 0.1), transparent 40%),
+                        radial-gradient(circle at 80% 80%, rgba(188, 19, 254, 0.1), transparent 40%);
+            transition: opacity 0.1s;
+            pointer-events: none;
+        }
+
+        /* Canvas for the Tree */
+        canvas {
+            position: absolute;
+            z-index: 2;
+            cursor: crosshair;
+        }
+
+        /* UI Overlay */
+        #ui-layer {
+            position: absolute;
+            z-index: 20;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .hud-panel {
+            background: var(--glass);
+            border: 1px solid var(--neon-blue);
+            padding: 15px;
+            border-radius: 5px;
+            backdrop-filter: blur(5px);
+            pointer-events: auto;
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.2);
+            max-width: 300px;
+            transition: all 0.3s ease;
+        }
+
+        .hud-panel:hover {
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.4);
+            border-color: white;
+        }
+
+        h1 {
+            font-size: 1.2rem;
+            margin: 0 0 10px 0;
+            color: var(--neon-blue);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 5px var(--neon-blue);
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+
+        .btn {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid var(--neon-green);
+            color: var(--neon-green);
+            padding: 8px 12px;
+            margin-top: 10px;
+            cursor: pointer;
+            font-family: inherit;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+            width: 100%;
+        }
+
+        .btn:hover {
+            background: var(--neon-green);
+            color: black;
+            box-shadow: 0 0 15px var(--neon-green);
+        }
+
+        .btn:disabled {
+            border-color: #555;
+            color: #555;
+            cursor: not-allowed;
+            box-shadow: none;
+            background: transparent;
+        }
+
+        .upgrade-list {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        #message-log {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            color: var(--neon-pink);
+            font-weight: bold;
+            text-shadow: 0 0 5px var(--neon-pink);
+            height: 20px;
+            pointer-events: none;
+        }
+
+        /* Animations */
+        @keyframes spin {
+            from { transform: translate(-50%, -50%) rotate(0deg); }
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        @keyframes spin-reverse {
+            from { transform: translate(-50%, -50%) rotate(360deg); }
+            to { transform: translate(-50%, -50%) rotate(0deg); }
+        }
+
+        .floating-text {
+            position: absolute;
+            color: white;
+            font-weight: bold;
+            pointer-events: none;
+            animation: floatUp 1s ease-out forwards;
+            text-shadow: 0 0 5px white;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-30px) scale(1.5); opacity: 0; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="bg-overlay"></div>
+    <div class="lightning" id="lightning"></div>
+    <div class="scanline"></div>
+
+    <!-- Concentric Rings -->
+    <div class="ring ring-1"></div>
+    <div class="ring ring-2"></div>
+    <div class="ring ring-3"></div>
+
+    <canvas id="treeCanvas"></canvas>
+
+    <div id="ui-layer">
+        <div class="hud-panel">
+            <h1>Neural Link</h1>
+            <div class="stat-row">
+                <span>DATA FRAGMENTS:</span>
+                <span id="score" style="color: var(--neon-green)">0</span>
+            </div>
+            <div class="stat-row">
+                <span>SYSTEM INTEGRITY:</span>
+                <span id="integrity">100%</span>
+            </div>
+            <div class="stat-row">
+                <span>NODES ACTIVE:</span>
+                <span id="nodes-active">0</span>
+            </div>
+        </div>
+
+        <div id="message-log">SYSTEM READY. HARVEST DATA FROM NODES.</div>
+
+        <div class="hud-panel" style="align-self: flex-end;">
+            <h1>Upgrades</h1>
+            <div class="upgrade-list">
+                <button class="btn" id="btn-auto" onclick="buyUpgrade('auto')">
+                    Auto-Harvester [Cost: 50]
+                </button>
+                <button class="btn" id="btn-eff" onclick="buyUpgrade('efficiency')">
+                    Data Compression [Cost: 100]
+                </button>
+                <button class="btn" id="btn-visual" onclick="buyUpgrade('visual')">
+                    Visual Cortex [Cost: 200]
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * NEURAL TREE GENERATOR & GAME LOGIC
+         * Recreating the visual of a glowing data tree using HTML5 Canvas recursive fractals.
+         */
+
+        const canvas = document.getElementById('treeCanvas');
+        const ctx = canvas.getContext('2d');
+        const lightningDiv = document.getElementById('lightning');
+        
+        // Game State
+        let state = {
+            score: 0,
+            clickPower: 1,
+            autoClicker: 0,
+            visualLevel: 1, // Determines how colorful/complex the tree is
+            nodes: [], // Stores clickable positions
+            lastAutoTick: 0
+        };
+
+        // Costs
+        const costs = {
+            auto: 50,
+            efficiency: 100,
+            visual: 200
+        };
+
+        // Resize handling
+        let width, height;
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+            generateTree();
+        }
+        window.addEventListener('resize', resize);
+
+        // --- Tree Generation Logic ---
+        
+        // Configuration for the fractal
+        let maxDepth = 9;
+        let branchAngle = 20;
+        let lengthScale = 0.75;
+
+        function generateTree() {
+            state.nodes = []; // Reset nodes
+            // We don't draw here, we just calculate positions for the animation loop to render
+            // Actually, to optimize, let's calculate the structure once.
+            
+            // Start recursion
+            const startX = width / 2;
+            const startY = height;
+            const trunkLen = height * 0.22;
+            
+            createBranch(startX, startY, trunkLen, -90, 0);
+        }
+
+        function createBranch(x, y, len, angle, depth) {
+            // Calculate end point
+            const rad = angle * Math.PI / 180;
+            const endX = x + len * Math.cos(rad);
+            const endY = y + len * Math.sin(rad);
+
+            // Store branch segment for rendering
+            state.nodes.push({
+                type: 'branch',
+                x1: x, y1: y,
+                x2: endX, y2: endY,
+                depth: depth,
+                angle: angle,
+                len: len
+            });
+
+            // If we are near the end, add "leaves" (Data Nodes)
+            if (depth > 4) {
+                // Chance to spawn a data node
+                if (Math.random() > 0.3) {
+                    state.nodes.push({
+                        type: 'leaf',
+                        x: endX,
+                        y: endY,
+                        size: (maxDepth - depth) * 3 + 2,
+                        depth: depth,
+                        active: true,
+                        pulseOffset: Math.random() * Math.PI * 2,
+                        icon: getRandomIcon()
+                    });
+                }
+            }
+
+            if (depth < maxDepth) {
+                // Recursive calls
+                // Randomize angle slightly for natural look
+                const activeVisuals = state.visualLevel > 1;
+                const subBranches = activeVisuals ? 2 + Math.floor(Math.random() * 2) : 2; // More branches at higher levels
+
+                createBranch(endX, endY, len * lengthScale, angle - branchAngle + (Math.random()*10-5), depth + 1);
+                createBranch(endX, endY, len * lengthScale, angle + branchAngle + (Math.random()*10-5), depth + 1);
+                
+                if (state.visualLevel >= 3 && depth > 2 && Math.random() > 0.8) {
+                     createBranch(endX, endY, len * lengthScale, angle + (Math.random()*40-20), depth + 1);
+                }
+            }
+        }
+
+        function getRandomIcon() {
+            const icons = ['⌘', '⌥', '⎔', '⌖', '⚡', '⌬', '⏣', '0', '1'];
+            return icons[Math.floor(Math.random() * icons.length)];
+        }
+
+        // --- Rendering ---
+
+        function draw() {
+            ctx.clearRect(0, 0, width, height);
+            
+            // Global composite operation for glow
+            ctx.globalCompositeOperation = 'screen';
+
+            const time = Date.now() * 0.002;
+
+            // Draw Branches
+            ctx.lineCap = 'round';
+            
+            state.nodes.forEach(node => {
+                if (node.type === 'branch') {
+                    ctx.beginPath();
+                    ctx.moveTo(node.x1, node.y1);
+                    ctx.lineTo(node.x2, node.y2);
+                    
+                    // Color Gradient Logic based on depth and position
+                    // Left side green, Right side purple/pink
+                    const xRatio = node.x2 / width;
+                    let hue = 120 + (xRatio * 180); // 120 (green) to 300 (magenta)
+                    
+                    ctx.strokeStyle = `hsla(${hue}, 80%, 60%, ${1 - node.depth/maxDepth + 0.1})`;
+                    ctx.lineWidth = (maxDepth - node.depth) * (state.visualLevel >= 2 ? 1.5 : 1);
+                    
+                    // Add subtle pulse to width
+                    if (state.visualLevel >= 3) {
+                        ctx.lineWidth += Math.sin(time + node.depth) * 0.5;
+                    }
+
+                    ctx.stroke();
+                }
+            });
+
+            // Draw Leaves (Data Nodes)
+            state.nodes.forEach(node => {
+                if (node.type === 'leaf') {
+                    const pulse = Math.sin(time + node.pulseOffset);
+                    const size = node.size + pulse;
+                    
+                    // Determine color
+                    const xRatio = node.x / width;
+                    let color = xRatio < 0.5 ? '#00ff41' : '#bc13fe';
+                    if (Math.abs(xRatio - 0.5) < 0.1) color = '#00f3ff'; // Center blue
+
+                    ctx.fillStyle = color;
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = color;
+
+                    // Draw shape based on icon
+                    ctx.font = `${Math.floor(size * 2)}px monospace`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    
+                    // If node was recently clicked, it might flash white
+                    if (node.clickedTime && Date.now() - node.clickedTime < 200) {
+                        ctx.fillStyle = '#ffffff';
+                        ctx.shadowBlur = 20;
+                    }
+
+                    ctx.fillText(node.icon, node.x, node.y);
+                    
+                    // Reset shadow for performance
+                    ctx.shadowBlur = 0;
+                }
+            });
+
+            ctx.globalCompositeOperation = 'source-over';
+            
+            requestAnimationFrame(draw);
+        }
+
+        // --- Interaction ---
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mx = e.clientX - rect.left;
+            const my = e.clientY - rect.top;
+            
+            // Simple distance check for cursor style
+            let hovering = false;
+            for (let node of state.nodes) {
+                if (node.type === 'leaf') {
+                    const dx = mx - node.x;
+                    const dy = my - node.y;
+                    if (dx*dx + dy*dy < 400) { // 20px radius squared
+                        hovering = true;
+                        break;
+                    }
+                }
+            }
+            canvas.style.cursor = hovering ? 'pointer' : 'default';
+        });
+
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mx = e.clientX - rect.left;
+            const my = e.clientY - rect.top;
+
+            // Trigger lightning effect randomly on click
+            triggerLightning();
+
+            let hit = false;
+            for (let node of state.nodes) {
+                if (node.type === 'leaf') {
+                    const dx = mx - node.x;
+                    const dy = my - node.y;
+                    if (dx*dx + dy*dy < 900) { // 30px radius hit area
+                        harvestNode(node);
+                        spawnFloatingText(mx, my, `+${state.clickPower}`);
+                        hit = true;
+                        // Don't break, allow multi-hit if overlapped (combo feel)
+                    }
+                }
+            }
+
+            if (!hit) {
+                // Miss penalty or just effect? Just effect.
+                spawnFloatingText(mx, my, "MISS", "#555");
+            }
+        });
+
+        function harvestNode(node) {
+            state.score += state.clickPower;
+            node.clickedTime = Date.now();
+            // Change icon temporarily
+            const originalIcon = node.icon;
+            node.icon = "★";
+            setTimeout(() => { node.icon = originalIcon; }, 500);
+            
+            updateUI();
+        }
+
+        function triggerLightning() {
+            lightningDiv.style.opacity = Math.random() * 0.5 + 0.2;
+            setTimeout(() => {
+                lightningDiv.style.opacity = 0;
+            }, 100);
+        }
+
+        function spawnFloatingText(x, y, text, color = null) {
+            const el = document.createElement('div');
+            el.className = 'floating-text';
+            el.innerText = text;
+            el.style.left = x + 'px';
+            el.style.top = y + 'px';
+            if (color) el.style.color = color;
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 1000);
+        }
+
+        // --- Game Logic ---
+
+        function buyUpgrade(type) {
+            if (type === 'auto' && state.score >= costs.auto) {
+                state.score -= costs.auto;
+                state.autoClicker++;
+                costs.auto = Math.floor(costs.auto * 1.5);
+                document.getElementById('message-log').innerText = "AUTO-HARVESTER INTEGRATED.";
+            } else if (type === 'efficiency' && state.score >= costs.efficiency) {
+                state.score -= costs.efficiency;
+                state.clickPower++;
+                costs.efficiency = Math.floor(costs.efficiency * 1.5);
+                document.getElementById('message-log').innerText = "DATA COMPRESSION OPTIMIZED.";
+            } else if (type === 'visual' && state.score >= costs.visual) {
+                state.score -= costs.visual;
+                state.visualLevel++;
+                costs.visual = costs.visual * 3;
+                maxDepth++; // Grow tree bigger
+                generateTree(); // Regenerate
+                document.getElementById('message-log').innerText = "VISUAL CORTEX UPGRADED. RE-MAPPING NEURAL PATHWAYS.";
+            } else {
+                document.getElementById('message-log').innerText = "INSUFFICIENT DATA FRAGMENTS.";
+                return;
+            }
+            updateUI();
+        }
+
+        function updateUI() {
+            document.getElementById('score').innerText = state.score;
+            document.getElementById('nodes-active').innerText = state.nodes.filter(n => n.type === 'leaf').length;
+            
+            // Update Button Text with new costs
+            document.getElementById('btn-auto').innerText = `Auto-Harvester [Cost: ${costs.auto}] (Lvl ${state.autoClicker})`;
+            document.getElementById('btn-eff').innerText = `Data Compression [Cost: ${costs.efficiency}] (Lvl ${state.clickPower})`;
+            document.getElementById('btn-visual').innerText = `Visual Cortex [Cost: ${costs.visual}] (Lvl ${state.visualLevel})`;
+
+            // Disable buttons if cant afford
+            document.getElementById('btn-auto').disabled = state.score < costs.auto;
+            document.getElementById('btn-eff').disabled = state.score < costs.efficiency;
+            document.getElementById('btn-visual').disabled = state.score < costs.visual;
+        }
+
+        // Auto Clicker Loop
+        setInterval(() => {
+            if (state.autoClicker > 0) {
+                const leaves = state.nodes.filter(n => n.type === 'leaf');
+                if (leaves.length > 0) {
+                    // Harvest random nodes based on autoClicker count
+                    for(let i=0; i<state.autoClicker; i++) {
+                        const randomNode = leaves[Math.floor(Math.random() * leaves.length)];
+                        // Visual effect only, don't spawn text to avoid clutter
+                        randomNode.clickedTime = Date.now();
+                        state.score += 1;
+                    }
+                    updateUI();
+                }
+            }
+        }, 1000);
+
+        // Init
+        resize();
+        draw();
+        updateUI();
+
+        // Initial Animation
+        setTimeout(() => {
+            document.getElementById('message-log').innerText = "ESTABLISHING NEURAL HANDSHAKE...";
+        }, 500);
+        setTimeout(() => {
+            document.getElementById('message-log').innerText = "SYSTEM ONLINE.";
+        }, 2000);
+
+    </script>
+</body>
+</html>

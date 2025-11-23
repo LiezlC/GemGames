@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beyond Automation: AI Lab Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap');
+
+        :root {
+            --color-bg: #0f172a;
+            --color-accent-cyan: #22d3ee;
+            --color-accent-coral: #f87171;
+            --color-accent-purple: #a78bfa;
+            --floor-size: 300px;
+        }
+
+        body {
+            background-color: var(--color-bg);
+            color: white;
+            font-family: 'Space Mono', monospace;
+            overflow: hidden;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+        }
+
+        /* UI Panels */
+        .panel {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 100;
+        }
+
+        .btn-action {
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-action:active {
+            transform: scale(0.95);
+        }
+        .btn-action::after {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: 0.5s;
+        }
+        .btn-action:hover::after {
+            left: 100%;
+        }
+
+        /* Isometric Scene Container */
+        #scene-container {
+            flex-grow: 1;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 2000px;
+            overflow: hidden;
+            cursor: crosshair;
+        }
+
+        /* The Isometric World */
+        #iso-world {
+            position: relative;
+            transform-style: preserve-3d;
+            transform: rotateX(60deg) rotateZ(-45deg);
+            transition: transform 0.5s ease-out;
+            width: var(--floor-size);
+            height: var(--floor-size);
+        }
+
+        /* Floors */
+        .floor {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: rgba(30, 41, 59, 0.9);
+            border: 2px solid var(--color-accent-cyan);
+            box-shadow: 0 0 15px rgba(34, 211, 238, 0.2);
+            transform-style: preserve-3d;
+            transition: all 0.5s ease;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(4, 1fr);
+            padding: 10px;
+            gap: 5px;
+        }
+
+        .floor:hover {
+            border-color: white;
+            box-shadow: 0 0 25px rgba(34, 211, 238, 0.4);
+        }
+
+        /* Floor Levels (Stacking) */
+        .floor-0 { transform: translateZ(0px); }
+        .floor-1 { transform: translateZ(100px); border-color: var(--color-accent-purple); }
+        .floor-2 { transform: translateZ(200px); border-color: var(--color-accent-coral); }
+
+        /* Connecting Cables (Decor) */
+        .cable {
+            position: absolute;
+            width: 2px;
+            background: linear-gradient(to bottom, var(--color-accent-cyan), var(--color-accent-coral));
+            transform-origin: top center;
+            opacity: 0.6;
+        }
+
+        /* Objects on Floors */
+        .obj {
+            transform-style: preserve-3d;
+            position: relative;
+            transition: transform 0.3s;
+        }
+        
+        /* Generic 3D Cube for objects */
+        .cube {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transform: translateZ(10px);
+        }
+        .cube-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            backface-visibility: hidden;
+        }
+        .face-front  { transform: rotateY(  0deg) translateZ(15px); background: rgba(255,255,255,0.1); }
+        .face-right  { transform: rotateY( 90deg) translateZ(15px); background: rgba(255,255,255,0.05); }
+        .face-back   { transform: rotateY(180deg) translateZ(15px); }
+        .face-left   { transform: rotateY(-90deg) translateZ(15px); }
+        .face-top    { transform: rotateX( 90deg) translateZ(15px); background: rgba(255,255,255,0.2); }
+        .face-bottom { transform: rotateX(-90deg) translateZ(15px); }
+
+        /* Specific Object Styles */
+        .server .face-front { background: rgba(34, 211, 238, 0.3); box-shadow: inset 0 0 10px var(--color-accent-cyan); }
+        .desk .face-top { background: rgba(248, 113, 113, 0.3); }
+        .ai-node .face-front { background: rgba(167, 139, 250, 0.4); border-radius: 50%; }
+
+        /* Floating Particles */
+        .particle {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: white;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        /* Animations */
+        @keyframes float {
+            0%, 100% { transform: translateZ(10px); }
+            50% { transform: translateZ(25px); }
+        }
+        .floating { animation: float 3s ease-in-out infinite; }
+
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 10px var(--color-accent-cyan); }
+            50% { box-shadow: 0 0 30px var(--color-accent-cyan), 0 0 10px white; }
+        }
+        .pulsing { animation: pulse-glow 2s infinite; }
+
+    </style>
+</head>
+<body>
+
+    <!-- Left Sidebar: Stats -->
+    <div class="panel w-80 h-full p-6 flex flex-col border-r border-slate-700">
+        <h1 class="text-2xl font-bold mb-2 text-cyan-400">BEYOND<br>AUTOMATION</h1>
+        <p class="text-xs text-slate-400 mb-8">AI Creative Lab Simulator v1.0</p>
+
+        <div class="space-y-6 flex-grow">
+            <div>
+                <div class="text-slate-400 text-xs uppercase tracking-widest">Creative Sparks</div>
+                <div class="text-4xl font-bold text-white" id="score">0</div>
+                <div class="text-sm text-cyan-300">+<span id="sps">0</span>/sec</div>
+            </div>
+
+            <div>
+                <div class="text-slate-400 text-xs uppercase tracking-widest mb-2">System Status</div>
+                <div class="h-2 bg-slate-800 rounded-full overflow-hidden">
+                    <div id="progress-bar" class="h-full bg-gradient-to-r from-cyan-500 to-coral-500 w-0 transition-all duration-300"></div>
+                </div>
+                <div class="flex justify-between text-xs mt-1 text-slate-500">
+                    <span>Initializing...</span>
+                    <span id="level-text">Lvl 1</span>
+                </div>
+            </div>
+
+            <div class="bg-slate-800/50 p-4 rounded border border-slate-700">
+                <div class="text-xs text-coral-400 mb-2">LOGS</div>
+                <div id="logs" class="text-xs text-slate-300 font-mono h-32 overflow-y-auto space-y-1">
+                    <div>> System booted.</div>
+                    <div>> Waiting for input...</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="text-xs text-slate-600 mt-4">
+            Click the lab floor to generate sparks.
+        </div>
+    </div>
+
+    <!-- Center: The Game World -->
+    <div id="scene-container">
+        <div id="iso-world">
+            <!-- Floor 1: Infrastructure (Blue) -->
+            <div class="floor floor-0" id="floor-0" onclick="clickFloor(event, 0)">
+                <!-- Initial Server -->
+                <div class="obj server cube-wrapper" style="grid-column: 2; grid-row: 2;">
+                    <div class="cube pulsing">
+                        <div class="cube-face face-front"></div>
+                        <div class="cube-face face-back"></div>
+                        <div class="cube-face face-right"></div>
+                        <div class="cube-face face-left"></div>
+                        <div class="cube-face face-top"></div>
+                        <div class="cube-face face-bottom"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Sidebar: Upgrades -->
+    <div class="panel w-80 h-full p-6 flex flex-col border-l border-slate-700 overflow-y-auto">
+        <h2 class="text-xl font-bold mb-6 text-coral-400">Research & Build</h2>
+
+        <div id="upgrades-list" class="space-y-4">
+            <!-- Generated by JS -->
+        </div>
+    </div>
+
+    <script>
+        // --- Game State ---
+        const state = {
+            sparks: 0,
+            sps: 0, // Sparks per second
+            clickPower: 1,
+            level: 1,
+            floorsUnlocked: 1,
+            items: []
+        };
+
+        // --- Configuration ---
+        const upgrades = [
+            {
+                id: 'server',
+                name: 'Data Server',
+                cost: 15,
+                sps: 1,
+                desc: 'Basic automation unit.',
+                icon: '💾',
+                color: 'cyan',
+                floor: 0,
+                type: 'server'
+            },
+            {
+                id: 'human',
+                name: 'Researcher',
+                cost: 100,
+                sps: 5,
+                desc: 'Human intuition boosts output.',
+                icon: '👩‍💻',
+                color: 'coral',
+                floor: 0,
+                type: 'desk'
+            },
+            {
+                id: 'gpu',
+                name: 'Neural Cluster',
+                cost: 500,
+                sps: 20,
+                desc: 'Deep learning capabilities.',
+                icon: '🧠',
+                color: 'purple',
+                floor: 1,
+                type: 'ai-node'
+            },
+            {
+                id: 'art',
+                name: 'Generative AI',
+                cost: 2000,
+                sps: 75,
+                desc: 'Creative synthesis engine.',
+                icon: '🎨',
+                color: 'pink',
+                floor: 2,
+                type: 'art-piece'
+            }
+        ];
+
+        const floorConfigs = [
+            { id: 0, name: "Infrastructure Layer", z: 0, color: "cyan" },
+            { id: 1, name: "Neural Layer", z: 100, color: "purple" },
+            { id: 2, name: "Creative Layer", z: 200, color: "coral" }
+        ];
+
+        // --- DOM Elements ---
+        const scoreEl = document.getElementById('score');
+        const spsEl = document.getElementById('sps');
+        const logsEl = document.getElementById('logs');
+        const upgradesListEl = document.getElementById('upgrades-list');
+        const isoWorld = document.getElementById('iso-world');
+        const progressBar = document.getElementById('progress-bar');
+        const levelText = document.getElementById('level-text');
+
+        // --- Initialization ---
+        function init() {
+            renderUpgrades();
+            gameLoop();
+            log("Simulation started. Click the grid to generate data.");
+        }
+
+        // --- Core Mechanics ---
+        function addSparks(amount) {
+            state.sparks += amount;
+            updateUI();
+            checkUnlocks();
+        }
+
+        function clickFloor(e, floorIndex) {
+            // Visual feedback
+            createParticle(e.clientX, e.clientY, floorConfigs[floorIndex].color);
+            
+            // Logic
+            addSparks(state.clickPower);
+            
+            // 3D Tilt effect on click
+            const rect = isoWorld.getBoundingClientRect();
+            const x = (e.clientX - rect.left) / rect.width - 0.5;
+            const y = (e.clientY - rect.top) / rect.height - 0.5;
+            
+            isoWorld.style.transform = `rotateX(60deg) rotateZ(-45deg) rotateX(${y * 5}deg) rotateY(${x * 5}deg)`;
+            setTimeout(() => {
+                isoWorld.style.transform = `rotateX(60deg) rotateZ(-45deg)`;
+            }, 100);
+        }
+
+        function buyUpgrade(index) {
+            const upgrade = upgrades[index];
+            if (state.sparks >= upgrade.cost) {
+                state.sparks -= upgrade.cost;
+                state.sps += upgrade.sps;
+                upgrade.cost = Math.floor(upgrade.cost * 1.3); // Price scaling
+                
+                // Add visual element to world
+                spawnObject(upgrade);
+                
+                log(`Acquired ${upgrade.name}. Output increased.`);
+                renderUpgrades();
+                updateUI();
+            } else {
+                log("Insufficient sparks.");
+            }
+        }
+
+        // --- Visuals & World Building ---
+        function spawnObject(upgrade) {
+            // Ensure floor exists
+            if (upgrade.floor >= state.floorsUnlocked) {
+                unlockFloor(upgrade.floor);
+            }
+
+            const floorEl = document.getElementById(`floor-${upgrade.floor}`);
+            if (!floorEl) return;
+
+            // Find empty spot (random for now, grid logic simplified)
+            const col = Math.floor(Math.random() * 4) + 1;
+            const row = Math.floor(Math.random() * 4) + 1;
+
+            const wrapper = document.createElement('div');
+            wrapper.className = `obj ${upgrade.type} cube-wrapper floating`;
+            wrapper.style.gridColumn = col;
+            wrapper.style.gridRow = row;
+            // Random delay for float animation so they don't all sync
+            wrapper.style.animationDelay = `-${Math.random() * 2}s`;
+
+            const cube = document.createElement('div');
+            cube.className = 'cube';
+            
+            // Define faces
+            const faces = ['front', 'back', 'right', 'left', 'top', 'bottom'];
+            faces.forEach(face => {
+                const div = document.createElement('div');
+                div.className = `cube-face face-${face}`;
+                if (face === 'top' || face === 'front') {
+                    div.innerHTML = upgrade.icon;
+                    div.style.color = `var(--color-accent-${upgrade.color})`;
+                    div.style.textShadow = `0 0 10px var(--color-accent-${upgrade.color})`;
+                }
+                cube.appendChild(div);
+            });
+
+            wrapper.appendChild(cube);
+            floorEl.appendChild(wrapper);
+        }
+
+        function unlockFloor(index) {
+            if (document.getElementById(`floor-${index}`)) return;
+            
+            state.floorsUnlocked = index + 1;
+            state.level++;
+            
+            const config = floorConfigs[index];
+            const div = document.createElement('div');
+            div.id = `floor-${index}`;
+            div.className = `floor floor-${index}`;
+            div.onclick = (e) => clickFloor(e, index);
+            
+            // Add some random initial debris/decor
+            div.innerHTML = ''; // Clear
+            
+            isoWorld.appendChild(div);
+            
+            // Animate entry
+            div.style.opacity = '0';
+            div.style.transform = `translateZ(${config.z + 500}px)`;
+            setTimeout(() => {
+                div.style.opacity = '1';
+                div.style.transform = `translateZ(${config.z}px)`;
+            }, 100);
+
+            log(`New Layer Unlocked: ${config.name}`);
+        }
+
+        function createParticle(x, y, colorName) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            p.style.left = x + 'px';
+            p.style.top = y + 'px';
+            
+            // Map color names to hex
+            const colors = {
+                cyan: '#22d3ee',
+                coral: '#f87171',
+                purple: '#a78bfa',
+                pink: '#f472b6'
+            };
+            p.style.backgroundColor = colors[colorName] || 'white';
+            p.style.boxShadow = `0 0 10px ${colors[colorName] || 'white'}`;
+
+            document.body.appendChild(p);
+
+            // Animate
+            const destX = x + (Math.random() - 0.5) * 200;
+            const destY = y - 100 - Math.random() * 100;
+
+            const animation = p.animate([
+                { transform: 'translate(0,0) scale(1)', opacity: 1 },
+                { transform: `translate(${destX - x}px, ${destY - y}px) scale(0)`, opacity: 0 }
+            ], {
+                duration: 1000,
+                easing: 'cubic-bezier(0, .9, .57, 1)'
+            });
+
+            animation.onfinish = () => p.remove();
+        }
+
+        // --- UI Updates ---
+        function renderUpgrades() {
+            upgradesListEl.innerHTML = '';
+            upgrades.forEach((u, index) => {
+                const btn = document.createElement('div');
+                btn.className = `btn-action p-4 rounded bg-slate-800 border border-slate-600 cursor-pointer hover:bg-slate-700 hover:border-${u.color}-400 group`;
+                
+                // Disable style if too expensive
+                if (state.sparks < u.cost) {
+                    btn.classList.add('opacity-50');
+                }
+
+                btn.innerHTML = `
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="font-bold text-${u.color}-400">${u.icon} ${u.name}</span>
+                        <span class="text-sm bg-slate-900 px-2 py-1 rounded text-white font-mono">${u.cost}⚡</span>
+                    </div>
+                    <div class="text-xs text-slate-400 group-hover:text-slate-300">${u.desc} (+${u.sps}/s)</div>
+                `;
+                btn.onclick = () => buyUpgrade(index);
+                upgradesListEl.appendChild(btn);
+            });
+        }
+
+        function updateUI() {
+            scoreEl.innerText = Math.floor(state.sparks).toLocaleString();
+            spsEl.innerText = state.sps.toLocaleString();
+            
+            // Progress bar logic (arbitrary goal for next level)
+            const goal = state.level * 500;
+            const progress = Math.min(100, (state.sparks / goal) * 100);
+            progressBar.style.width = `${progress}%`;
+            levelText.innerText = `Layer ${state.floorsUnlocked}`;
+            
+            // Re-render upgrades to update opacity based on affordability
+            // Optimization: could just toggle classes, but this is fine for small list
+            Array.from(upgradesListEl.children).forEach((btn, idx) => {
+                if (state.sparks < upgrades[idx].cost) {
+                    btn.classList.add('opacity-50');
+                } else {
+                    btn.classList.remove('opacity-50');
+                }
+            });
+        }
+
+        function log(msg) {
+            const line = document.createElement('div');
+            line.innerText = `> ${msg}`;
+            logsEl.prepend(line);
+            if (logsEl.children.length > 20) logsEl.lastChild.remove();
+        }
+
+        function checkUnlocks() {
+            // Auto unlock next floor if rich enough (simple progression)
+            if (state.sparks > 500 && state.floorsUnlocked < 2) {
+                // Suggestion in logs, actual unlock happens on purchase for now
+                // But let's add a visual cue
+            }
+        }
+
+        // --- Game Loop ---
+        let lastTime = 0;
+        function gameLoop(timestamp) {
+            if (!lastTime) lastTime = timestamp;
+            const deltaTime = timestamp - lastTime;
+
+            if (deltaTime >= 1000) {
+                addSparks(state.sps);
+                lastTime = timestamp;
+                
+                // Random ambient particle from active machines
+                if (state.sps > 0) {
+                    const rect = isoWorld.getBoundingClientRect();
+                    createParticle(
+                        rect.left + rect.width/2 + (Math.random()-0.5)*100, 
+                        rect.top + rect.height/2 + (Math.random()-0.5)*100, 
+                        'cyan'
+                    );
+                }
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Start
+        init();
+
+        // Add initial "Core" click listener
+        document.querySelector('.server').addEventListener('click', (e) => {
+            e.stopPropagation();
+            clickFloor(e, 0);
+        });
+
+    </script>
+</body>
+</html>

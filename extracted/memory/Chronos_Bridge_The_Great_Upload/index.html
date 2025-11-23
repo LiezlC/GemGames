@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chronos Bridge: The Great Upload</title>
+    <style>
+        :root {
+            --space-bg: #050510;
+            --old-earth-base: #d4b483;
+            --old-earth-shadow: #8c6e45;
+            --new-earth-glow: #00f3ff;
+            --new-earth-core: #002233;
+            --gold: #ffd700;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: var(--space-bg);
+            background-image: 
+                radial-gradient(circle at 50% 50%, #1a1a2e 0%, #000000 100%);
+            overflow: hidden;
+            font-family: 'Courier New', Courier, monospace;
+            color: white;
+            user-select: none;
+        }
+
+        /* Stars */
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            opacity: 0.8;
+            animation: twinkle infinite ease-in-out;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; transform: scale(0.8); }
+            50% { opacity: 1; transform: scale(1.2); }
+        }
+
+        /* UI Overlay */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .hud-panel {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 15px;
+            border-radius: 8px;
+            pointer-events: auto;
+            backdrop-filter: blur(5px);
+            max-width: 300px;
+        }
+
+        .hud-top {
+            align-self: center;
+            text-align: center;
+            border-color: var(--gold);
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.2);
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            background: linear-gradient(to right, var(--old-earth-base), var(--new-earth-glow));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: 0.9rem;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        button {
+            background: transparent;
+            border: 1px solid var(--new-earth-glow);
+            color: var(--new-earth-glow);
+            padding: 8px 12px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.8rem;
+            transition: all 0.3s;
+            border-radius: 4px;
+            flex: 1;
+        }
+
+        button:hover:not(:disabled) {
+            background: rgba(0, 243, 255, 0.2);
+            box-shadow: 0 0 10px var(--new-earth-glow);
+        }
+
+        button:disabled {
+            border-color: #555;
+            color: #555;
+            cursor: not-allowed;
+        }
+
+        /* The Main Stage */
+        #universe {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 800px;
+            height: 400px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            perspective: 1000px;
+        }
+
+        /* The Globes */
+        .globe-container {
+            width: 200px;
+            height: 200px;
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .globe-container:active {
+            transform: scale(0.95);
+        }
+
+        .globe {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            animation: rotateGlobe 20s linear infinite;
+        }
+
+        /* Left Globe: The Past (Analog) */
+        #globe-past .globe {
+            background: radial-gradient(circle at 30% 30%, var(--old-earth-base), var(--old-earth-shadow));
+            box-shadow: 
+                inset -20px -20px 50px rgba(0,0,0,0.8),
+                0 0 20px rgba(212, 180, 131, 0.3);
+            border: 2px solid rgba(139, 69, 19, 0.3);
+            overflow: hidden;
+        }
+
+        /* Texture for Old Globe (CSS Patterns) */
+        #globe-past .texture {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background-image: 
+                repeating-linear-gradient(0deg, transparent, transparent 19px, rgba(80, 50, 20, 0.1) 20px),
+                repeating-linear-gradient(90deg, transparent, transparent 19px, rgba(80, 50, 20, 0.1) 20px);
+            opacity: 0.6;
+            animation: rotateTexture 20s linear infinite;
+        }
+        
+        /* Compass Rose on Old Globe */
+        .compass-rose {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 60%;
+            height: 60%;
+            transform: translate(-50%, -50%);
+            border: 1px solid rgba(80, 50, 20, 0.3);
+            border-radius: 50%;
+        }
+        .compass-rose::before, .compass-rose::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            background: rgba(80, 50, 20, 0.2);
+            transform: translate(-50%, -50%);
+        }
+        .compass-rose::before { width: 100%; height: 1px; }
+        .compass-rose::after { width: 1px; height: 100%; }
+
+        /* Right Globe: The Future (Digital) */
+        #globe-future .globe {
+            background: radial-gradient(circle at 30% 30%, rgba(0, 243, 255, 0.1), var(--new-earth-core));
+            box-shadow: 
+                inset 0 0 30px var(--new-earth-glow),
+                0 0 30px rgba(0, 243, 255, 0.4);
+            border: 1px solid rgba(0, 243, 255, 0.5);
+        }
+
+        /* Texture for New Globe (Wireframe) */
+        #globe-future .texture {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background-image: 
+                linear-gradient(rgba(0, 243, 255, 0.3) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 243, 255, 0.3) 1px, transparent 1px);
+            background-size: 20px 20px;
+            box-shadow: inset 0 0 40px var(--new-earth-core);
+            animation: rotateTexture 15s linear infinite reverse;
+        }
+
+        /* The Connection (SVG) */
+        #connection-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .infinity-path {
+            fill: none;
+            stroke: url(#gradient-stream);
+            stroke-width: 2;
+            stroke-dasharray: 10, 5;
+            animation: flow 1s linear infinite;
+            opacity: 0.6;
+        }
+
+        @keyframes flow {
+            to { stroke-dashoffset: -15; }
+        }
+
+        @keyframes rotateGlobe {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes rotateTexture {
+            0% { background-position: 0 0; }
+            100% { background-position: 100px 0; }
+        }
+
+        /* Floating Particles */
+        .particle {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 0 10px white;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .data-text {
+            position: absolute;
+            color: var(--gold);
+            font-size: 12px;
+            font-weight: bold;
+            pointer-events: none;
+            animation: floatUp 1s forwards;
+        }
+
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-30px); }
+        }
+
+        /* Central Burst */
+        .burst {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            background: radial-gradient(circle, #fff, var(--gold), transparent);
+            border-radius: 50%;
+            box-shadow: 0 0 40px 10px var(--gold);
+            animation: pulseBurst 2s infinite;
+            z-index: -1;
+        }
+
+        @keyframes pulseBurst {
+            0% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
+            50% { transform: translate(-50%, -50%) scale(2); opacity: 0.8; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
+        }
+
+        /* Responsive */
+        @media (max-width: 850px) {
+            #universe {
+                width: 90%;
+                flex-direction: column;
+                height: 70%;
+            }
+            .globe-container {
+                width: 150px;
+                height: 150px;
+            }
+            .infinity-path {
+                display: none; /* Hard to align SVG perfectly in column mode without complex JS, hiding for simplicity on mobile */
+            }
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Background Stars -->
+    <div id="starfield"></div>
+
+    <!-- SVG Layer for Connection -->
+    <svg id="connection-layer">
+        <defs>
+            <linearGradient id="gradient-stream" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#d4b483" stop-opacity="0.2" />
+                <stop offset="50%" stop-color="#ffffff" stop-opacity="1" />
+                <stop offset="100%" stop-color="#00f3ff" stop-opacity="0.2" />
+            </linearGradient>
+        </defs>
+        <!-- Multiple paths for the "string" effect -->
+        <path class="infinity-path" id="path1" d="" />
+        <path class="infinity-path" id="path2" d="" style="animation-duration: 1.5s; stroke-width: 1px; opacity: 0.4;" />
+        <path class="infinity-path" id="path3" d="" style="animation-duration: 2s; stroke-width: 1px; opacity: 0.3;" />
+    </svg>
+
+    <!-- Main Universe Container -->
+    <div id="universe">
+        <!-- The Past -->
+        <div id="globe-past" class="globe-container" onclick="extractData(event)">
+            <div class="globe">
+                <div class="texture"></div>
+                <div class="compass-rose"></div>
+            </div>
+            <div style="position:absolute; bottom:-30px; width:100%; text-align:center; color:var(--old-earth-base);">THE ANALOG</div>
+        </div>
+
+        <!-- Central Energy Source -->
+        <div class="burst"></div>
+
+        <!-- The Future -->
+        <div id="globe-future" class="globe-container" onclick="boostUpload()">
+            <div class="globe">
+                <div class="texture"></div>
+            </div>
+            <div style="position:absolute; bottom:-30px; width:100%; text-align:center; color:var(--new-earth-glow);">THE DIGITAL</div>
+        </div>
+    </div>
+
+    <!-- UI Layer -->
+    <div id="ui-layer">
+        <div class="hud-panel hud-top">
+            <h1>Chronos Bridge</h1>
+            <div class="stats">
+                <span>Data Uploaded:</span>
+                <span id="score-display">0 TB</span>
+            </div>
+            <div style="margin-top: 5px; font-size: 0.8rem; color: #aaa;">
+                Progress: <span id="progress-percent">0</span>%
+            </div>
+            <div style="width: 100%; background: #333; height: 4px; margin-top: 5px; border-radius: 2px;">
+                <div id="progress-bar" style="width: 0%; height: 100%; background: linear-gradient(to right, var(--gold), var(--new-earth-glow)); transition: width 0.3s;"></div>
+            </div>
+        </div>
+
+        <div class="hud-panel" style="align-self: flex-start;">
+            <h3 style="margin:0 0 10px 0; color:var(--gold); font-size: 0.9rem;">UPGRADES</h3>
+            <div class="controls">
+                <button id="btn-auto" onclick="buyAutoClicker()" disabled>
+                    Auto-Scribe<br><span style="font-size:0.7em">Cost: 50 TB</span>
+                </button>
+                <button id="btn-boost" onclick="buyBandwidth()" disabled>
+                    Fiber Optics<br><span style="font-size:0.7em">Cost: 100 TB</span>
+                </button>
+            </div>
+            <div style="margin-top:10px; font-size: 0.7rem; color: #ccc;">
+                <i>Click the Analog World to extract history.</i>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Game State ---
+        let state = {
+            score: 0,
+            clickValue: 1,
+            autoClickers: 0,
+            bandwidth: 1,
+            maxScore: 10000
+        };
+
+        const els = {
+            score: document.getElementById('score-display'),
+            progress: document.getElementById('progress-percent'),
+            bar: document.getElementById('progress-bar'),
+            btnAuto: document.getElementById('btn-auto'),
+            btnBoost: document.getElementById('btn-boost'),
+            past: document.getElementById('globe-past'),
+            future: document.getElementById('globe-future'),
+            path1: document.getElementById('path1'),
+            path2: document.getElementById('path2'),
+            path3: document.getElementById('path3')
+        };
+
+        // --- Starfield Generation ---
+        function createStars() {
+            const count = 150;
+            const container = document.getElementById('starfield');
+            for(let i=0; i<count; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                const size = Math.random() * 2 + 1;
+                star.style.width = `${size}px`;
+                star.style.height = `${size}px`;
+                star.style.left = `${Math.random() * 100}vw`;
+                star.style.top = `${Math.random() * 100}vh`;
+                star.style.animationDuration = `${Math.random() * 3 + 2}s`;
+                star.style.animationDelay = `${Math.random() * 5}s`;
+                container.appendChild(star);
+            }
+        }
+        createStars();
+
+        // --- SVG Path Calculation ---
+        function updatePaths() {
+            const r1 = els.past.getBoundingClientRect();
+            const r2 = els.future.getBoundingClientRect();
+
+            // Centers
+            const p1 = { x: r1.left + r1.width/2, y: r1.top + r1.height/2 };
+            const p2 = { x: r2.left + r2.width/2, y: r2.top + r2.height/2 };
+            
+            // Midpoint
+            const mid = { x: (p1.x + p2.x)/2, y: (p1.y + p2.y)/2 };
+
+            // Control points for figure 8
+            // We want the curve to go out and cross in the middle
+            const dist = Math.abs(p2.x - p1.x);
+            const curveHeight = 100;
+
+            // Simple S-curve / Infinity approximation
+            // M p1x p1y C (p1x + dist/2) (p1y - h), (p2x - dist/2) (p2y + h), p2x p2y
+            // To make it a loop, we draw two curves. Top arc and bottom arc.
+            
+            // Let's just draw a nice flow line
+            // Start right side of P1, End left side of P2
+            const startX = p1.x + r1.width/2;
+            const endX = p2.x - r2.width/2;
+
+            const cp1x = startX + (endX - startX) * 0.5;
+            const cp1y = p1.y - curveHeight;
+            const cp2x = startX + (endX - startX) * 0.5;
+            const cp2y = p2.y + curveHeight;
+
+            // Drawing a figure 8 loop visually is complex with one path, 
+            // let's draw a sine-wave style connection that implies flow
+            
+            const d = `M ${startX} ${p1.y} 
+                       C ${startX + 50} ${p1.y}, ${mid.x} ${mid.y}, ${mid.x} ${mid.y}
+                       S ${endX - 50} ${p2.y}, ${endX} ${p2.y}`;
+
+            // Variations for the other paths to create volume
+            const d2 = `M ${startX} ${p1.y} 
+                       C ${startX + 50} ${p1.y + 20}, ${mid.x} ${mid.y + 20}, ${mid.x} ${mid.y}
+                       S ${endX - 50} ${p2.y - 20}, ${endX} ${p2.y}`;
+            
+            const d3 = `M ${startX} ${p1.y} 
+                       C ${startX + 50} ${p1.y - 20}, ${mid.x} ${mid.y - 20}, ${mid.x} ${mid.y}
+                       S ${endX - 50} ${p2.y + 20}, ${endX} ${p2.y}`;
+
+            els.path1.setAttribute('d', d);
+            els.path2.setAttribute('d', d2);
+            els.path3.setAttribute('d', d3);
+        }
+
+        window.addEventListener('resize', updatePaths);
+        setTimeout(updatePaths, 100); // Initial layout
+
+        // --- Game Logic ---
+
+        function updateUI() {
+            els.score.innerText = Math.floor(state.score) + " TB";
+            const pct = Math.min(100, (state.score / state.maxScore) * 100).toFixed(1);
+            els.progress.innerText = pct;
+            els.bar.style.width = pct + "%";
+
+            // Button states
+            els.btnAuto.disabled = state.score < 50;
+            els.btnBoost.disabled = state.score < 100;
+
+            // Visual feedback on Future Globe based on progress
+            const glowIntensity = 10 + (pct * 0.5);
+            els.future.querySelector('.globe').style.boxShadow = `inset 0 0 ${glowIntensity}px var(--new-earth-glow), 0 0 ${glowIntensity}px rgba(0, 243, 255, 0.4)`;
+        }
+
+        function spawnFloatingText(x, y, text) {
+            const el = document.createElement('div');
+            el.className = 'data-text';
+            el.style.left = x + 'px';
+            el.style.top = y + 'px';
+            el.innerText = text;
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 1000);
+        }
+
+        function spawnParticle(startRect, endRect) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            document.body.appendChild(p);
+
+            const startX = startRect.left + startRect.width/2;
+            const startY = startRect.top + startRect.height/2;
+            const endX = endRect.left + endRect.width/2;
+            const endY = endRect.top + endRect.height/2;
+
+            // Random offset for organic feel
+            const controlY = startY + (Math.random() > 0.5 ? -100 : 100);
+            const midX = (startX + endX) / 2;
+
+            // Animate using JS for curve
+            let progress = 0;
+            const speed = 0.02 * state.bandwidth; // Speed increases with bandwidth
+
+            function animate() {
+                progress += speed;
+                if (progress >= 1) {
+                    p.remove();
+                    // Add score when particle arrives
+                    state.score += state.clickValue;
+                    updateUI();
+                    return;
+                }
+
+                // Quadratic Bezier Curve math
+                // B(t) = (1-t)^2 * P0 + 2(1-t)t * P1 + t^2 * P2
+                const t = progress;
+                const invT = 1 - t;
+                
+                const x = (invT * invT * startX) + (2 * invT * t * midX) + (t * t * endX);
+                const y = (invT * invT * startY) + (2 * invT * t * controlY) + (t * t * endY);
+
+                p.style.left = x + 'px';
+                p.style.top = y + 'px';
+                
+                // Color shift from Gold to Blue
+                if (progress > 0.5) {
+                    p.style.background = '#00f3ff';
+                    p.style.boxShadow = '0 0 10px #00f3ff';
+                } else {
+                    p.style.background = '#ffd700';
+                    p.style.boxShadow = '0 0 10px #ffd700';
+                }
+
+                requestAnimationFrame(animate);
+            }
+            animate();
+        }
+
+        // --- Interactions ---
+
+        function extractData(e) {
+            // Visual feedback
+            const rect = els.past.getBoundingClientRect();
+            const futureRect = els.future.getBoundingClientRect();
+            
+            // Spawn multiple particles based on click value
+            for(let i=0; i< Math.ceil(state.clickValue); i++) {
+                setTimeout(() => {
+                    spawnParticle(rect, futureRect);
+                }, i * 50);
+            }
+
+            spawnFloatingText(e.clientX, e.clientY, "+DATA");
+            
+            // Tilt effect
+            els.past.style.transform = "scale(0.95) rotate(-5deg)";
+            setTimeout(() => els.past.style.transform = "scale(1) rotate(0deg)", 100);
+        }
+
+        function boostUpload() {
+            // Clicking the future globe just gives a small bonus or visual effect
+            if(state.score > 0) {
+                state.score += 1;
+                updateUI();
+                const rect = els.future.getBoundingClientRect();
+                spawnFloatingText(rect.left + rect.width/2, rect.top, "RECEIVED");
+            }
+        }
+
+        function buyAutoClicker() {
+            if (state.score >= 50) {
+                state.score -= 50;
+                state.autoClickers++;
+                updateUI();
+                startAutoClicker();
+            }
+        }
+
+        function buyBandwidth() {
+            if (state.score >= 100) {
+                state.score -= 100;
+                state.bandwidth += 0.5;
+                state.clickValue += 1; // Also increases data per packet
+                updateUI();
+            }
+        }
+
+        function startAutoClicker() {
+            // If it's the first one, start the interval
+            if (state.autoClickers === 1) {
+                setInterval(() => {
+                    if (state.autoClickers > 0) {
+                        const rect = els.past.getBoundingClientRect();
+                        const futureRect = els.future.getBoundingClientRect();
+                        // Simulate a click center of globe
+                        spawnParticle(rect, futureRect);
+                    }
+                }, 1000); // 1 second per auto clicker cycle
+            }
+        }
+
+        // Initialize
+        updateUI();
+
+    </script>
+</body>
+</html>
