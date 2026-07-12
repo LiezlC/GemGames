@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Valley Estate Architect</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --sky-day-top: #87CEEB;
+            --sky-day-btm: #E0F7FA;
+            --sky-night-top: #0f172a;
+            --sky-night-btm: #312e81;
+            
+            --hill-color: #8d7b68;
+            --grass-back: #a4c639;
+            --grass-front: #7c9c2d;
+            --road-color: #d2b48c;
+            
+            --house-wall: #fdfbf7;
+            --house-roof: #20b2aa; /* Teal roof from image */
+            
+            --transition-speed: 0.8s;
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Inter', system-ui, sans-serif;
+            background: #111;
+            color: white;
+        }
+
+        /* The Main Scene Canvas */
+        #scene {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(to bottom, var(--sky-day-top), var(--sky-day-btm));
+            transition: background var(--transition-speed);
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+        }
+
+        #scene.night {
+            background: linear-gradient(to bottom, var(--sky-night-top), var(--sky-night-btm));
+        }
+
+        /* Celestial Body (Sun/Moon) */
+        .celestial {
+            position: absolute;
+            top: 10%;
+            right: 10%;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: #ffd700;
+            box-shadow: 0 0 40px #ffd700;
+            transition: all var(--transition-speed);
+            z-index: 1;
+        }
+
+        #scene.night .celestial {
+            background: #f4f4f4;
+            box-shadow: 0 0 20px #f4f4f4;
+            right: 80%; /* Move across sky */
+            top: 15%;
+        }
+
+        /* Landscape Layers */
+        .layer {
+            position: absolute;
+            width: 100%;
+            transition: all 0.5s ease-out;
+        }
+
+        /* Distant Hills */
+        .hills {
+            bottom: 25%;
+            height: 40%;
+            background: var(--hill-color);
+            clip-path: polygon(0% 100%, 0% 20%, 20% 10%, 40% 25%, 60% 15%, 80% 30%, 100% 10%, 100% 100%);
+            z-index: 2;
+            opacity: 0.8;
+        }
+
+        /* Middle Ground (House sits here) */
+        .ground-mid {
+            bottom: 15%;
+            height: 25%;
+            background: var(--grass-back);
+            clip-path: ellipse(150% 100% at 50% 100%);
+            z-index: 3;
+        }
+
+        /* The House (CSS Art) */
+        .house-container {
+            position: absolute;
+            bottom: 28%; /* Sit on top of mid ground */
+            left: 50%;
+            transform: translateX(-50%) scale(0); /* Hidden initially */
+            width: 200px;
+            height: 120px;
+            z-index: 4;
+            transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .house-container.visible {
+            transform: translateX(-50%) scale(1);
+        }
+
+        .house-body {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 70px;
+            background: var(--house-wall);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-end;
+            padding-bottom: 5px;
+        }
+
+        .house-roof {
+            position: absolute;
+            top: 0;
+            width: 0; 
+            height: 0; 
+            border-left: 100px solid transparent;
+            border-right: 100px solid transparent;
+            border-bottom: 60px solid var(--house-roof);
+        }
+
+        .window {
+            width: 20px;
+            height: 30px;
+            background: #333;
+            border-top-left-radius: 10px;
+            border-top-right-radius: 10px;
+        }
+
+        .door {
+            width: 30px;
+            height: 45px;
+            background: #5d4037;
+            border-top-left-radius: 2px;
+            border-top-right-radius: 2px;
+        }
+
+        .oculus {
+            position: absolute;
+            top: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 24px;
+            height: 24px;
+            background: #333;
+            border-radius: 50%;
+            border: 3px solid white;
+            z-index: 5;
+        }
+
+        /* Foreground */
+        .ground-front {
+            bottom: 0;
+            height: 20%;
+            width: 100%;
+            background: var(--grass-front);
+            z-index: 10;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+        }
+
+        /* Dirt Road */
+        .road {
+            position: absolute;
+            bottom: 0;
+            left: 20%;
+            width: 200px;
+            height: 100%;
+            background: var(--road-color);
+            transform: skewX(-40deg);
+            border-left: 5px solid #c1a075;
+            opacity: 0;
+            transition: opacity 1s;
+        }
+        .road.visible { opacity: 1; }
+
+        /* Trees */
+        .tree {
+            position: absolute;
+            font-size: 40px;
+            bottom: 25%; /* Align with horizon roughly */
+            z-index: 5;
+            cursor: pointer;
+            transition: transform 0.2s;
+            user-select: none;
+            animation: popIn 0.4s ease-out forwards;
+        }
+        .tree:hover { transform: scale(1.2) rotate(5deg); }
+        
+        @keyframes popIn {
+            from { transform: scale(0) translateY(20px); opacity: 0; }
+            to { transform: scale(1) translateY(0); opacity: 1; }
+        }
+
+        /* UI Overlay */
+        #ui {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 600px;
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 20px;
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+
+        .btn-group {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        button {
+            flex: 1;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            padding: 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        button:hover {
+            background: rgba(255,255,255,0.2);
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button.primary {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            border: none;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: #94a3b8;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 10px;
+        }
+        
+        .stat-value { color: white; font-weight: bold; }
+
+        /* Floating particles for clicks */
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            animation: floatUp 1s ease-out forwards;
+            font-weight: bold;
+            color: #4ade80;
+            z-index: 100;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-50px); opacity: 0; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="scene">
+        <!-- Sky Elements -->
+        <div class="celestial" id="sunMoon"></div>
+        
+        <!-- Background Hills -->
+        <div class="layer hills"></div>
+
+        <!-- Mid Ground -->
+        <div class="layer ground-mid"></div>
+
+        <!-- The Road -->
+        <div class="road" id="road"></div>
+
+        <!-- Dynamic Tree Container -->
+        <div id="tree-layer" class="layer" style="bottom: 0; height: 100%; pointer-events: none;"></div>
+
+        <!-- The House -->
+        <div class="house-container" id="house">
+            <div class="house-roof"></div>
+            <div class="oculus"></div>
+            <div class="house-body">
+                <div class="window"></div>
+                <div class="door"></div>
+                <div class="window"></div>
+            </div>
+        </div>
+
+        <!-- Foreground -->
+        <div class="ground-front">
+            <!-- Decorative bushes -->
+            <div style="position: absolute; left: 10%; bottom: 0; font-size: 30px;">🌿</div>
+            <div style="position: absolute; right: 15%; bottom: 0; font-size: 35px;">🌾</div>
+        </div>
+    </div>
+
+    <div id="ui">
+        <div class="stats">
+            <span>Serenity Score: <span id="score" class="stat-value">0</span></span>
+            <span>Time: <span id="time-display" class="stat-value">Day</span></span>
+        </div>
+
+        <div class="btn-group">
+            <button onclick="plantTree()">🌲 Plant Tree</button>
+            <button onclick="toggleHouse()" id="btn-house">🏠 Build Estate</button>
+            <button onclick="paveRoad()" id="btn-road">🛣️ Pave Road</button>
+        </div>
+        
+        <div class="btn-group">
+            <button onclick="toggleTime()" class="primary">☀️ / 🌙 Toggle Time</button>
+            <button onclick="resetScene()" style="background: #ef4444;">🗑️ Reset</button>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let state = {
+            trees: 0,
+            houseBuilt: false,
+            roadPaved: false,
+            isNight: false,
+            score: 0
+        };
+
+        // Elements
+        const scene = document.getElementById('scene');
+        const house = document.getElementById('house');
+        const road = document.getElementById('road');
+        const treeLayer = document.getElementById('tree-layer');
+        const scoreEl = document.getElementById('score');
+        const timeDisplay = document.getElementById('time-display');
+        const btnHouse = document.getElementById('btn-house');
+        const btnRoad = document.getElementById('btn-road');
+
+        // Actions
+        function updateScore(points, x, y) {
+            state.score += points;
+            scoreEl.innerText = state.score;
+            
+            // Create floating text
+            if (x && y) {
+                const el = document.createElement('div');
+                el.classList.add('particle');
+                el.innerText = `+${points}`;
+                el.style.left = x + 'px';
+                el.style.top = y + 'px';
+                document.body.appendChild(el);
+                setTimeout(() => el.remove(), 1000);
+            }
+        }
+
+        function plantTree() {
+            const tree = document.createElement('div');
+            tree.classList.add('tree');
+            
+            // Randomize tree type
+            const types = ['🌲', '🌳', '🌴', '🌵'];
+            // Bias towards pine (index 0) based on image
+            const type = Math.random() > 0.7 ? types[1] : types[0];
+            tree.innerText = type;
+
+            // Random Position
+            // We want trees mostly behind the house or to the sides
+            const randomX = Math.random() * 100;
+            // Perspective scaling: lower trees are closer (bigger), higher are further (smaller)
+            // Horizon is roughly at bottom 25%.
+            const horizonY = 25;
+            const randomY = horizonY + (Math.random() * 15); // 25% to 40% from bottom
+            
+            // Scale based on Y (closer = lower Y value in CSS bottom = bigger)
+            // Actually in CSS bottom, higher value = further away.
+            // Let's simplify: Just place them around the mid-ground.
+            
+            tree.style.left = randomX + '%';
+            tree.style.bottom = (20 + Math.random() * 20) + '%'; // 20-40% up
+            
+            // Z-index logic: if it's "lower" on screen (smaller bottom %), higher z-index
+            const bottomVal = parseInt(tree.style.bottom);
+            tree.style.zIndex = 100 - bottomVal; 
+            
+            // Make trees interactable
+            tree.style.pointerEvents = 'auto';
+            tree.onclick = (e) => {
+                e.stopPropagation();
+                tree.innerText = '✨';
+                setTimeout(() => tree.remove(), 500);
+                updateScore(5, e.clientX, e.clientY);
+            };
+
+            treeLayer.appendChild(tree);
+            state.trees++;
+            updateScore(10);
+        }
+
+        function toggleHouse() {
+            state.houseBuilt = !state.houseBuilt;
+            if (state.houseBuilt) {
+                house.classList.add('visible');
+                btnHouse.innerText = '🏚️ Demolish';
+                updateScore(500);
+            } else {
+                house.classList.remove('visible');
+                btnHouse.innerText = '🏠 Build Estate';
+                state.score -= 200; // Penalty for demolition
+                scoreEl.innerText = state.score;
+            }
+        }
+
+        function paveRoad() {
+            state.roadPaved = !state.roadPaved;
+            if (state.roadPaved) {
+                road.classList.add('visible');
+                btnRoad.innerText = '🚫 Remove Road';
+                updateScore(100);
+            } else {
+                road.classList.remove('visible');
+                btnRoad.innerText = '🛣️ Pave Road';
+            }
+        }
+
+        function toggleTime() {
+            state.isNight = !state.isNight;
+            if (state.isNight) {
+                scene.classList.add('night');
+                timeDisplay.innerText = 'Night';
+            } else {
+                scene.classList.remove('night');
+                timeDisplay.innerText = 'Day';
+            }
+        }
+
+        function resetScene() {
+            state.score = 0;
+            scoreEl.innerText = 0;
+            state.trees = 0;
+            treeLayer.innerHTML = '';
+            
+            if (state.houseBuilt) toggleHouse();
+            if (state.roadPaved) paveRoad();
+            if (state.isNight) toggleTime();
+        }
+
+        // Initial Animation / Setup
+        window.onload = () => {
+            // Add some initial trees to match the photo vibe
+            for(let i=0; i<5; i++) {
+                setTimeout(plantTree, i * 200);
+            }
+        };
+
+    </script>
+</body>
+</html>

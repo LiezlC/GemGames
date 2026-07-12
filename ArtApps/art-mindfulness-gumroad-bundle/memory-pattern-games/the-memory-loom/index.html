@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Memory Loom</title>
+    <style>
+        :root {
+            --bg-dark: #1a1025;
+            --bg-light: #4a2c50;
+            --accent-orange: #ff9f1c;
+            --accent-blue: #2ec4b6;
+            --accent-pink: #ff006e;
+            --text-color: #f1faee;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, var(--bg-dark), #2b1d38, #5c2a45);
+            font-family: 'Courier New', Courier, monospace;
+            color: var(--text-color);
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            user-select: none;
+        }
+
+        /* UI Layout */
+        #app {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: grid;
+            grid-template-columns: 250px 1fr 300px;
+            grid-template-rows: 80px 1fr 150px;
+        }
+
+        /* Header / Stats */
+        header {
+            grid-column: 1 / -1;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(5px);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2rem;
+            border-bottom: 2px solid var(--accent-blue);
+            z-index: 10;
+        }
+
+        .stat-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .stat-value { font-size: 1.5rem; font-weight: bold; color: var(--accent-orange); }
+        .stat-label { font-size: 0.8rem; opacity: 0.8; }
+
+        /* The Machine (Background Visuals) */
+        #machine-layer {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        /* SVG Pipes and Gears */
+        .gear {
+            transform-origin: center;
+            animation: spin 10s linear infinite;
+            fill: var(--accent-blue);
+            opacity: 0.2;
+        }
+        .gear.reverse { animation: spin-rev 15s linear infinite; fill: var(--accent-pink); }
+        
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes spin-rev { 100% { transform: rotate(-360deg); } }
+
+        /* The Clock (Right Panel) */
+        #clock-panel {
+            grid-column: 3;
+            grid-row: 2;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 5;
+        }
+
+        .clock-face {
+            width: 200px;
+            height: 200px;
+            border: 8px solid var(--accent-orange);
+            border-radius: 50%;
+            position: relative;
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 20px var(--accent-orange);
+        }
+
+        .hand {
+            position: absolute;
+            bottom: 50%;
+            left: 50%;
+            transform-origin: bottom center;
+            background: white;
+            border-radius: 4px;
+        }
+        .hour-hand { width: 6px; height: 50px; background: var(--accent-pink); }
+        .min-hand { width: 4px; height: 80px; background: var(--accent-blue); }
+        .pivot {
+            position: absolute; top: 50%; left: 50%;
+            width: 12px; height: 12px;
+            background: var(--accent-orange);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        /* The Operator (Bottom Center) */
+        #operator-panel {
+            grid-column: 2;
+            grid-row: 3;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            z-index: 10;
+            position: relative;
+        }
+
+        .archivist {
+            width: 120px;
+            height: 140px;
+            position: relative;
+            transition: transform 0.2s;
+        }
+        .archivist:hover { transform: scale(1.05); }
+        
+        /* CSS Art for Archivist */
+        .head {
+            width: 60px; height: 70px;
+            background: #ffccaa;
+            border-radius: 30px;
+            position: absolute; top: 0; left: 30px;
+            z-index: 2;
+        }
+        .hair {
+            width: 64px; height: 30px;
+            background: #2b2b2b;
+            border-radius: 30px 30px 0 0;
+            position: absolute; top: -5px; left: 28px;
+            z-index: 3;
+        }
+        .suit {
+            width: 100px; height: 80px;
+            background: #3a506b;
+            border-radius: 40px 40px 0 0;
+            position: absolute; bottom: 0; left: 10px;
+            z-index: 1;
+        }
+        .tie {
+            width: 10px; height: 30px;
+            background: var(--accent-pink);
+            position: absolute; top: 75px; left: 55px;
+            z-index: 4;
+        }
+        .eyes {
+            display: flex; gap: 15px;
+            position: absolute; top: 30px; left: 15px;
+        }
+        .eye { width: 6px; height: 6px; background: #000; border-radius: 50%; }
+
+        /* Interactive Zone (Center) */
+        #main-stage {
+            grid-column: 2;
+            grid-row: 2;
+            position: relative;
+            z-index: 5;
+        }
+
+        /* Floating Thoughts */
+        .thought-bubble {
+            position: absolute;
+            cursor: pointer;
+            font-size: 2rem;
+            animation: floatUp linear infinite;
+            transition: transform 0.1s;
+            filter: drop-shadow(0 0 5px rgba(255,255,255,0.5));
+        }
+        .thought-bubble:active { transform: scale(0.8); }
+
+        @keyframes floatUp {
+            0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-20vh) rotate(360deg); opacity: 0; }
+        }
+
+        /* Controls (Left Panel) */
+        #controls-panel {
+            grid-column: 1;
+            grid-row: 2 / span 2;
+            background: rgba(0,0,0,0.2);
+            border-right: 1px solid rgba(255,255,255,0.1);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            z-index: 5;
+        }
+
+        .control-btn {
+            background: transparent;
+            border: 2px solid var(--accent-blue);
+            color: var(--accent-blue);
+            padding: 15px;
+            font-family: inherit;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-radius: 8px;
+            text-align: left;
+            position: relative;
+            overflow: hidden;
+        }
+        .control-btn:hover {
+            background: var(--accent-blue);
+            color: #000;
+            box-shadow: 0 0 15px var(--accent-blue);
+        }
+        .control-btn:disabled {
+            border-color: #555;
+            color: #555;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #333;
+            margin-top: 5px;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: var(--accent-pink);
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        /* Notifications */
+        #message-area {
+            position: absolute;
+            bottom: 160px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            padding: 10px 20px;
+            border-radius: 20px;
+            border: 1px solid var(--accent-orange);
+            color: var(--accent-orange);
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.5s;
+            pointer-events: none;
+            z-index: 20;
+        }
+
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <!-- Background Machine Visuals -->
+    <div id="machine-layer">
+        <svg width="100%" height="100%">
+            <!-- Big Gear Top Right -->
+            <g class="gear" style="transform-origin: 80% 20%;">
+                <circle cx="80%" cy="20%" r="150" stroke="currentColor" stroke-width="4" stroke-dasharray="20 10" fill="none"/>
+                <circle cx="80%" cy="20%" r="100" stroke="currentColor" stroke-width="20" stroke-dasharray="4 4" fill="none"/>
+            </g>
+            <!-- Small Gear Left -->
+            <g class="gear reverse" style="transform-origin: 20% 60%;">
+                <circle cx="20%" cy="60%" r="80" stroke="currentColor" stroke-width="8" stroke-dasharray="15 5" fill="none"/>
+                <rect x="15%" y="55%" width="10%" height="10%" fill="none" stroke="currentColor" />
+            </g>
+            <!-- Pipes -->
+            <path d="M 0 100 Q 300 400 600 100 T 1000 300" stroke="#2ec4b6" stroke-width="4" fill="none" stroke-dasharray="10 10" opacity="0.3">
+                <animate attributeName="stroke-dashoffset" from="0" to="100" dur="2s" repeatCount="indefinite" />
+            </path>
+             <path d="M 200 800 C 400 600 600 900 900 500" stroke="#ff006e" stroke-width="4" fill="none" stroke-dasharray="20 20" opacity="0.3">
+                <animate attributeName="stroke-dashoffset" from="100" to="0" dur="3s" repeatCount="indefinite" />
+            </path>
+        </svg>
+    </div>
+
+    <header>
+        <div class="stat-box">
+            <span class="stat-value" id="score">0</span>
+            <span class="stat-label">MEMORIES WOVEN</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-value" id="entropy">0%</span>
+            <span class="stat-label">SYSTEM ENTROPY</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-value" id="level">1</span>
+            <span class="stat-label">CYCLE</span>
+        </div>
+    </header>
+
+    <div id="controls-panel">
+        <h3>SYSTEM CONTROLS</h3>
+        
+        <button class="control-btn" id="btn-stabilize" onclick="stabilize()">
+            🔧 STABILIZE REALITY
+            <div class="progress-bar"><div class="progress-fill" id="bar-stabilize"></div></div>
+        </button>
+
+        <button class="control-btn" id="btn-flush" onclick="flushPipes()">
+            🌊 FLUSH PIPES
+            <div class="progress-bar"><div class="progress-fill" id="bar-flush"></div></div>
+        </button>
+
+        <button class="control-btn" id="btn-focus" onclick="deepFocus()">
+            🧠 DEEP FOCUS
+            <div class="progress-bar"><div class="progress-fill" id="bar-focus"></div></div>
+        </button>
+
+        <div style="margin-top: auto; font-size: 0.8rem; color: #aaa;">
+            <p>INSTRUCTIONS:</p>
+            <p>1. Click floating symbols to weave memories.</p>
+            <p>2. Don't let Entropy reach 100%.</p>
+            <p>3. Use tools to manage chaos.</p>
+        </div>
+    </div>
+
+    <div id="main-stage">
+        <!-- Floating elements will be injected here -->
+    </div>
+
+    <div id="clock-panel">
+        <div class="clock-face">
+            <div class="pivot"></div>
+            <div class="hand hour-hand" id="h-hand"></div>
+            <div class="hand min-hand" id="m-hand"></div>
+        </div>
+        <h3 style="margin-top: 20px; color: var(--accent-orange);">TEMPORAL FLUX</h3>
+    </div>
+
+    <div id="operator-panel">
+        <div class="archivist">
+            <div class="hair"></div>
+            <div class="head">
+                <div class="eyes">
+                    <div class="eye"></div>
+                    <div class="eye"></div>
+                </div>
+            </div>
+            <div class="suit"></div>
+            <div class="tie"></div>
+        </div>
+    </div>
+
+    <div id="message-area">SYSTEM STABLE</div>
+</div>
+
+<script>
+    // Game State
+    let score = 0;
+    let entropy = 0;
+    let level = 1;
+    let gameActive = true;
+    let spawnRate = 2000;
+    let entropyRate = 0.2; // per tick
+    
+    // Cooldowns
+    let cooldowns = {
+        stabilize: 0,
+        flush: 0,
+        focus: 0
+    };
+
+    // DOM Elements
+    const stage = document.getElementById('main-stage');
+    const scoreEl = document.getElementById('score');
+    const entropyEl = document.getElementById('entropy');
+    const levelEl = document.getElementById('level');
+    const msgEl = document.getElementById('message-area');
+    const hourHand = document.getElementById('h-hand');
+    const minHand = document.getElementById('m-hand');
+
+    // Symbols for "Thoughts"
+    const symbols = ['💡', '🧩', '🎵', '🗝️', '🧿', '⚙️', '💎', '🧬', '🔭', '🕰️'];
+    const chaosSymbols = ['🔥', '🦠', '💣', '🕸️'];
+
+    // Main Loop
+    function gameLoop() {
+        if (!gameActive) return;
+
+        // Increase Entropy
+        entropy += entropyRate * level;
+        if (entropy > 100) {
+            entropy = 100;
+            gameOver();
+        }
+        updateUI();
+
+        // Clock Animation
+        const now = Date.now();
+        hourHand.style.transform = `translateX(-50%) rotate(${(now / 10000) % 360}deg)`;
+        minHand.style.transform = `translateX(-50%) rotate(${(now / 1000) % 360}deg)`;
+
+        // Cooldown Management
+        for (let key in cooldowns) {
+            if (cooldowns[key] > 0) {
+                cooldowns[key] -= 1;
+                document.getElementById(`bar-${key}`).style.width = `${(cooldowns[key] / 100) * 100}%`;
+                document.getElementById(`btn-${key}`).disabled = true;
+            } else {
+                document.getElementById(`bar-${key}`).style.width = '0%';
+                document.getElementById(`btn-${key}`).disabled = false;
+            }
+        }
+
+        requestAnimationFrame(gameLoop);
+    }
+
+    // Spawner
+    function spawnThought() {
+        if (!gameActive) return;
+
+        const el = document.createElement('div');
+        el.classList.add('thought-bubble');
+        
+        // Determine type
+        const isChaos = Math.random() < (0.1 + (level * 0.05));
+        el.textContent = isChaos ? chaosSymbols[Math.floor(Math.random() * chaosSymbols.length)] : symbols[Math.floor(Math.random() * symbols.length)];
+        
+        // Random Position
+        el.style.left = Math.random() * 80 + 10 + '%';
+        
+        // Random Speed
+        const duration = 5 + Math.random() * 5;
+        el.style.animationDuration = `${duration}s`;
+
+        // Click Handler
+        el.addEventListener('mousedown', () => {
+            if (isChaos) {
+                // Chaos item: hurts if clicked? No, let's say you have to diffuse them.
+                // Actually, let's make chaos items reduce entropy but give no points.
+                entropy = Math.max(0, entropy - 5);
+                showMessage("CHAOS DIFFUSED", "#ff006e");
+            } else {
+                // Good item
+                score += 10 * level;
+                scoreEl.textContent = score;
+                checkLevelUp();
+                createSparkle(el.getBoundingClientRect());
+            }
+            el.remove();
+        });
+
+        // Remove when animation ends
+        el.addEventListener('animationend', () => {
+            if (el.parentNode) {
+                el.remove();
+                // Penalty for missing good items?
+                if (!isChaos) {
+                    entropy += 2;
+                }
+            }
+        });
+
+        stage.appendChild(el);
+
+        // Schedule next spawn
+        setTimeout(spawnThought, spawnRate / (1 + (level * 0.1)));
+    }
+
+    // Actions
+    function stabilize() {
+        if (cooldowns.stabilize > 0) return;
+        entropy = Math.max(0, entropy - 20);
+        cooldowns.stabilize = 300; // frames
+        showMessage("REALITY STABILIZED", "#2ec4b6");
+        pulseScreen();
+    }
+
+    function flushPipes() {
+        if (cooldowns.flush > 0) return;
+        // Remove all chaos items currently on screen
+        const items = document.querySelectorAll('.thought-bubble');
+        items.forEach(item => {
+            if (chaosSymbols.includes(item.textContent)) {
+                item.remove();
+            }
+        });
+        cooldowns.flush = 500;
+        showMessage("PIPES FLUSHED", "#ff9f1c");
+    }
+
+    function deepFocus() {
+        if (cooldowns.focus > 0) return;
+        // Slow down time (entropy gain) for a while
+        const oldRate = entropyRate;
+        entropyRate = 0;
+        document.body.style.filter = "grayscale(0.5) contrast(1.2)";
+        
+        setTimeout(() => {
+            entropyRate = oldRate;
+            document.body.style.filter = "none";
+        }, 5000);
+
+        cooldowns.focus = 800;
+        showMessage("DEEP FOCUS ENGAGED", "#f1faee");
+    }
+
+    // Helpers
+    function updateUI() {
+        entropyEl.textContent = Math.floor(entropy) + '%';
+        entropyEl.style.color = entropy > 80 ? '#ff006e' : '#ff9f1c';
+        
+        // Visual feedback for high entropy
+        if (entropy > 80) {
+            document.body.style.boxShadow = `inset 0 0 ${entropy}px #ff0000`;
+        } else {
+            document.body.style.boxShadow = 'none';
+        }
+    }
+
+    function checkLevelUp() {
+        if (score > level * 500) {
+            level++;
+            levelEl.textContent = level;
+            showMessage(`CYCLE ${level} INITIATED`, "#fff");
+            entropy = Math.max(0, entropy - 10); // Bonus
+        }
+    }
+
+    function showMessage(text, color) {
+        msgEl.textContent = text;
+        msgEl.style.color = color;
+        msgEl.style.borderColor = color;
+        msgEl.style.opacity = 1;
+        setTimeout(() => {
+            msgEl.style.opacity = 0;
+        }, 2000);
+    }
+
+    function createSparkle(rect) {
+        const sparkle = document.createElement('div');
+        sparkle.style.position = 'absolute';
+        sparkle.style.left = rect.left + 'px';
+        sparkle.style.top = rect.top + 'px';
+        sparkle.style.pointerEvents = 'none';
+        sparkle.textContent = '+10';
+        sparkle.style.color = '#fff';
+        sparkle.style.fontWeight = 'bold';
+        sparkle.style.animation = 'floatUp 1s forwards';
+        document.body.appendChild(sparkle);
+        setTimeout(() => sparkle.remove(), 1000);
+    }
+
+    function pulseScreen() {
+        const overlay = document.createElement('div');
+        overlay.style.position = 'fixed';
+        overlay.style.top = 0; overlay.style.left = 0;
+        overlay.style.width = '100%'; overlay.style.height = '100%';
+        overlay.style.background = 'white';
+        overlay.style.opacity = 0.2;
+        overlay.style.pointerEvents = 'none';
+        overlay.style.transition = 'opacity 0.5s';
+        document.body.appendChild(overlay);
+        setTimeout(() => {
+            overlay.style.opacity = 0;
+            setTimeout(() => overlay.remove(), 500);
+        }, 50);
+    }
+
+    function gameOver() {
+        gameActive = false;
+        stage.innerHTML = '';
+        const modal = document.createElement('div');
+        modal.style.position = 'absolute';
+        modal.style.top = '50%'; modal.style.left = '50%';
+        modal.style.transform = 'translate(-50%, -50%)';
+        modal.style.background = 'rgba(0,0,0,0.9)';
+        modal.style.padding = '40px';
+        modal.style.border = '2px solid var(--accent-pink)';
+        modal.style.textAlign = 'center';
+        modal.style.zIndex = 100;
+        modal.innerHTML = `
+            <h1 style="color: var(--accent-pink)">CRITICAL FAILURE</h1>
+            <p>Entropy consumed the system.</p>
+            <p>Memories Woven: ${score}</p>
+            <button onclick="location.reload()" style="padding: 10px 20px; background: var(--accent-blue); border: none; cursor: pointer; font-weight: bold; margin-top: 20px;">REBOOT SYSTEM</button>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    // Start
+    requestAnimationFrame(gameLoop);
+    spawnThought();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web of Life - Interactive Sanctuary</title>
+    <style>
+        :root {
+            --sky-top: #5F9EA0;
+            --sky-bottom: #F0E68C;
+            --mountain-far: #4682B4;
+            --mountain-mid: #2F4F4F;
+            --mountain-near: #1A3333;
+            --lake-top: #386870;
+            --lake-bottom: #1A2A2A;
+            --moon-color: #FFFACD;
+            --text-color: #ADFF2F;
+            --ui-bg: rgba(0, 0, 0, 0.6);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            background: #000;
+            color: white;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* The Scene Container */
+        #scene {
+            position: relative;
+            flex-grow: 1;
+            width: 100%;
+            background: linear-gradient(to bottom, var(--sky-top), var(--sky-bottom) 60%, var(--lake-top) 60%, var(--lake-bottom));
+            overflow: hidden;
+            cursor: crosshair;
+            transition: filter 2s ease;
+        }
+
+        /* The Moon */
+        #moon {
+            position: absolute;
+            top: 10%;
+            right: 20%;
+            width: 120px;
+            height: 120px;
+            background: radial-gradient(circle at 30% 30%, #FFFFF0, var(--moon-color));
+            border-radius: 50%;
+            box-shadow: 0 0 40px rgba(255, 250, 205, 0.6);
+            cursor: pointer;
+            transition: all 1s ease;
+            z-index: 2;
+        }
+        #moon:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 60px rgba(255, 250, 205, 0.9);
+        }
+
+        /* Clouds */
+        .cloud {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 50px;
+            filter: blur(8px);
+            animation: floatCloud 60s linear infinite;
+            z-index: 3;
+        }
+
+        @keyframes floatCloud {
+            from { transform: translateX(-100px); }
+            to { transform: translateX(120vw); }
+        }
+
+        /* Mountains */
+        .mountain {
+            position: absolute;
+            bottom: 40%; /* Horizon line */
+            width: 100%;
+            z-index: 4;
+        }
+        
+        .mtn-far {
+            height: 300px;
+            background: var(--mountain-far);
+            clip-path: polygon(0% 100%, 15% 40%, 30% 90%, 45% 20%, 60% 80%, 75% 30%, 100% 100%);
+            opacity: 0.8;
+            left: -10%;
+            width: 120%;
+        }
+
+        .mtn-mid {
+            height: 250px;
+            background: var(--mountain-mid);
+            clip-path: polygon(0% 100%, 10% 100%, 25% 30%, 40% 100%, 60% 100%, 75% 40%, 90% 100%);
+            left: 0;
+            bottom: 38%;
+        }
+
+        .mtn-near {
+            height: 150px;
+            background: var(--mountain-near);
+            clip-path: polygon(0% 100%, 0% 80%, 15% 20%, 30% 100%, 70% 100%, 85% 30%, 100% 90%, 100% 100%);
+            bottom: 35%;
+            z-index: 5;
+        }
+
+        /* Lake Reflection Overlay */
+        #lake-surface {
+            position: absolute;
+            bottom: 0;
+            height: 40%;
+            width: 100%;
+            background: linear-gradient(to bottom, rgba(255,255,255,0.1), transparent);
+            z-index: 6;
+            pointer-events: none;
+        }
+
+        /* Interactive Elements Container */
+        #ecosystem {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none; /* Let clicks pass through to specific elements */
+        }
+
+        .tree {
+            position: absolute;
+            bottom: 15%; /* Bank of the lake */
+            font-size: 4rem;
+            transform-origin: bottom center;
+            animation: grow 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+            pointer-events: auto;
+            filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5));
+            z-index: 11;
+        }
+        
+        .tree:hover {
+            transform: scale(1.1);
+        }
+
+        .person {
+            position: absolute;
+            bottom: 12%;
+            left: 20%;
+            height: 120px;
+            width: 40px;
+            background: #8B0000; /* Red dress */
+            border-radius: 20px 20px 0 0;
+            z-index: 12;
+            pointer-events: auto;
+            cursor: grab;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+        .person::after {
+            content: '';
+            position: absolute;
+            top: -25px;
+            left: 5px;
+            width: 30px;
+            height: 30px;
+            background: #FFDAB9;
+            border-radius: 50%;
+        }
+        .person::before {
+            content: ''; /* Hair */
+            position: absolute;
+            top: -25px;
+            left: 0px;
+            width: 40px;
+            height: 40px;
+            background: #222;
+            border-radius: 50%;
+            z-index: 1;
+        }
+
+        /* The Web Canvas */
+        #web-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 9;
+            pointer-events: none;
+        }
+
+        /* UI Overlay */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 20;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+        }
+
+        h1 {
+            font-size: 3rem;
+            color: var(--text-color);
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            -webkit-text-stroke: 1px #006400;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            color: #fff;
+            margin-top: 5px;
+        }
+
+        #controls {
+            pointer-events: auto;
+            background: var(--ui-bg);
+            padding: 15px;
+            border-radius: 15px;
+            backdrop-filter: blur(5px);
+            display: flex;
+            gap: 15px;
+            align-self: center;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        button {
+            background: transparent;
+            border: 2px solid #fff;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        button:hover {
+            background: rgba(255,255,255,0.2);
+            transform: translateY(-2px);
+        }
+
+        button.active {
+            background: var(--text-color);
+            color: #000;
+            border-color: var(--text-color);
+        }
+
+        #quote-box {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            max-width: 600px;
+            opacity: 0;
+            transition: opacity 0.5s;
+            pointer-events: none;
+        }
+        #quote-box.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        #quote-text {
+            font-size: 1.5rem;
+            font-style: italic;
+            margin-bottom: 15px;
+            color: #F0E68C;
+        }
+
+        /* Logo Area */
+        #logo {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            color: #006400;
+            font-weight: bold;
+            text-align: center;
+            font-size: 0.8rem;
+            pointer-events: auto;
+        }
+        #logo svg {
+            width: 40px;
+            height: 40px;
+            display: block;
+            margin: 0 auto;
+        }
+
+        @keyframes grow {
+            from { transform: scale(0); }
+            to { transform: scale(1); }
+        }
+
+        /* Breathing Mode */
+        .breathe-mode #scene {
+            animation: breatheAnim 8s ease-in-out infinite;
+        }
+        @keyframes breatheAnim {
+            0%, 100% { transform: scale(1); filter: brightness(1); }
+            50% { transform: scale(1.02); filter: brightness(1.1); }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="scene">
+        <!-- Background Elements -->
+        <div class="cloud" style="top: 15%; width: 200px; height: 60px; opacity: 0.6;"></div>
+        <div class="cloud" style="top: 25%; width: 300px; height: 80px; left: 40%; animation-duration: 80s;"></div>
+        
+        <div id="moon" onclick="triggerMoon()"></div>
+        
+        <div class="mountain mtn-far"></div>
+        <div class="mountain mtn-mid"></div>
+        <div class="mountain mtn-near"></div>
+        
+        <div id="lake-surface"></div>
+
+        <!-- Canvas for drawing connections -->
+        <canvas id="web-canvas"></canvas>
+
+        <!-- Interactive Objects Container -->
+        <div id="ecosystem">
+            <!-- The Person (User Avatar) -->
+            <div class="person" id="avatar" style="left: 50%;"></div>
+        </div>
+    </div>
+
+    <div id="ui-layer">
+        <header>
+            <h1>Find Your Place</h1>
+            <h2>in the Web of Life</h2>
+        </header>
+
+        <div id="quote-box">
+            <p id="quote-text">"In every walk with nature one receives far more than he seeks."</p>
+            <button onclick="closeQuote()">Close</button>
+        </div>
+
+        <div id="controls">
+            <button onclick="setMode('plant')" id="btn-plant">🌲 Plant Trees</button>
+            <button onclick="setMode('connect')" id="btn-connect">🕸️ Show The Web</button>
+            <button onclick="toggleBreathe()" id="btn-breathe">🌬️ Breathe</button>
+            <button onclick="clearScene()">🔄 Reset</button>
+        </div>
+
+        <div id="logo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 19V6M5 12l7-7 7 7"/>
+                <path d="M12 19a7 7 0 0 1-7-7"/>
+                <path d="M12 19a7 7 0 0 0 7-7"/>
+            </svg>
+            Wisdom<br>in the Wild
+        </div>
+    </div>
+
+    <script>
+        const scene = document.getElementById('scene');
+        const ecosystem = document.getElementById('ecosystem');
+        const canvas = document.getElementById('web-canvas');
+        const ctx = canvas.getContext('2d');
+        const avatar = document.getElementById('avatar');
+        const quoteBox = document.getElementById('quote-box');
+        const quoteText = document.getElementById('quote-text');
+        
+        let mode = 'plant'; // plant, connect, none
+        let isBreathing = false;
+        let elements = []; // Stores positions of trees and person for the web
+        
+        // Quotes DB
+        const quotes = [
+            "The clearest way into the Universe is through a forest wilderness.",
+            "Look deep into nature, and then you will understand everything better.",
+            "Adopt the pace of nature: her secret is patience.",
+            "We do not inherit the earth from our ancestors, we borrow it from our children.",
+            "To forget how to dig the earth and to tend the soil is to forget ourselves.",
+            "In nature, nothing exists alone."
+        ];
+
+        // Initialize Canvas Size
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Track Avatar Position
+        let avatarPos = { x: window.innerWidth / 2, y: window.innerHeight * 0.85 };
+        
+        // Initial Setup
+        updateElementsList();
+
+        // Mode Switching
+        function setMode(newMode) {
+            mode = newMode;
+            document.querySelectorAll('#controls button').forEach(b => b.classList.remove('active'));
+            if(newMode !== 'none') {
+                document.getElementById(`btn-${newMode}`).classList.add('active');
+            }
+            
+            if (mode === 'connect') {
+                drawWeb();
+            } else {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+        }
+
+        // Scene Interaction
+        scene.addEventListener('click', (e) => {
+            if (e.target.closest('#controls') || e.target.closest('#quote-box') || e.target.id === 'moon') return;
+
+            if (mode === 'plant') {
+                plantTree(e.clientX, e.clientY);
+            }
+        });
+
+        function plantTree(x, y) {
+            // Restrict to lower half (ground)
+            if (y < window.innerHeight * 0.55) return;
+
+            const tree = document.createElement('div');
+            tree.classList.add('tree');
+            tree.innerHTML = '🌲';
+            // Randomize tree slightly
+            const scale = 0.8 + Math.random() * 0.5;
+            tree.style.fontSize = `${3 * scale}rem`;
+            tree.style.left = `${x - 20}px`;
+            tree.style.top = `${y - 50}px`; // Adjust to plant feet on click
+            
+            ecosystem.appendChild(tree);
+            
+            // Add to elements list for web
+            elements.push({
+                x: x,
+                y: y,
+                type: 'tree'
+            });
+
+            // If web mode is active, redraw
+            if (mode === 'connect') drawWeb();
+        }
+
+        function updateElementsList() {
+            // Reset and add static/avatar elements
+            const rect = avatar.getBoundingClientRect();
+            avatarPos = {
+                x: rect.left + rect.width/2,
+                y: rect.top + rect.height/2,
+                type: 'human'
+            };
+            
+            // Rebuild list including trees
+            elements = [avatarPos];
+            document.querySelectorAll('.tree').forEach(t => {
+                const r = t.getBoundingClientRect();
+                elements.push({
+                    x: r.left + r.width/2,
+                    y: r.top + r.height/2,
+                    type: 'tree'
+                });
+            });
+            
+            // Add Moon
+            const moonRect = document.getElementById('moon').getBoundingClientRect();
+            elements.push({
+                x: moonRect.left + moonRect.width/2,
+                y: moonRect.top + moonRect.height/2,
+                type: 'moon'
+            });
+        }
+
+        function drawWeb() {
+            updateElementsList();
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.strokeStyle = 'rgba(173, 255, 47, 0.4)'; // Glowing green line
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+
+            // Connect every element to every other element
+            for (let i = 0; i < elements.length; i++) {
+                for (let j = i + 1; j < elements.length; j++) {
+                    const dist = Math.hypot(elements[i].x - elements[j].x, elements[i].y - elements[j].y);
+                    // Only connect if reasonably close, or if it's the moon (moon connects to everything)
+                    if (dist < 400 || elements[i].type === 'moon' || elements[j].type === 'moon') {
+                        ctx.moveTo(elements[i].x, elements[i].y);
+                        ctx.lineTo(elements[j].x, elements[j].y);
+                    }
+                }
+            }
+            ctx.stroke();
+            
+            // Add nodes
+            elements.forEach(el => {
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.arc(el.x, el.y, 4, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            
+            if (mode === 'connect') {
+                requestAnimationFrame(drawWeb); // Keep animating if things move
+            }
+        }
+
+        // Moon Interaction
+        function triggerMoon() {
+            const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+            quoteText.innerText = `"${randomQuote}"`;
+            quoteBox.classList.add('visible');
+            
+            // Change moon color temporarily
+            const moon = document.getElementById('moon');
+            moon.style.boxShadow = "0 0 100px rgba(255, 215, 0, 1)";
+            setTimeout(() => {
+                moon.style.boxShadow = "0 0 40px rgba(255, 250, 205, 0.6)";
+            }, 1000);
+        }
+
+        function closeQuote() {
+            quoteBox.classList.remove('visible');
+        }
+
+        // Breathing Exercise
+        function toggleBreathe() {
+            isBreathing = !isBreathing;
+            document.body.classList.toggle('breathe-mode');
+            const btn = document.getElementById('btn-breathe');
+            if(isBreathing) {
+                btn.innerText = "🛑 Stop";
+                btn.classList.add('active');
+            } else {
+                btn.innerText = "🌬️ Breathe";
+                btn.classList.remove('active');
+            }
+        }
+
+        function clearScene() {
+            document.querySelectorAll('.tree').forEach(e => e.remove());
+            elements = [];
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            updateElementsList();
+        }
+
+        // Draggable Avatar Logic
+        let isDragging = false;
+        avatar.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            avatar.style.cursor = 'grabbing';
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                // Constrain to ground area
+                let newY = e.clientY - 60;
+                if (newY < window.innerHeight * 0.5) newY = window.innerHeight * 0.5;
+                
+                avatar.style.left = (e.clientX - 20) + 'px';
+                avatar.style.top = newY + 'px';
+                
+                if (mode === 'connect') drawWeb();
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            isDragging = false;
+            avatar.style.cursor = 'grab';
+        });
+
+    </script>
+</body>
+</html>

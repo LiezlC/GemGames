@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Synth-Farm 2077: Agri-Tech Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-pink: #ff00ff;
+            --neon-cyan: #00ffff;
+            --neon-yellow: #ffd700;
+            --deep-purple: #240046;
+            --sunset-orange: #ff9e00;
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Rajdhani', sans-serif;
+            background-color: #1a0b2e;
+            color: white;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- Background & Atmosphere --- */
+        .sky-gradient {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(180deg, #10002b 0%, #3c096c 40%, #ff9e00 80%, #ffea00 100%);
+            z-index: -2;
+        }
+
+        .synth-grid {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 50%;
+            background-image: 
+                linear-gradient(rgba(255, 0, 255, 0.3) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 0, 255, 0.3) 1px, transparent 1px);
+            background-size: 40px 40px;
+            transform: perspective(500px) rotateX(60deg);
+            transform-origin: bottom;
+            z-index: -1;
+            animation: gridMove 20s linear infinite;
+        }
+
+        @keyframes gridMove {
+            0% { background-position: 0 0; }
+            100% { background-position: 0 40px; }
+        }
+
+        .sun {
+            position: absolute;
+            bottom: 30%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 300px;
+            height: 300px;
+            background: linear-gradient(to top, #ffd700, #ff00ff);
+            border-radius: 50%;
+            box-shadow: 0 0 50px #ff00ff;
+            z-index: -2;
+            mask-image: linear-gradient(to bottom, black 60%, transparent 60%, transparent 65%, black 65%, black 70%, transparent 70%, transparent 75%, black 75%);
+            -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 60%, transparent 65%, black 65%, black 70%, transparent 70%, transparent 75%, black 75%);
+        }
+
+        /* --- Waveforms --- */
+        .waveform-container {
+            position: absolute;
+            top: 10%;
+            left: 0;
+            width: 100%;
+            height: 150px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            z-index: -1;
+            opacity: 0.6;
+        }
+
+        .wave-bar {
+            width: 4px;
+            background: var(--neon-cyan);
+            border-radius: 2px;
+            animation: wave 1s ease-in-out infinite;
+            box-shadow: 0 0 10px var(--neon-cyan);
+        }
+
+        @keyframes wave {
+            0%, 100% { height: 10px; }
+            50% { height: 100px; }
+        }
+
+        /* --- UI Elements --- */
+        .glass-panel {
+            background: rgba(16, 0, 43, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .tech-border {
+            border: 1px solid var(--neon-cyan);
+            box-shadow: 0 0 5px var(--neon-cyan), inset 0 0 5px var(--neon-cyan);
+        }
+
+        .animal-card {
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .animal-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--neon-pink);
+            box-shadow: 0 0 15px var(--neon-pink);
+        }
+
+        .btn-harvest {
+            background: linear-gradient(45deg, #ff00ff, #7b2cbf);
+            border: none;
+            color: white;
+            font-family: 'Orbitron', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.2s;
+        }
+        .btn-harvest:active {
+            transform: scale(0.95);
+        }
+        .btn-harvest:disabled {
+            background: #333;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .resource-float {
+            position: absolute;
+            color: var(--neon-yellow);
+            font-weight: bold;
+            pointer-events: none;
+            animation: floatUp 1s ease-out forwards;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-50px); opacity: 0; }
+        }
+
+        .scan-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.1);
+            animation: scan 3s linear infinite;
+            pointer-events: none;
+            z-index: 50;
+        }
+        @keyframes scan {
+            0% { top: 0%; }
+            100% { top: 100%; }
+        }
+
+        /* Terminal Text */
+        .terminal {
+            font-family: 'Courier New', monospace;
+            color: var(--neon-cyan);
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Background Layers -->
+    <div class="sky-gradient"></div>
+    <div class="sun"></div>
+    <div class="synth-grid"></div>
+    <div class="waveform-container" id="waveforms">
+        <!-- Generated by JS -->
+    </div>
+    <div class="scan-line"></div>
+
+    <!-- Main App Interface -->
+    <div class="relative z-10 flex flex-col h-full p-4 max-w-7xl mx-auto w-full">
+        
+        <!-- Header / HUD -->
+        <header class="flex justify-between items-center mb-6 glass-panel p-4">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-green-400 to-blue-600 flex items-center justify-center text-2xl border-2 border-white shadow-lg">
+                    👩‍🌾
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold font-[Orbitron] text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400">AGRI-TECH OS v9.0</h1>
+                    <p class="text-xs text-gray-300 tracking-widest">OPERATOR: BIO-HACKER</p>
+                </div>
+            </div>
+            
+            <div class="flex gap-6 text-right">
+                <div>
+                    <p class="text-xs text-gray-400 uppercase">Crypto-Credits</p>
+                    <p class="text-2xl font-[Orbitron] text-yellow-400" id="score-display">₮ 0</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-400 uppercase">Network Load</p>
+                    <div class="w-32 h-4 bg-gray-800 rounded-full mt-1 overflow-hidden border border-gray-600">
+                        <div id="network-bar" class="h-full bg-gradient-to-r from-green-500 to-red-500 w-10 transition-all duration-500"></div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Game Grid -->
+        <main class="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 overflow-y-auto pb-20">
+            
+            <!-- Animal Unit: Chicken -->
+            <div class="glass-panel p-4 flex flex-col items-center justify-between animal-card h-64 relative group">
+                <div class="absolute top-2 right-2 text-xs text-cyan-300 border border-cyan-800 px-2 rounded">UNIT: CHK-01</div>
+                <div class="text-6xl mt-4 drop-shadow-[0_0_10px_rgba(255,255,255,0.5)] animate-bounce" style="animation-duration: 2s;">🐔</div>
+                <div class="text-center">
+                    <h3 class="text-xl font-bold text-pink-300">Cyber Chicken</h3>
+                    <p class="text-xs text-gray-400">Produces: Quantum Eggs</p>
+                </div>
+                <div class="w-full mt-2">
+                    <div class="flex justify-between text-xs mb-1">
+                        <span>Sync</span>
+                        <span id="timer-chicken">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-800 h-2 rounded-full overflow-hidden">
+                        <div id="progress-chicken" class="h-full bg-pink-500 w-0 transition-all duration-100"></div>
+                    </div>
+                </div>
+                <button onclick="harvest('chicken')" id="btn-chicken" class="btn-harvest w-full py-2 rounded mt-4 font-bold shadow-lg hover:shadow-pink-500/50">
+                    Harvest Data
+                </button>
+            </div>
+
+            <!-- Animal Unit: Goat -->
+            <div class="glass-panel p-4 flex flex-col items-center justify-between animal-card h-64 relative">
+                <div class="absolute top-2 right-2 text-xs text-cyan-300 border border-cyan-800 px-2 rounded">UNIT: GOA-T2</div>
+                <div class="text-6xl mt-4 drop-shadow-[0_0_10px_rgba(255,255,255,0.5)] animate-pulse" style="animation-duration: 3s;">🐐</div>
+                <div class="text-center">
+                    <h3 class="text-xl font-bold text-purple-300">Neon Goat</h3>
+                    <p class="text-xs text-gray-400">Produces: RAM Cheese</p>
+                </div>
+                <div class="w-full mt-2">
+                    <div class="flex justify-between text-xs mb-1">
+                        <span>Sync</span>
+                        <span id="timer-goat">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-800 h-2 rounded-full overflow-hidden">
+                        <div id="progress-goat" class="h-full bg-purple-500 w-0 transition-all duration-100"></div>
+                    </div>
+                </div>
+                <button onclick="harvest('goat')" id="btn-goat" class="btn-harvest w-full py-2 rounded mt-4 font-bold shadow-lg hover:shadow-purple-500/50">
+                    Harvest Data
+                </button>
+            </div>
+
+            <!-- Animal Unit: Sheep -->
+            <div class="glass-panel p-4 flex flex-col items-center justify-between animal-card h-64 relative">
+                <div class="absolute top-2 right-2 text-xs text-cyan-300 border border-cyan-800 px-2 rounded">UNIT: SHP-X</div>
+                <div class="text-6xl mt-4 drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">🐑</div>
+                <div class="text-center">
+                    <h3 class="text-xl font-bold text-blue-300">Cloud Sheep</h3>
+                    <p class="text-xs text-gray-400">Produces: Fiber Wool</p>
+                </div>
+                <div class="w-full mt-2">
+                    <div class="flex justify-between text-xs mb-1">
+                        <span>Sync</span>
+                        <span id="timer-sheep">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-800 h-2 rounded-full overflow-hidden">
+                        <div id="progress-sheep" class="h-full bg-blue-500 w-0 transition-all duration-100"></div>
+                    </div>
+                </div>
+                <button onclick="harvest('sheep')" id="btn-sheep" class="btn-harvest w-full py-2 rounded mt-4 font-bold shadow-lg hover:shadow-blue-500/50">
+                    Harvest Data
+                </button>
+            </div>
+
+            <!-- Animal Unit: Horse -->
+            <div class="glass-panel p-4 flex flex-col items-center justify-between animal-card h-64 relative">
+                <div class="absolute top-2 right-2 text-xs text-cyan-300 border border-cyan-800 px-2 rounded">UNIT: HRS-V8</div>
+                <div class="text-6xl mt-4 drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">🐎</div>
+                <div class="text-center">
+                    <h3 class="text-xl font-bold text-orange-300">Turbo Horse</h3>
+                    <p class="text-xs text-gray-400">Produces: Raw Horsepower</p>
+                </div>
+                <div class="w-full mt-2">
+                    <div class="flex justify-between text-xs mb-1">
+                        <span>Sync</span>
+                        <span id="timer-horse">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-800 h-2 rounded-full overflow-hidden">
+                        <div id="progress-horse" class="h-full bg-orange-500 w-0 transition-all duration-100"></div>
+                    </div>
+                </div>
+                <button onclick="harvest('horse')" id="btn-horse" class="btn-harvest w-full py-2 rounded mt-4 font-bold shadow-lg hover:shadow-orange-500/50">
+                    Harvest Data
+                </button>
+            </div>
+
+        </main>
+
+        <!-- Bottom Control Panel (Laptop Metaphor) -->
+        <footer class="mt-4 glass-panel p-4 flex flex-col md:flex-row gap-4 h-48 border-t-2 border-cyan-500/30">
+            <!-- Terminal Log -->
+            <div class="flex-1 bg-black/80 rounded p-2 overflow-y-auto font-mono text-xs border border-gray-700 shadow-inner" id="terminal">
+                <div class="text-green-500">> System Initialized...</div>
+                <div class="text-green-500">> Bio-Metrics: Stable</div>
+                <div class="text-green-500">> Connecting to Agri-Net... Connected.</div>
+            </div>
+
+            <!-- Upgrades -->
+            <div class="w-full md:w-1/3 flex flex-col gap-2">
+                <h4 class="font-[Orbitron] text-sm text-cyan-400 border-b border-cyan-900 pb-1">SYSTEM UPGRADES</h4>
+                <button onclick="buyUpgrade('auto')" id="btn-upgrade-auto" class="flex justify-between items-center bg-gray-800 hover:bg-gray-700 p-2 rounded text-xs transition border border-gray-600">
+                    <span>🤖 Auto-Harvester Bot</span>
+                    <span class="text-yellow-400">₮ 500</span>
+                </button>
+                <button onclick="buyUpgrade('speed')" id="btn-upgrade-speed" class="flex justify-between items-center bg-gray-800 hover:bg-gray-700 p-2 rounded text-xs transition border border-gray-600">
+                    <span>⚡ Overclock Production</span>
+                    <span class="text-yellow-400">₮ 250</span>
+                </button>
+                <button onclick="buyUpgrade('network')" id="btn-upgrade-network" class="flex justify-between items-center bg-gray-800 hover:bg-gray-700 p-2 rounded text-xs transition border border-gray-600">
+                    <span>📡 Stabilize Waveforms</span>
+                    <span class="text-yellow-400">₮ 1000</span>
+                </button>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // --- Game State ---
+        const state = {
+            credits: 0,
+            networkStability: 100,
+            upgrades: {
+                auto: false,
+                speed: 1,
+                network: 1
+            },
+            animals: {
+                chicken: { name: "Cyber Chicken", value: 15, time: 2000, progress: 0, active: false },
+                goat: { name: "Neon Goat", value: 40, time: 4000, progress: 0, active: false },
+                sheep: { name: "Cloud Sheep", value: 80, time: 7000, progress: 0, active: false },
+                horse: { name: "Turbo Horse", value: 200, time: 12000, progress: 0, active: false }
+            }
+        };
+
+        // --- Initialization ---
+        function init() {
+            generateWaveforms();
+            startLoops();
+            log("Welcome back, Operator. Farm status: ONLINE.");
+        }
+
+        // --- Visuals ---
+        function generateWaveforms() {
+            const container = document.getElementById('waveforms');
+            const count = 50;
+            for (let i = 0; i < count; i++) {
+                const bar = document.createElement('div');
+                bar.className = 'wave-bar';
+                // Randomize animation delay and duration for organic look
+                bar.style.animationDuration = (0.5 + Math.random() * 1) + 's';
+                bar.style.animationDelay = (Math.random() * 1) + 's';
+                bar.style.height = (10 + Math.random() * 50) + 'px';
+                bar.style.opacity = Math.random();
+                container.appendChild(bar);
+            }
+        }
+
+        function log(msg) {
+            const term = document.getElementById('terminal');
+            const line = document.createElement('div');
+            line.textContent = `> ${msg}`;
+            line.className = "mb-1";
+            term.appendChild(line);
+            term.scrollTop = term.scrollHeight;
+        }
+
+        function updateUI() {
+            document.getElementById('score-display').textContent = `₮ ${state.credits}`;
+            document.getElementById('network-bar').style.width = `${state.networkStability}%`;
+            
+            // Check upgrade affordability
+            checkAffordability('btn-upgrade-auto', 500);
+            checkAffordability('btn-upgrade-speed', 250);
+            checkAffordability('btn-upgrade-network', 1000);
+        }
+
+        function checkAffordability(id, cost) {
+            const btn = document.getElementById(id);
+            if (state.credits >= cost) {
+                btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                btn.classList.add('hover:bg-gray-700');
+            } else {
+                btn.classList.add('opacity-50', 'cursor-not-allowed');
+                btn.classList.remove('hover:bg-gray-700');
+            }
+        }
+
+        // --- Game Logic ---
+        function startLoops() {
+            // Production Loop
+            setInterval(() => {
+                for (const [key, animal] of Object.entries(state.animals)) {
+                    if (animal.progress < 100) {
+                        // Calculate increment based on speed upgrade
+                        const increment = (100 / (animal.time / 100)) * state.upgrades.speed;
+                        animal.progress = Math.min(100, animal.progress + increment);
+                        
+                        // Update DOM
+                        document.getElementById(`progress-${key}`).style.width = `${animal.progress}%`;
+                        document.getElementById(`timer-${key}`).textContent = `${Math.floor(animal.progress)}%`;
+                        
+                        // Enable button if ready
+                        if (animal.progress >= 100) {
+                            const btn = document.getElementById(`btn-${key}`);
+                            btn.disabled = false;
+                            btn.classList.add('animate-pulse', 'ring-2', 'ring-white');
+                            btn.textContent = "READY TO HARVEST";
+                            
+                            // Auto Harvest Logic
+                            if (state.upgrades.auto) {
+                                harvest(key);
+                            }
+                        } else {
+                            const btn = document.getElementById(`btn-${key}`);
+                            btn.disabled = true;
+                            btn.classList.remove('animate-pulse', 'ring-2', 'ring-white');
+                            btn.textContent = "Syncing...";
+                        }
+                    }
+                }
+            }, 100);
+
+            // Network Fluctuation Loop
+            setInterval(() => {
+                if(Math.random() > 0.7) {
+                    state.networkStability = Math.max(10, Math.min(100, state.networkStability + (Math.random() * 10 - 5)));
+                    updateUI();
+                    if(state.networkStability < 30) log("WARNING: Network instability detected!");
+                }
+            }, 2000);
+        }
+
+        window.harvest = function(type) {
+            const animal = state.animals[type];
+            if (animal.progress >= 100) {
+                // Reset
+                animal.progress = 0;
+                
+                // Reward
+                const reward = Math.floor(animal.value * (state.networkStability / 100));
+                state.credits += reward;
+                
+                // Visual Feedback
+                log(`Harvested ${animal.name}: +₮${reward}`);
+                showFloatingText(reward, document.getElementById(`btn-${type}`));
+                
+                updateUI();
+            }
+        };
+
+        function showFloatingText(amount, element) {
+            const rect = element.getBoundingClientRect();
+            const float = document.createElement('div');
+            float.className = 'resource-float';
+            float.textContent = `+₮${amount}`;
+            float.style.left = (rect.left + rect.width/2) + 'px';
+            float.style.top = rect.top + 'px';
+            document.body.appendChild(float);
+            setTimeout(() => float.remove(), 1000);
+        }
+
+        window.buyUpgrade = function(type) {
+            let cost = 0;
+            let name = "";
+
+            if (type === 'auto') { cost = 500; name = "Auto-Harvester"; }
+            if (type === 'speed') { cost = 250; name = "Overclock"; }
+            if (type === 'network') { cost = 1000; name = "Network Stabilizer"; }
+
+            if (state.credits >= cost) {
+                state.credits -= cost;
+                
+                if (type === 'auto') {
+                    state.upgrades.auto = true;
+                    document.getElementById('btn-upgrade-auto').innerHTML = "<span>✅ INSTALLED</span>";
+                    document.getElementById('btn-upgrade-auto').disabled = true;
+                }
+                if (type === 'speed') {
+                    state.upgrades.speed += 0.5;
+                    cost = Math.floor(cost * 1.5); // Increase price for next level
+                    document.getElementById('btn-upgrade-speed').querySelector('span:last-child').textContent = `₮ ${cost}`;
+                }
+                if (type === 'network') {
+                    state.networkStability = 100;
+                    log("Network stabilized to 100%");
+                }
+
+                log(`Purchased Upgrade: ${name}`);
+                updateUI();
+            } else {
+                log("ERROR: Insufficient Credits.");
+            }
+        };
+
+        // Start
+        init();
+
+    </script>
+</body>
+</html>

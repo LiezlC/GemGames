@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JWST: Deep Field Explorer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #050505;
+            font-family: 'Share Tech Mono', monospace;
+            color: #00ffcc;
+            user-select: none;
+        }
+
+        /* Space Background Layers */
+        #universe {
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at center, #1a0b2e 0%, #000000 100%);
+            z-index: 0;
+            transition: transform 0.1s ease-out;
+        }
+
+        .nebula-cloud {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(60px);
+            opacity: 0.4;
+            animation: drift 60s infinite alternate linear;
+        }
+
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle 3s infinite ease-in-out;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; transform: scale(0.8); }
+            50% { opacity: 1; transform: scale(1.2); }
+        }
+
+        @keyframes drift {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(20px, -20px); }
+        }
+
+        /* The Telescope (CSS/SVG Construction) */
+        #jwst-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            height: 300px;
+            z-index: 10;
+            pointer-events: none; /* Let clicks pass through to space */
+            animation: float 8s infinite ease-in-out;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
+            50% { transform: translate(-50%, -55%) rotate(2deg); }
+        }
+
+        /* HUD Elements */
+        .hud-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        .reticle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 400px;
+            height: 400px;
+            border: 1px solid rgba(0, 255, 204, 0.3);
+            border-radius: 50%;
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.1);
+        }
+
+        .reticle::before, .reticle::after {
+            content: '';
+            position: absolute;
+            background: rgba(0, 255, 204, 0.5);
+        }
+        .reticle::before { top: 50%; left: 0; width: 100%; height: 1px; }
+        .reticle::after { left: 50%; top: 0; height: 100%; width: 1px; }
+
+        .target-marker {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border: 2px dashed #ff0055;
+            border-radius: 50%;
+            animation: spin 4s linear infinite;
+            cursor: pointer;
+            pointer-events: auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.3s;
+        }
+
+        .target-marker:hover {
+            background: rgba(255, 0, 85, 0.2);
+            transform: scale(1.2);
+            border-style: solid;
+        }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* UI Panels */
+        .panel {
+            background: rgba(10, 10, 15, 0.85);
+            border: 1px solid #00ffcc;
+            backdrop-filter: blur(5px);
+            padding: 1rem;
+            pointer-events: auto;
+        }
+
+        .scan-btn {
+            background: linear-gradient(45deg, #004433, #002211);
+            border: 1px solid #00ffcc;
+            color: #00ffcc;
+            text-transform: uppercase;
+            padding: 10px 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Share Tech Mono', monospace;
+        }
+        .scan-btn:hover { background: #00ffcc; color: black; box-shadow: 0 0 15px #00ffcc; }
+        .scan-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Discovery Modal */
+        #discovery-modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            max-width: 500px;
+            background: rgba(0, 0, 0, 0.95);
+            border: 2px solid #ffd700;
+            z-index: 100;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 0 50px rgba(255, 215, 0, 0.3);
+        }
+
+        .artifact-display {
+            width: 200px;
+            height: 200px;
+            margin: 20px auto;
+            border-radius: 10px;
+            position: relative;
+            overflow: hidden;
+            background: black;
+        }
+
+        /* CSS Art for Discoveries */
+        .art-galaxy {
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 10px; height: 10px;
+            box-shadow: 
+                0 0 40px 20px rgba(255, 100, 200, 0.5),
+                20px 20px 0 0 rgba(255, 255, 255, 0.8),
+                -20px -20px 0 0 rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            animation: spin 10s linear infinite;
+        }
+        .art-planet {
+            width: 100px; height: 100px;
+            background: radial-gradient(circle at 30% 30%, #4facfe 0%, #00f2fe 100%);
+            border-radius: 50%;
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: inset -10px -10px 20px rgba(0,0,0,0.5);
+        }
+        .art-nebula {
+            width: 100%; height: 100%;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(255,0,0,0.4), transparent),
+                radial-gradient(circle at 80% 20%, rgba(0,0,255,0.4), transparent);
+            filter: blur(20px);
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            width: 100%;
+            height: 4px;
+            background: #333;
+            margin-top: 10px;
+        }
+        .progress-bar {
+            height: 100%;
+            background: #ffd700;
+            width: 0%;
+            transition: width 0.2s;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Background Universe -->
+    <div id="universe">
+        <!-- Stars and Nebula clouds generated by JS -->
+    </div>
+
+    <!-- JWST Model (SVG) -->
+    <div id="jwst-container">
+        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+            <!-- Sunshield -->
+            <path d="M10,100 Q50,150 100,140 Q150,150 190,100 L100,80 Z" fill="url(#shieldGrad)" stroke="#555" stroke-width="1" />
+            <defs>
+                <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:#d1d1d1;stop-opacity:1" />
+                    <stop offset="50%" style="stop-color:#e0aaff;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#a0a0a0;stop-opacity:1" />
+                </linearGradient>
+                <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:#ffd700;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#b8860b;stop-opacity:1" />
+                </linearGradient>
+            </defs>
+            
+            <!-- Primary Mirror (18 Hexagons) -->
+            <g transform="translate(100, 90) scale(0.8)">
+                <!-- Center -->
+                <!-- Inner Ring -->
+                <polygon points="0,-10 8.66,-5 8.66,5 0,10 -8.66,5 -8.66,-5" fill="none" /> <!-- Empty center -->
+                <g id="hex-ring-1">
+                    <polygon points="0,-22 8.66,-17 8.66,-7 0,-2 -8.66,-7 -8.66,-17" fill="url(#goldGrad)" stroke="#000" stroke-width="0.5" />
+                    <polygon points="19,-11 27.66,-6 27.66,4 19,9 10.34,4 10.34,-6" fill="url(#goldGrad)" stroke="#000" stroke-width="0.5" />
+                    <polygon points="19,11 27.66,16 27.66,26 19,31 10.34,26 10.34,16" fill="url(#goldGrad)" stroke="#000" stroke-width="0.5" />
+                    <polygon points="0,22 8.66,27 8.66,37 0,42 -8.66,37 -8.66,27" fill="url(#goldGrad)" stroke="#000" stroke-width="0.5" />
+                    <polygon points="-19,11 -10.34,16 -10.34,26 -19,31 -27.66,26 -27.66,16" fill="url(#goldGrad)" stroke="#000" stroke-width="0.5" />
+                    <polygon points="-19,-11 -10.34,-6 -10.34,4 -19,9 -27.66,4 -27.66,-6" fill="url(#goldGrad)" stroke="#000" stroke-width="0.5" />
+                </g>
+                <!-- Outer Ring (Simplified for visual effect) -->
+                <g id="hex-ring-2" transform="scale(1.8)" opacity="0.9">
+                     <!-- Just adding a few to imply the outer ring without perfect math for brevity -->
+                    <polygon points="0,-22 8.66,-17 8.66,-7 0,-2 -8.66,-7 -8.66,-17" fill="url(#goldGrad)" stroke="#000" stroke-width="0.2" />
+                    <polygon points="19,-11 27.66,-6 27.66,4 19,9 10.34,4 10.34,-6" fill="url(#goldGrad)" stroke="#000" stroke-width="0.2" />
+                    <polygon points="-19,11 -10.34,16 -10.34,26 -19,31 -27.66,26 -27.66,16" fill="url(#goldGrad)" stroke="#000" stroke-width="0.2" />
+                </g>
+                <!-- Secondary Mirror Support -->
+                <line x1="0" y1="0" x2="0" y2="-40" stroke="black" stroke-width="2" />
+                <line x1="0" y1="0" x2="-30" y2="20" stroke="black" stroke-width="2" />
+                <line x1="0" y1="0" x2="30" y2="20" stroke="black" stroke-width="2" />
+                <circle cx="0" cy="0" r="3" fill="black" />
+            </g>
+        </svg>
+    </div>
+
+    <!-- HUD Interface -->
+    <div class="hud-layer">
+        <div class="reticle"></div>
+        
+        <!-- Top Bar -->
+        <div class="absolute top-0 left-0 w-full flex justify-between p-4">
+            <div class="panel">
+                <div class="text-xs text-gray-400">MISSION STATUS</div>
+                <div class="text-xl font-bold">DEEP FIELD SCAN</div>
+                <div class="text-xs text-yellow-500 mt-1">MIRRORS: ALIGNED</div>
+                <div class="text-xs text-yellow-500">TEMP: 50K</div>
+            </div>
+            <div class="panel text-right">
+                <div class="text-xs text-gray-400">DISCOVERIES</div>
+                <div class="text-2xl font-bold" id="score-display">0 / 5</div>
+            </div>
+        </div>
+
+        <!-- Bottom Controls -->
+        <div class="absolute bottom-0 left-0 w-full flex justify-center p-6">
+            <div class="panel flex gap-4 items-center">
+                <div class="text-right mr-2">
+                    <div class="text-xs text-gray-400">INSTRUMENT</div>
+                    <div class="font-bold text-pink-400">NIRCam</div>
+                </div>
+                <button id="scan-btn" class="scan-btn" onclick="startScan()">INITIATE EXPOSURE</button>
+                <div class="w-32">
+                    <div class="text-xs text-gray-400 mb-1">BUFFER</div>
+                    <div class="progress-container">
+                        <div id="scan-progress" class="progress-bar"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Layer (Targets) -->
+    <div id="target-layer" class="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
+        <!-- Targets injected via JS -->
+    </div>
+
+    <!-- Discovery Modal -->
+    <div id="discovery-modal">
+        <h2 class="text-2xl font-bold text-yellow-400 mb-2">ANOMALY DETECTED</h2>
+        <p class="text-sm text-gray-300 mb-4">Processing data from MIRI/NIRCam...</p>
+        
+        <div class="artifact-display" id="artifact-canvas">
+            <!-- CSS Art injected here -->
+        </div>
+
+        <div class="text-left text-xs font-mono text-green-400 mb-4 space-y-1">
+            <p>> REDSHIFT: z = <span id="data-z"></span></p>
+            <p>> COMPOSITION: <span id="data-comp"></span></p>
+            <p>> DISTANCE: <span id="data-dist"></span> LY</p>
+        </div>
+
+        <button class="scan-btn w-full" onclick="closeModal()">LOG DATA & CONTINUE</button>
+    </div>
+
+    <script>
+        // --- Configuration ---
+        const starCount = 300;
+        const cloudCount = 15;
+        const targetCount = 5;
+        let score = 0;
+        let isScanning = false;
+        let currentTarget = null;
+
+        // --- Initialization ---
+        const universe = document.getElementById('universe');
+        const targetLayer = document.getElementById('target-layer');
+        const scoreDisplay = document.getElementById('score-display');
+        const modal = document.getElementById('discovery-modal');
+        const progressBar = document.getElementById('scan-progress');
+        const artifactCanvas = document.getElementById('artifact-canvas');
+
+        // Generate Background
+        function initSpace() {
+            // Stars
+            for(let i=0; i<starCount; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                const size = Math.random() * 2;
+                star.style.width = size + 'px';
+                star.style.height = size + 'px';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.animationDuration = (Math.random() * 3 + 1) + 's';
+                star.style.opacity = Math.random();
+                universe.appendChild(star);
+            }
+
+            // Nebula Clouds (Pink/Purple from image)
+            const colors = ['#4a0e4e', '#8b008b', '#2e003e', '#ff69b4'];
+            for(let i=0; i<cloudCount; i++) {
+                const cloud = document.createElement('div');
+                cloud.className = 'nebula-cloud';
+                const size = Math.random() * 400 + 200;
+                cloud.style.width = size + 'px';
+                cloud.style.height = size + 'px';
+                cloud.style.background = colors[Math.floor(Math.random() * colors.length)];
+                cloud.style.left = (Math.random() * 120 - 10) + '%';
+                cloud.style.top = (Math.random() * 120 - 10) + '%';
+                cloud.style.animationDuration = (Math.random() * 60 + 40) + 's';
+                universe.appendChild(cloud);
+            }
+        }
+
+        // Generate Targets
+        function spawnTarget() {
+            const t = document.createElement('div');
+            t.className = 'target-marker';
+            // Position randomly but within a central area so they are findable
+            const x = Math.random() * 80 + 10; 
+            const y = Math.random() * 60 + 20;
+            t.style.left = x + '%';
+            t.style.top = y + '%';
+            
+            t.innerHTML = '<span style="font-size:10px; color:#ff0055; position:absolute; top:-15px; width:100px; left:-30px;">SIGNAL DETECTED</span>';
+            
+            t.onclick = (e) => {
+                if(isScanning) return;
+                e.stopPropagation(); // Prevent clicking through
+                lockTarget(t);
+            };
+            
+            targetLayer.appendChild(t);
+        }
+
+        for(let i=0; i<targetCount; i++) spawnTarget();
+
+        // --- Interaction ---
+        
+        // Parallax Effect
+        document.addEventListener('mousemove', (e) => {
+            const x = (window.innerWidth - e.pageX * 2) / 50;
+            const y = (window.innerHeight - e.pageY * 2) / 50;
+            universe.style.transform = `translate(${x}px, ${y}px)`;
+            
+            // Move targets slightly differently for depth
+            targetLayer.style.transform = `translate(${x * 1.5}px, ${y * 1.5}px)`;
+        });
+
+        function lockTarget(element) {
+            // Highlight target
+            document.querySelectorAll('.target-marker').forEach(el => el.style.opacity = '0.3');
+            element.style.opacity = '1';
+            element.style.borderColor = '#00ffcc';
+            element.style.background = 'rgba(0, 255, 204, 0.1)';
+            currentTarget = element;
+            
+            // Enable scan button visual cue
+            const btn = document.getElementById('scan-btn');
+            btn.style.boxShadow = "0 0 20px #00ffcc";
+            btn.innerText = "LOCK ACQUIRED - CLICK TO SCAN";
+        }
+
+        window.startScan = function() {
+            if(!currentTarget) {
+                alert("No signal locked! Click a red reticle in space first.");
+                return;
+            }
+            if(isScanning) return;
+            
+            isScanning = true;
+            let progress = 0;
+            const btn = document.getElementById('scan-btn');
+            btn.innerText = "EXPOSING...";
+            
+            const interval = setInterval(() => {
+                progress += 2;
+                progressBar.style.width = progress + '%';
+                
+                // Random hex data effect in button
+                if(progress % 10 === 0) {
+                    btn.innerText = `GATHERING PHOTONS... ${progress}%`;
+                }
+
+                if(progress >= 100) {
+                    clearInterval(interval);
+                    completeScan();
+                }
+            }, 30);
+        }
+
+        function completeScan() {
+            isScanning = false;
+            progressBar.style.width = '0%';
+            document.getElementById('scan-btn').innerText = "INITIATE EXPOSURE";
+            document.getElementById('scan-btn').style.boxShadow = "none";
+            
+            // Remove target
+            currentTarget.remove();
+            currentTarget = null;
+            
+            // Show modal
+            generateArtifact();
+            modal.style.display = 'block';
+            
+            // Update Score
+            score++;
+            scoreDisplay.innerText = `${score} / ${targetCount}`;
+        }
+
+        function generateArtifact() {
+            // Clear previous
+            artifactCanvas.innerHTML = '';
+            
+            // Randomize type
+            const type = Math.random() > 0.5 ? 'galaxy' : 'planet';
+            
+            // Generate Data
+            document.getElementById('data-z').innerText = (Math.random() * 10 + 1).toFixed(2);
+            document.getElementById('data-comp').innerText = Math.random() > 0.5 ? 'HYDROGEN / HELIUM' : 'SILICATE / ICE';
+            document.getElementById('data-dist').innerText = Math.floor(Math.random() * 10000 + 500) + " MILLION";
+
+            if(type === 'galaxy') {
+                const el = document.createElement('div');
+                el.className = 'art-galaxy';
+                // Random color
+                const hue = Math.floor(Math.random() * 360);
+                el.style.boxShadow = `0 0 40px 20px hsla(${hue}, 70%, 60%, 0.5), 20px 20px 0 0 white, -20px -20px 0 0 white`;
+                artifactCanvas.appendChild(el);
+                
+                // Add some stars to the photo
+                for(let i=0; i<20; i++) {
+                    const s = document.createElement('div');
+                    s.style.position = 'absolute';
+                    s.style.width = '2px'; s.style.height='2px'; s.style.background='white';
+                    s.style.left = Math.random()*100+'%'; s.style.top = Math.random()*100+'%';
+                    artifactCanvas.appendChild(s);
+                }
+            } else {
+                const el = document.createElement('div');
+                el.className = 'art-planet';
+                // Random gradient
+                const c1 = `hsl(${Math.random()*360}, 70%, 50%)`;
+                const c2 = `hsl(${Math.random()*360}, 70%, 20%)`;
+                el.style.background = `radial-gradient(circle at 30% 30%, ${c1}, ${c2})`;
+                
+                // Maybe a ring?
+                if(Math.random() > 0.7) {
+                    const ring = document.createElement('div');
+                    ring.style.position = 'absolute';
+                    ring.style.top = '50%'; ring.style.left = '50%';
+                    ring.style.transform = 'translate(-50%, -50%) rotate(70deg)';
+                    ring.style.width = '140px'; ring.style.height = '40px';
+                    ring.style.border = '4px solid rgba(255,255,255,0.3)';
+                    ring.style.borderRadius = '50%';
+                    artifactCanvas.appendChild(ring);
+                }
+                
+                artifactCanvas.appendChild(el);
+            }
+        }
+
+        window.closeModal = function() {
+            modal.style.display = 'none';
+            document.querySelectorAll('.target-marker').forEach(el => el.style.opacity = '1');
+            
+            if(score === targetCount) {
+                alert("MISSION COMPLETE. ALL DEEP FIELD TARGETS ANALYZED.");
+                location.reload(); // Reset
+            }
+        }
+
+        // Run
+        initSpace();
+
+    </script>
+</body>
+</html>

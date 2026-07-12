@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Art-Dozer: Color Cleanup</title>
+    <style>
+        :root {
+            --dozer-yellow: #FFC107;
+            --dozer-dark: #FF9800;
+            --tire-color: #263238;
+            --sky-top: #1e3c72;
+            --sky-bottom: #2a5298;
+            --paint-1: #ff00cc;
+            --paint-2: #3333ff;
+            --paint-3: #ffff00;
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(to bottom, #4facfe 0%, #00f2fe 100%);
+            touch-action: none; /* Prevent zoom/scroll on mobile */
+        }
+
+        /* UI Layer */
+        #ui-layer {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            color: white;
+            text-shadow: 2px 2px 0px rgba(0,0,0,0.3);
+            pointer-events: none;
+        }
+
+        h1 { margin: 0; font-size: 2rem; letter-spacing: 1px; }
+        p { margin: 5px 0; font-size: 1.2rem; }
+
+        #controls-hint {
+            position: absolute;
+            bottom: 120px;
+            width: 100%;
+            text-align: center;
+            color: rgba(255,255,255,0.8);
+            font-weight: bold;
+            pointer-events: none;
+            animation: fadeOut 5s forwards;
+            animation-delay: 3s;
+        }
+
+        @keyframes fadeOut { to { opacity: 0; } }
+
+        /* Mobile Controls */
+        .mobile-controls {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 20px;
+            box-sizing: border-box;
+            z-index: 100;
+        }
+
+        .control-btn {
+            width: 70px;
+            height: 70px;
+            background: rgba(255,255,255,0.3);
+            border: 2px solid white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            color: white;
+            user-select: none;
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+            transition: transform 0.1s;
+        }
+        .control-btn:active { transform: scale(0.9); background: rgba(255,255,255,0.5); }
+
+        /* Game World */
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* The Ground - Colorful Paint Strokes */
+        #ground {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 200%; /* Scrolling */
+            height: 25vh;
+            background-color: #e0c3fc;
+            background-image: 
+                radial-gradient(circle at 50% 50%, var(--paint-1) 10%, transparent 10%),
+                radial-gradient(circle at 20% 80%, var(--paint-2) 15%, transparent 15%),
+                linear-gradient(45deg, var(--paint-3) 25%, transparent 25%),
+                linear-gradient(-45deg, var(--dozer-dark) 10%, transparent 10%),
+                radial-gradient(circle at 80% 20%, #ff6b6b 20%, transparent 20%);
+            background-size: 300px 300px;
+            transform: translateZ(0);
+            border-top: 5px solid rgba(255,255,255,0.5);
+        }
+
+        /* Clouds */
+        .cloud {
+            position: absolute;
+            background: rgba(255,255,255,0.8);
+            border-radius: 50px;
+            animation: floatCloud linear infinite;
+            opacity: 0.8;
+        }
+        .cloud::after, .cloud::before {
+            content: '';
+            position: absolute;
+            background: inherit;
+            border-radius: 50%;
+        }
+        @keyframes floatCloud {
+            from { transform: translateX(100vw); }
+            to { transform: translateX(-200px); }
+        }
+
+        /* The Bulldozer */
+        #bulldozer {
+            position: absolute;
+            bottom: 22vh; /* Sit on ground */
+            left: 20%;
+            width: 200px;
+            height: 140px;
+            transition: transform 0.1s;
+            z-index: 10;
+        }
+
+        /* Dozer Parts */
+        .cab {
+            position: absolute;
+            top: 0;
+            left: 80px;
+            width: 80px;
+            height: 70px;
+            background: var(--dozer-yellow);
+            border: 3px solid #d4a006;
+            border-radius: 10px 10px 0 0;
+            z-index: 2;
+        }
+        .window {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 60px;
+            height: 40px;
+            background: #37474f;
+            border: 2px solid #263238;
+            border-radius: 5px;
+        }
+        .body {
+            position: absolute;
+            bottom: 30px;
+            left: 50px;
+            width: 120px;
+            height: 50px;
+            background: var(--dozer-yellow);
+            border-radius: 5px;
+            z-index: 2;
+            box-shadow: inset -5px -5px 0 rgba(0,0,0,0.1);
+        }
+        .wheel-rear {
+            position: absolute;
+            bottom: 0;
+            left: 110px;
+            width: 50px;
+            height: 50px;
+            background: var(--tire-color);
+            border-radius: 50%;
+            border: 4px dashed #546e7a;
+            z-index: 1;
+            animation: spin 2s linear infinite;
+            animation-play-state: paused;
+        }
+        .wheel-front {
+            position: absolute;
+            bottom: 0;
+            left: 60px;
+            width: 40px;
+            height: 40px;
+            background: var(--tire-color);
+            border-radius: 50%;
+            border: 3px dashed #546e7a;
+            z-index: 1;
+            animation: spin 2s linear infinite;
+            animation-play-state: paused;
+        }
+        
+        /* The Scoop Arm and Bucket */
+        .arm-pivot {
+            position: absolute;
+            top: 60px;
+            left: 60px;
+            width: 10px;
+            height: 10px;
+            background: #333;
+            border-radius: 50%;
+            z-index: 3;
+        }
+        .arm {
+            position: absolute;
+            top: 65px;
+            left: 65px;
+            width: 80px;
+            height: 12px;
+            background: var(--dozer-dark);
+            transform-origin: 0 50%;
+            transform: rotate(20deg);
+            border-radius: 5px;
+            z-index: 3;
+            transition: transform 0.2s ease-out;
+        }
+        .piston {
+            position: absolute;
+            top: 50px;
+            left: 80px;
+            width: 50px;
+            height: 6px;
+            background: silver;
+            transform-origin: 0 50%;
+            transform: rotate(35deg);
+            z-index: 2;
+            transition: transform 0.2s ease-out;
+        }
+
+        .bucket {
+            position: absolute;
+            /* Positioned relative to the arm's end via JS or nested structure? 
+               Let's keep it simple and absolute relative to dozer, updated by JS or CSS transforms */
+            top: 70px; 
+            left: -20px;
+            width: 60px;
+            height: 80px;
+            background: #e65100; /* Rust orange */
+            border-radius: 10px 10px 50px 10px;
+            transform-origin: 100% 20%;
+            transform: rotate(0deg);
+            z-index: 4;
+            border-left: 5px solid #bf360c;
+            transition: top 0.2s, transform 0.2s;
+        }
+
+        /* Rocks / Debris */
+        .rock {
+            position: absolute;
+            bottom: 25vh;
+            width: 40px;
+            height: 35px;
+            background: #78909c;
+            border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+            box-shadow: inset 5px 5px 0 rgba(255,255,255,0.2), 5px 0 10px rgba(0,0,0,0.2);
+            z-index: 5;
+        }
+        
+        /* Particles */
+        .particle {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: pop 0.5s forwards;
+        }
+        @keyframes pop {
+            0% { transform: scale(1) translateY(0); opacity: 1; }
+            100% { transform: scale(0) translateY(-50px); opacity: 0; }
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* Game Over / Win */
+        #message-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            z-index: 200;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s;
+        }
+        #message-overlay.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        button.restart-btn {
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            background: var(--dozer-yellow);
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: bold;
+            color: #333;
+            margin-top: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        button.restart-btn:hover { background: white; }
+
+    </style>
+</head>
+<body>
+
+    <div id="ui-layer">
+        <h1>ART-DOZER</h1>
+        <p>Rocks Cleared: <span id="score">0</span></p>
+        <p>Paint Revealed: <span id="distance">0</span>m</p>
+    </div>
+
+    <div id="controls-hint">
+        Desktop: Arrow Keys | Mobile: On-screen Buttons<br>
+        Push rocks to clear the canvas!
+    </div>
+
+    <div id="game-container">
+        <!-- Sky Elements -->
+        <div class="cloud" style="top: 10%; left: 10%; width: 120px; height: 40px; animation-duration: 25s;"></div>
+        <div class="cloud" style="top: 20%; left: 60%; width: 160px; height: 50px; animation-duration: 35s;"></div>
+        <div class="cloud" style="top: 5%; left: 80%; width: 100px; height: 30px; animation-duration: 20s;"></div>
+
+        <!-- The Player -->
+        <div id="bulldozer">
+            <div class="bucket" id="bucket"></div>
+            <div class="arm" id="arm"></div>
+            <div class="piston" id="piston"></div>
+            <div class="cab"><div class="window"></div></div>
+            <div class="body"></div>
+            <div class="wheel-rear" id="wheel1"></div>
+            <div class="wheel-front" id="wheel2"></div>
+        </div>
+
+        <!-- Debris Container -->
+        <div id="debris-layer"></div>
+
+        <!-- The Ground -->
+        <div id="ground"></div>
+    </div>
+
+    <div id="message-overlay">
+        <h1 id="msg-title">Great Job!</h1>
+        <p id="msg-sub">You cleared the path.</p>
+        <button class="restart-btn" onclick="resetGame()">Keep Dozing</button>
+    </div>
+
+    <div class="mobile-controls">
+        <div class="control-btn" id="btn-scoop">🚜</div>
+        <div class="control-btn" id="btn-go">➡️</div>
+    </div>
+
+    <script>
+        // Game State
+        const state = {
+            moving: false,
+            scoopDown: true,
+            score: 0,
+            distance: 0,
+            speed: 5,
+            groundOffset: 0,
+            rocks: [],
+            lastRockTime: 0
+        };
+
+        // DOM Elements
+        const dozer = document.getElementById('bulldozer');
+        const bucket = document.getElementById('bucket');
+        const arm = document.getElementById('arm');
+        const piston = document.getElementById('piston');
+        const wheels = [document.getElementById('wheel1'), document.getElementById('wheel2')];
+        const ground = document.getElementById('ground');
+        const debrisLayer = document.getElementById('debris-layer');
+        const scoreEl = document.getElementById('score');
+        const distEl = document.getElementById('distance');
+        const msgOverlay = document.getElementById('message-overlay');
+
+        // Audio Context (Simple Synth)
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioContext();
+
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            if (type === 'crunch') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(100, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.1);
+            } else if (type === 'motor') {
+                // Continuous low hum logic handled separately
+            }
+        }
+
+        // Controls
+        const keys = {};
+        window.addEventListener('keydown', (e) => {
+            keys[e.code] = true;
+            if(e.code === 'ArrowUp') toggleScoop(false); // Up
+            if(e.code === 'ArrowDown') toggleScoop(true); // Down
+        });
+        window.addEventListener('keyup', (e) => keys[e.code] = false);
+
+        // Mobile Controls
+        const btnScoop = document.getElementById('btn-scoop');
+        const btnGo = document.getElementById('btn-go');
+
+        btnScoop.addEventListener('touchstart', (e) => { e.preventDefault(); toggleScoop(!state.scoopDown); });
+        btnScoop.addEventListener('mousedown', (e) => { e.preventDefault(); toggleScoop(!state.scoopDown); });
+        
+        btnGo.addEventListener('touchstart', (e) => { e.preventDefault(); keys['ArrowRight'] = true; });
+        btnGo.addEventListener('touchend', (e) => { e.preventDefault(); keys['ArrowRight'] = false; });
+        btnGo.addEventListener('mousedown', (e) => { e.preventDefault(); keys['ArrowRight'] = true; });
+        btnGo.addEventListener('mouseup', (e) => { e.preventDefault(); keys['ArrowRight'] = false; });
+
+
+        function toggleScoop(isDown) {
+            state.scoopDown = isDown;
+            if (state.scoopDown) {
+                // Lower bucket
+                arm.style.transform = 'rotate(20deg)';
+                bucket.style.transform = 'rotate(0deg)';
+                bucket.style.top = '70px';
+                piston.style.transform = 'rotate(35deg)';
+            } else {
+                // Raise bucket
+                arm.style.transform = 'rotate(-10deg)';
+                bucket.style.transform = 'rotate(-30deg)';
+                bucket.style.top = '40px';
+                piston.style.transform = 'rotate(15deg)';
+            }
+        }
+
+        function spawnRock() {
+            const rock = document.createElement('div');
+            rock.className = 'rock';
+            // Randomize rock look
+            const size = 30 + Math.random() * 30;
+            rock.style.width = size + 'px';
+            rock.style.height = (size * 0.8) + 'px';
+            rock.style.backgroundColor = ['#78909c', '#546e7a', '#455a64'][Math.floor(Math.random()*3)];
+            
+            // Start off screen right
+            const startX = window.innerWidth + 50;
+            rock.style.left = startX + 'px';
+            
+            // Physics properties
+            rock.dataset.x = startX;
+            rock.dataset.vx = 0;
+            rock.dataset.cleared = "false";
+
+            debrisLayer.appendChild(rock);
+            state.rocks.push(rock);
+        }
+
+        function createParticles(x, y, color) {
+            for(let i=0; i<5; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                p.style.left = x + 'px';
+                p.style.top = y + 'px';
+                p.style.background = color;
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 50;
+                const tx = Math.cos(angle) * speed;
+                const ty = Math.sin(angle) * speed - 50;
+                p.style.setProperty('--tx', tx + 'px');
+                p.style.setProperty('--ty', ty + 'px');
+                debrisLayer.appendChild(p);
+                setTimeout(() => p.remove(), 500);
+            }
+        }
+
+        function updateGame() {
+            // Movement Logic
+            if (keys['ArrowRight']) {
+                state.moving = true;
+                state.groundOffset += state.speed;
+                state.distance += 0.1;
+                
+                // Animate Ground
+                ground.style.backgroundPosition = `-${state.groundOffset}px 0`;
+                
+                // Animate Wheels
+                wheels.forEach(w => w.style.animationPlayState = 'running');
+                
+                // Dozer Bounce
+                dozer.style.transform = `translateY(${Math.sin(Date.now()/100)*2}px)`;
+
+            } else {
+                state.moving = false;
+                wheels.forEach(w => w.style.animationPlayState = 'paused');
+                dozer.style.transform = `translateY(0px)`;
+            }
+
+            // Spawn Rocks
+            if (state.moving && Date.now() - state.lastRockTime > 1500 + Math.random()*2000) {
+                spawnRock();
+                state.lastRockTime = Date.now();
+            }
+
+            // Update Rocks
+            const dozerRect = bucket.getBoundingClientRect();
+            // Approximate scoop hit area
+            const scoopRight = dozerRect.right;
+            const scoopBottom = dozerRect.bottom;
+
+            for (let i = state.rocks.length - 1; i >= 0; i--) {
+                const rock = state.rocks[i];
+                let x = parseFloat(rock.dataset.x);
+                let vx = parseFloat(rock.dataset.vx);
+
+                // Move rock left relative to player if player is moving
+                if (state.moving) {
+                    x -= state.speed;
+                }
+
+                // Collision with Scoop
+                // Check if rock is near scoop x range
+                const rockRect = rock.getBoundingClientRect();
+                
+                // Simple 1D collision for the runner style
+                // If rock is touching scoop face
+                if (rockRect.left < scoopRight - 10 && rockRect.right > scoopRight - 40 && !state.scoopDown) {
+                    // Scoop is UP -> Pass over rock (or crash? Let's just pass over for simplicity)
+                    // Visual glitch maybe
+                } else if (rockRect.left < scoopRight && rockRect.right > dozerRect.left && state.scoopDown) {
+                    // Scoop is DOWN -> Push rock
+                    if (rock.dataset.cleared === "false") {
+                        vx = state.speed * 1.5; // Push forward
+                        playSound('crunch');
+                        createParticles(rockRect.left, rockRect.top, '#ffcc00');
+                        
+                        // Mark as hit/pushing
+                        state.score++;
+                        scoreEl.innerText = state.score;
+                        rock.dataset.cleared = "true";
+                        
+                        // Visual effect on rock
+                        rock.style.transform = `rotate(${Math.random()*360}deg)`;
+                    }
+                    x += vx; // Push it
+                }
+
+                // Apply velocity decay
+                vx *= 0.9;
+                x += vx;
+
+                // Update DOM
+                rock.dataset.x = x;
+                rock.dataset.vx = vx;
+                rock.style.left = x + 'px';
+
+                // Remove if off screen left
+                if (x < -100) {
+                    rock.remove();
+                    state.rocks.splice(i, 1);
+                }
+                // Remove if pushed far right (cleared)
+                if (x > window.innerWidth + 100) {
+                    rock.remove();
+                    state.rocks.splice(i, 1);
+                }
+            }
+
+            // UI Update
+            distEl.innerText = Math.floor(state.distance);
+
+            requestAnimationFrame(updateGame);
+        }
+
+        function resetGame() {
+            msgOverlay.classList.remove('visible');
+            state.score = 0;
+            state.distance = 0;
+            scoreEl.innerText = '0';
+            // Clear rocks
+            state.rocks.forEach(r => r.remove());
+            state.rocks = [];
+        }
+
+        // Init
+        requestAnimationFrame(updateGame);
+
+    </script>
+</body>
+</html>

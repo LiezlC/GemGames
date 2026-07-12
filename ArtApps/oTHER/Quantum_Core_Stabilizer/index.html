@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Core Stabilizer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap');
+
+        :root {
+            --neon-blue: #00f3ff;
+            --neon-gold: #ffd700;
+            --neon-purple: #bc13fe;
+            --core-glow: 0 0 50px rgba(0, 243, 255, 0.5);
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #050505;
+            color: #fff;
+            font-family: 'Share Tech Mono', monospace;
+        }
+
+        /* Canvas for Matrix Rain */
+        #matrix-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            opacity: 0.3;
+        }
+
+        /* Main UI Container */
+        #interface {
+            position: relative;
+            z-index: 10;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            pointer-events: none; /* Let clicks pass through to game elements */
+        }
+
+        /* HUD Panels */
+        .hud-panel {
+            background: rgba(10, 15, 30, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            padding: 1rem;
+            margin: 1rem;
+            border-radius: 8px;
+            pointer-events: auto;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        .hud-panel:hover {
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
+        }
+
+        h1, h2, h3 {
+            font-family: 'Orbitron', sans-serif;
+            text-transform: uppercase;
+            margin: 0;
+        }
+
+        /* The Quantum Core Visualization */
+        #core-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 500px;
+            height: 500px;
+            z-index: 5;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+
+        .orbit {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            transform: translate(-50%, -50%);
+            transition: all 0.5s ease;
+        }
+
+        /* Specific Orbit Styles simulating the image */
+        .orbit-1 {
+            width: 400px;
+            height: 150px;
+            border-top: 2px solid var(--neon-blue);
+            border-bottom: 2px solid var(--neon-blue);
+            animation: spin 8s linear infinite;
+            box-shadow: 0 0 10px var(--neon-blue);
+        }
+        .orbit-2 {
+            width: 350px;
+            height: 350px;
+            border: 1px dashed rgba(255, 255, 255, 0.3);
+            animation: spin-rev 12s linear infinite;
+        }
+        .orbit-3 {
+            width: 100px;
+            height: 400px;
+            border-left: 2px solid var(--neon-gold);
+            border-right: 2px solid var(--neon-gold);
+            animation: spin 6s linear infinite;
+            box-shadow: 0 0 15px var(--neon-gold);
+        }
+        .orbit-4 {
+            width: 280px;
+            height: 280px;
+            border: 1px solid rgba(188, 19, 254, 0.5);
+            border-radius: 40%;
+            animation: pulse-rotate 10s ease-in-out infinite;
+        }
+
+        /* The Central Singularity */
+        #singularity {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px;
+            height: 60px;
+            background: radial-gradient(circle, #fff, var(--neon-gold), #ff8c00);
+            border-radius: 50%;
+            box-shadow: 0 0 60px var(--neon-gold), 0 0 100px var(--neon-blue);
+            animation: heartbeat 2s infinite;
+            z-index: 10;
+        }
+
+        /* Animations */
+        @keyframes spin { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }
+        @keyframes spin-rev { 0% { transform: translate(-50%, -50%) rotate(360deg); } 100% { transform: translate(-50%, -50%) rotate(0deg); } }
+        @keyframes pulse-rotate { 
+            0% { transform: translate(-50%, -50%) rotate(0deg) scale(1); } 
+            50% { transform: translate(-50%, -50%) rotate(180deg) scale(1.1); } 
+            100% { transform: translate(-50%, -50%) rotate(360deg) scale(1); } 
+        }
+        @keyframes heartbeat {
+            0% { transform: translate(-50%, -50%) scale(1); opacity: 0.9; }
+            50% { transform: translate(-50%, -50%) scale(1.3); opacity: 1; box-shadow: 0 0 80px var(--neon-gold), 0 0 150px var(--neon-blue); }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 0.9; }
+        }
+        @keyframes shake {
+            0% { transform: translate(-51%, -51%); }
+            25% { transform: translate(-49%, -50%); }
+            50% { transform: translate(-50%, -49%); }
+            75% { transform: translate(-51%, -50%); }
+            100% { transform: translate(-50%, -50%); }
+        }
+
+        /* Controls */
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            background: #333;
+            border-radius: 3px;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: var(--neon-blue);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--neon-blue);
+        }
+
+        button {
+            background: transparent;
+            border: 1px solid var(--neon-blue);
+            color: var(--neon-blue);
+            padding: 8px 16px;
+            font-family: 'Orbitron', sans-serif;
+            cursor: pointer;
+            transition: 0.2s;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+        }
+        button:hover {
+            background: var(--neon-blue);
+            color: #000;
+            box-shadow: 0 0 15px var(--neon-blue);
+        }
+        button.danger {
+            border-color: #ff4444;
+            color: #ff4444;
+        }
+        button.danger:hover {
+            background: #ff4444;
+            color: #fff;
+            box-shadow: 0 0 15px #ff4444;
+        }
+
+        /* Progress Bars */
+        .bar-container {
+            width: 100%;
+            height: 10px;
+            background: #222;
+            border-radius: 5px;
+            overflow: hidden;
+            position: relative;
+        }
+        .bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--neon-blue), var(--neon-purple));
+            width: 0%;
+            transition: width 0.2s;
+        }
+        .bar-target {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: #fff;
+            z-index: 2;
+        }
+
+        /* Glitch Effect */
+        .glitch-text {
+            position: relative;
+        }
+        .glitch-text::before, .glitch-text::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* Floating Data Particles */
+        .particle {
+            position: absolute;
+            color: var(--neon-blue);
+            font-size: 12px;
+            pointer-events: none;
+            animation: floatUp 2s ease-out forwards;
+        }
+        @keyframes floatUp {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-100px); opacity: 0; }
+        }
+
+        /* Status Indicators */
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .status-ok { background: #0f0; box-shadow: 0 0 10px #0f0; }
+        .status-warn { background: #ff8800; box-shadow: 0 0 10px #ff8800; }
+        .status-crit { background: #f00; box-shadow: 0 0 10px #f00; }
+
+    </style>
+</head>
+<body>
+
+    <!-- Background Matrix Rain -->
+    <canvas id="matrix-bg"></canvas>
+
+    <!-- The Quantum Core -->
+    <div id="core-container">
+        <div class="orbit orbit-1"></div>
+        <div class="orbit orbit-2"></div>
+        <div class="orbit orbit-3"></div>
+        <div class="orbit orbit-4"></div>
+        <div id="singularity"></div>
+    </div>
+
+    <!-- UI Overlay -->
+    <div id="interface">
+        <!-- Header -->
+        <div class="flex justify-between items-start p-4">
+            <div class="hud-panel w-64">
+                <h2 class="text-xl text-cyan-400 mb-2 glitch-text" data-text="QUANTUM CORE">QUANTUM CORE</h2>
+                <div class="flex items-center mb-2">
+                    <span id="status-light" class="status-dot status-ok"></span>
+                    <span id="status-text">STABLE</span>
+                </div>
+                <div class="text-xs text-gray-400">SYSTEM ID: QX-9902</div>
+                <div class="text-xs text-gray-400">UPTIME: <span id="uptime">00:00:00</span></div>
+            </div>
+
+            <div class="hud-panel">
+                <h3 class="text-sm text-purple-400 mb-1">DECRYPTION PROGRESS</h3>
+                <div class="bar-container w-64 mb-2">
+                    <div id="progress-bar" class="bar-fill" style="width: 0%"></div>
+                </div>
+                <div class="flex justify-between text-xs font-mono">
+                    <span id="progress-text">0%</span>
+                    <span>TARGET: UNIVERSAL TRUTH</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls Footer -->
+        <div class="flex justify-center items-end p-8">
+            <div class="hud-panel w-full max-w-2xl grid grid-cols-1 md:grid-cols-3 gap-6">
+                
+                <!-- Frequency Tuner -->
+                <div class="control-group">
+                    <label class="text-xs text-cyan-300 mb-1">RESONANCE FREQUENCY</label>
+                    <div class="bar-container mb-2 bg-gray-800">
+                        <div id="freq-target" class="bar-target" style="left: 50%"></div>
+                        <div id="freq-current" class="bar-fill bg-cyan-500 opacity-50" style="width: 50%"></div>
+                    </div>
+                    <input type="range" id="freq-slider" min="0" max="100" value="50">
+                    <div class="text-xs text-center mt-1 text-gray-500">MATCH THE WHITE MARKER</div>
+                </div>
+
+                <!-- Thermal Management -->
+                <div class="control-group text-center">
+                    <label class="text-xs text-orange-300 mb-1">CORE TEMP</label>
+                    <div class="text-2xl font-bold font-mono mb-2" id="temp-display">3000 K</div>
+                    <button id="vent-btn" class="danger">EMERGENCY VENT</button>
+                </div>
+
+                <!-- Data Injection -->
+                <div class="control-group">
+                    <label class="text-xs text-purple-300 mb-1">DATA STREAM</label>
+                    <div class="h-12 bg-black/50 border border-gray-700 p-2 font-mono text-xs overflow-hidden text-green-500" id="console-log">
+                        > Initializing...<br>
+                        > Waiting for input...
+                    </div>
+                    <button id="inject-btn" class="mt-2">INJECT ALGORITHM</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Matrix Rain Effect ---
+        const canvas = document.getElementById('matrix-bg');
+        const ctx = canvas.getContext('2d');
+
+        let width = canvas.width = window.innerWidth;
+        let height = canvas.height = window.innerHeight;
+
+        const cols = Math.floor(width / 20);
+        const ypos = Array(cols).fill(0);
+
+        window.addEventListener('resize', () => {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        });
+
+        function matrix() {
+            ctx.fillStyle = '#0001';
+            ctx.fillRect(0, 0, width, height);
+
+            ctx.fillStyle = '#00f3ff';
+            ctx.font = '15pt monospace';
+
+            ypos.forEach((y, ind) => {
+                const text = String.fromCharCode(Math.random() * 128);
+                const x = ind * 20;
+                ctx.fillText(text, x, y);
+                if (y > 100 + Math.random() * 10000) ypos[ind] = 0;
+                else ypos[ind] = y + 20;
+            });
+        }
+        setInterval(matrix, 50);
+
+        // --- Game Logic ---
+        
+        const state = {
+            temp: 3000,
+            stability: 100,
+            progress: 0,
+            targetFreq: 50,
+            currentFreq: 50,
+            uptime: 0
+        };
+
+        // Elements
+        const coreContainer = document.getElementById('core-container');
+        const singularity = document.getElementById('singularity');
+        const tempDisplay = document.getElementById('temp-display');
+        const progressBar = document.getElementById('progress-bar');
+        const progressText = document.getElementById('progress-text');
+        const statusLight = document.getElementById('status-light');
+        const statusText = document.getElementById('status-text');
+        const freqSlider = document.getElementById('freq-slider');
+        const freqTarget = document.getElementById('freq-target');
+        const freqCurrent = document.getElementById('freq-current');
+        const consoleLog = document.getElementById('console-log');
+        const ventBtn = document.getElementById('vent-btn');
+        const injectBtn = document.getElementById('inject-btn');
+
+        // Helper: Log to console div
+        function log(msg) {
+            consoleLog.innerHTML = `> ${msg}<br>` + consoleLog.innerHTML;
+        }
+
+        // Helper: Floating Text
+        function spawnParticle(x, y, text) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            p.innerText = text;
+            p.style.left = x + 'px';
+            p.style.top = y + 'px';
+            document.body.appendChild(p);
+            setTimeout(() => p.remove(), 2000);
+        }
+
+        // Core Click Interaction
+        coreContainer.addEventListener('click', (e) => {
+            // Clicking the core stabilizes it slightly and generates heat
+            state.stability = Math.min(100, state.stability + 5);
+            state.temp += 100;
+            
+            // Visual feedback
+            singularity.style.transform = 'translate(-50%, -50%) scale(1.5)';
+            setTimeout(() => {
+                singularity.style.transform = 'translate(-50%, -50%) scale(1)';
+            }, 100);
+
+            spawnParticle(e.clientX, e.clientY, "+ DATA");
+            log("Manual Stabilization Pulse");
+        });
+
+        // Vent Button
+        ventBtn.addEventListener('click', () => {
+            if(state.temp > 1000) {
+                state.temp -= 500;
+                log("Coolant flushed.");
+                // Sound effect visualization (screen flash)
+                document.body.style.backgroundColor = '#001122';
+                setTimeout(() => document.body.style.backgroundColor = '#050505', 100);
+            } else {
+                log("Temp already nominal.");
+            }
+        });
+
+        // Inject Button
+        injectBtn.addEventListener('click', () => {
+            state.progress += 2;
+            state.temp += 200;
+            log("Algorithm injected. Entropy increasing.");
+            spawnParticle(window.innerWidth/2, window.innerHeight/2, "DECRYPTING...");
+        });
+
+        // Frequency Slider
+        freqSlider.addEventListener('input', (e) => {
+            state.currentFreq = parseInt(e.target.value);
+        });
+
+        // Game Loop
+        setInterval(() => {
+            // 1. Update Uptime
+            state.uptime++;
+            const h = Math.floor(state.uptime / 3600).toString().padStart(2, '0');
+            const m = Math.floor((state.uptime % 3600) / 60).toString().padStart(2, '0');
+            const s = (state.uptime % 60).toString().padStart(2, '0');
+            document.getElementById('uptime').innerText = `${h}:${m}:${s}`;
+
+            // 2. Move Target Frequency randomly
+            if (Math.random() < 0.05) {
+                state.targetFreq = Math.floor(Math.random() * 100);
+                freqTarget.style.left = state.targetFreq + '%';
+            }
+
+            // 3. Check Frequency Match
+            const freqDiff = Math.abs(state.currentFreq - state.targetFreq);
+            const isAligned = freqDiff < 10;
+            
+            freqCurrent.style.width = state.currentFreq + '%';
+            if(isAligned) {
+                freqCurrent.style.background = '#00f3ff'; // Blue
+                state.progress += 0.05; // Passive progress when aligned
+            } else {
+                freqCurrent.style.background = '#ff4444'; // Red
+                state.stability -= 0.2; // Lose stability if misaligned
+            }
+
+            // 4. Temperature Logic
+            state.temp += (Math.random() * 10) - 2; // Natural fluctuation
+            if (state.temp > 5000) {
+                state.stability -= 0.5;
+                log("WARNING: OVERHEATING");
+            }
+            if (state.temp < 1000) state.temp = 1000; // Min temp
+
+            // 5. Update UI
+            tempDisplay.innerText = Math.floor(state.temp) + " K";
+            if(state.temp > 4500) tempDisplay.style.color = 'red';
+            else if(state.temp > 3500) tempDisplay.style.color = 'orange';
+            else tempDisplay.style.color = '#00f3ff';
+
+            progressBar.style.width = Math.min(100, state.progress) + '%';
+            progressText.innerText = Math.floor(state.progress) + '%';
+
+            // 6. Status Logic
+            if (state.stability < 30) {
+                statusLight.className = 'status-dot status-crit';
+                statusText.innerText = 'CRITICAL';
+                statusText.style.color = 'red';
+                coreContainer.style.animation = 'shake 0.5s infinite';
+                singularity.style.background = 'red';
+            } else if (state.stability < 70) {
+                statusLight.className = 'status-dot status-warn';
+                statusText.innerText = 'UNSTABLE';
+                statusText.style.color = 'orange';
+                coreContainer.style.animation = 'none';
+                singularity.style.background = 'orange';
+            } else {
+                statusLight.className = 'status-dot status-ok';
+                statusText.innerText = 'STABLE';
+                statusText.style.color = '#00f3ff';
+                coreContainer.style.animation = 'none';
+                singularity.style.background = 'radial-gradient(circle, #fff, var(--neon-gold), #ff8c00)';
+            }
+
+            // 7. Win/Loss
+            if (state.progress >= 100) {
+                alert("DECRYPTION COMPLETE. UNIVERSAL TRUTH FOUND: [42]");
+                state.progress = 0;
+                state.stability = 100;
+                state.temp = 3000;
+            }
+            if (state.stability <= 0) {
+                alert("CORE MELTDOWN. SYSTEM RESET.");
+                state.stability = 100;
+                state.temp = 3000;
+                state.progress = 0;
+            }
+
+        }, 100);
+
+    </script>
+</body>
+</html>

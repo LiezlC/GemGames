@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zen Veranda Architect</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
+
+        :root {
+            --perspective: 800px;
+            --floor-color: #d4a373; /* Terracotta */
+            --floor-grid: #bc8a5f;
+            --wall-color: #fefae0;
+            --beam-color: #5c3a21;
+            --shadow-opacity: 0.6;
+            --shadow-offset: 0px;
+            --sky-top: #87CEEB;
+            --sky-bottom: #E0F7FA;
+            --sun-pos-x: 50%;
+            --sun-pos-y: 10%;
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            background: #111;
+            color: white;
+        }
+
+        /* The 3D Scene Container */
+        #viewport {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: linear-gradient(to bottom, var(--sky-top), var(--sky-bottom));
+            transition: background 0.5s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* The Sun */
+        .sun {
+            position: absolute;
+            top: var(--sun-pos-y);
+            left: var(--sun-pos-x);
+            width: 80px;
+            height: 80px;
+            background: radial-gradient(circle, #fff, #ffd700);
+            border-radius: 50%;
+            box-shadow: 0 0 40px #ffd700, 0 0 80px #ff8c00;
+            transform: translate(-50%, -50%);
+            transition: top 0.1s, left 0.1s, box-shadow 0.5s;
+            z-index: 0;
+        }
+
+        /* 3D Perspective Wrapper */
+        .scene {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            perspective: var(--perspective);
+            transform-style: preserve-3d;
+        }
+
+        /* The Corridor */
+        .corridor {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 600px;
+            height: 600px;
+            transform: translate(-50%, -50%) translateZ(0);
+            transform-style: preserve-3d;
+        }
+
+        /* Floor */
+        .floor {
+            position: absolute;
+            width: 1000px;
+            height: 2000px;
+            background-color: var(--floor-color);
+            background-image: 
+                linear-gradient(var(--floor-grid) 2px, transparent 2px),
+                linear-gradient(90deg, var(--floor-grid) 2px, transparent 2px);
+            background-size: 100px 100px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, 0) rotateX(90deg);
+            transform-origin: top;
+            box-shadow: inset 0 0 100px rgba(0,0,0,0.5);
+            cursor: crosshair;
+        }
+
+        /* Left Wall (Columns) */
+        .wall-left {
+            position: absolute;
+            width: 2000px;
+            height: 400px;
+            top: -200px; /* Lift up */
+            left: -300px;
+            transform: rotateY(90deg) translateZ(300px); /* Position to the left */
+            transform-origin: right;
+            display: flex;
+            flex-direction: row-reverse; /* Columns recede */
+        }
+
+        .column {
+            width: 40px;
+            height: 100%;
+            background: linear-gradient(to right, #e0e0e0, #fff, #ccc);
+            margin-right: 160px; /* Spacing between columns */
+            box-shadow: 5px 0 15px rgba(0,0,0,0.2);
+        }
+
+        /* Right Wall (House) */
+        .wall-right {
+            position: absolute;
+            width: 2000px;
+            height: 500px;
+            top: -250px;
+            right: -300px;
+            background: var(--wall-color);
+            transform: rotateY(-90deg) translateZ(300px);
+            transform-origin: left;
+            box-shadow: inset 0 0 50px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: flex-end;
+            flex-direction: row-reverse;
+        }
+
+        .window {
+            width: 120px;
+            height: 250px;
+            background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+            margin-right: 200px;
+            border: 8px solid #fff;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* Window Reflection */
+        .window::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.1) 50%, transparent 60%);
+            transform: rotate(25deg);
+        }
+
+        /* Ceiling / Pergola Beams */
+        .ceiling {
+            position: absolute;
+            top: -200px; /* Height of ceiling */
+            left: 50%;
+            width: 600px;
+            height: 2000px;
+            transform: translate(-50%, 0) rotateX(90deg) translateZ(0);
+            transform-origin: bottom;
+            pointer-events: none;
+        }
+
+        .beam {
+            position: absolute;
+            left: -200px; /* Extend beyond corridor width */
+            width: 1000px;
+            height: 30px;
+            background: var(--beam-color);
+            box-shadow: 0 5px 10px rgba(0,0,0,0.3);
+        }
+
+        /* Shadows on the Floor */
+        .shadow {
+            position: absolute;
+            left: -200px;
+            width: 1400px; /* Wider to account for skew */
+            height: 30px;
+            background: black;
+            opacity: var(--shadow-opacity);
+            filter: blur(8px);
+            transform: translateX(var(--shadow-offset));
+            transition: transform 0.1s ease-out, opacity 0.5s;
+            pointer-events: none;
+        }
+
+        /* Plants */
+        .plant {
+            position: absolute;
+            font-size: 40px;
+            transform: rotateX(-90deg) translate(-50%, -100%); /* Stand up on floor */
+            transform-origin: bottom center;
+            pointer-events: none; /* Let clicks pass through to floor */
+            text-shadow: 0 10px 5px rgba(0,0,0,0.3);
+            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn {
+            0% { transform: rotateX(-90deg) translate(-50%, -100%) scale(0); }
+            100% { transform: rotateX(-90deg) translate(-50%, -100%) scale(1); }
+        }
+
+        /* UI Overlay */
+        .ui-panel {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(12px);
+            padding: 20px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            gap: 24px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            z-index: 100;
+            width: 90%;
+            max-width: 600px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-width: 120px;
+        }
+
+        label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #94a3b8;
+            font-weight: 600;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            accent-color: #f59e0b;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        button {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1.2rem;
+        }
+
+        button:hover, button.active {
+            background: #f59e0b;
+            color: black;
+            border-color: #f59e0b;
+            transform: translateY(-2px);
+        }
+
+        .instructions {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.5);
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: #e2e8f0;
+            pointer-events: none;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="viewport">
+        <div class="sun" id="sun"></div>
+        
+        <div class="instructions">
+            <p>🖱️ Click on the floor to plant greenery</p>
+            <p>☀️ Use sliders to control time & light</p>
+        </div>
+
+        <div class="scene">
+            <div class="corridor">
+                <!-- Left Wall with Columns -->
+                <div class="wall-left">
+                    <!-- Generated by JS -->
+                </div>
+
+                <!-- Right Wall with Windows -->
+                <div class="wall-right">
+                    <!-- Generated by JS -->
+                </div>
+
+                <!-- Ceiling (Beams) -->
+                <div class="ceiling" id="ceiling">
+                    <!-- Generated by JS -->
+                </div>
+
+                <!-- Floor -->
+                <div class="floor" id="floor">
+                    <!-- Shadows and Plants go here -->
+                </div>
+            </div>
+        </div>
+
+        <div class="ui-panel">
+            <div class="control-group">
+                <label>Time of Day</label>
+                <input type="range" id="timeSlider" min="0" max="100" value="20">
+            </div>
+            
+            <div class="control-group">
+                <label>Materials</label>
+                <div class="btn-group">
+                    <button onclick="setTheme('terra')" class="active" id="btn-terra">🧱</button>
+                    <button onclick="setTheme('slate')" id="btn-slate">🌑</button>
+                    <button onclick="setTheme('wood')" id="btn-wood">🪵</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label>Plant Type</label>
+                <div class="btn-group">
+                    <button onclick="selectPlant('🌿')" class="plant-btn active">🌿</button>
+                    <button onclick="selectPlant('🪴')" class="plant-btn">🪴</button>
+                    <button onclick="selectPlant('🌺')" class="plant-btn">🌺</button>
+                    <button onclick="selectPlant('🌵')" class="plant-btn">🌵</button>
+                </div>
+            </div>
+            
+            <div class="control-group" style="min-width: auto;">
+                <label>Clear</label>
+                <button onclick="clearPlants()">🗑️</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const BEAM_COUNT = 15;
+        const BEAM_SPACING = 200; // px
+        const START_OFFSET = 100;
+        
+        const floor = document.getElementById('floor');
+        const ceiling = document.getElementById('ceiling');
+        const wallLeft = document.querySelector('.wall-left');
+        const wallRight = document.querySelector('.wall-right');
+        const timeSlider = document.getElementById('timeSlider');
+        const sun = document.getElementById('sun');
+
+        let currentPlant = '🌿';
+        let plants = [];
+
+        // Initialize Scene
+        function initScene() {
+            // Create Beams and Shadows
+            for (let i = 0; i < BEAM_COUNT; i++) {
+                const zPos = START_OFFSET + (i * BEAM_SPACING);
+                
+                // Beam (Ceiling)
+                const beam = document.createElement('div');
+                beam.className = 'beam';
+                beam.style.top = zPos + 'px'; // In the rotated ceiling plane, top is depth
+                ceiling.appendChild(beam);
+
+                // Shadow (Floor)
+                const shadow = document.createElement('div');
+                shadow.className = 'shadow';
+                shadow.style.top = zPos + 'px';
+                shadow.id = `shadow-${i}`;
+                floor.appendChild(shadow);
+
+                // Columns (Left) - fewer columns than beams
+                if (i % 2 === 0) {
+                    const col = document.createElement('div');
+                    col.className = 'column';
+                    wallLeft.appendChild(col);
+                }
+
+                // Windows (Right) - fewer windows
+                if (i % 3 === 0 && i < 12) {
+                    const win = document.createElement('div');
+                    win.className = 'window';
+                    wallRight.appendChild(win);
+                }
+            }
+        }
+
+        // Dynamic Lighting Logic
+        function updateLighting() {
+            const val = parseInt(timeSlider.value);
+            
+            // 0 = Morning (Left), 50 = Noon (Top), 100 = Evening (Right)
+            // Map 0-100 to sun position
+            // X position: 10% to 90%
+            const sunX = 10 + (val * 0.8);
+            // Y position: Arc (High at 50, Low at 0 and 100)
+            // Parabola: y = a(x-h)^2 + k
+            const normalized = (val - 50) / 50; // -1 to 1
+            const heightFactor = 1 - (normalized * normalized); // 0 to 1 (1 at noon)
+            const sunY = 60 - (heightFactor * 50); // 60% down at horizon, 10% at noon
+
+            // Update CSS Vars
+            document.documentElement.style.setProperty('--sun-pos-x', `${sunX}%`);
+            document.documentElement.style.setProperty('--sun-pos-y', `${sunY}%`);
+
+            // Sky Colors
+            let skyTop, skyBot, shadowOpacity;
+            if (val < 20) { // Morning
+                skyTop = '#FF7E5F'; skyBot = '#FEB47B'; shadowOpacity = 0.4;
+            } else if (val < 80) { // Day
+                skyTop = '#87CEEB'; skyBot = '#E0F7FA'; shadowOpacity = 0.6;
+            } else { // Sunset/Dusk
+                skyTop = '#2c3e50'; skyBot = '#fd746c'; shadowOpacity = 0.5;
+            }
+            
+            document.documentElement.style.setProperty('--sky-top', skyTop);
+            document.documentElement.style.setProperty('--sky-bottom', skyBot);
+            document.documentElement.style.setProperty('--shadow-opacity', shadowOpacity);
+
+            // Shadow Logic
+            // If sun is left (val < 50), shadow moves right (positive offset)
+            // If sun is right (val > 50), shadow moves left (negative offset)
+            // Max offset needs to be large to look realistic
+            const offset = (50 - val) * 8; 
+            document.documentElement.style.setProperty('--shadow-offset', `${offset}px`);
+        }
+
+        // Interaction Logic
+        floor.addEventListener('click', (e) => {
+            // Calculate click position relative to the floor element
+            const rect = floor.getBoundingClientRect();
+            
+            // Because of 3D transforms, getting exact X/Y on the plane is tricky.
+            // However, since we are clicking on the element itself, e.offsetX/Y works relative to the element's coordinate system.
+            const x = e.offsetX;
+            const y = e.offsetY;
+
+            addPlantToScene(x, y);
+        });
+
+        function addPlantToScene(x, y) {
+            const plant = document.createElement('div');
+            plant.className = 'plant';
+            plant.textContent = currentPlant;
+            plant.style.left = x + 'px';
+            plant.style.top = y + 'px';
+            
+            // Randomize size slightly
+            const scale = 0.8 + Math.random() * 0.5;
+            plant.style.fontSize = (40 * scale) + 'px';
+
+            floor.appendChild(plant);
+            plants.push(plant);
+        }
+
+        function selectPlant(emoji) {
+            currentPlant = emoji;
+            document.querySelectorAll('.plant-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function clearPlants() {
+            plants.forEach(p => p.remove());
+            plants = [];
+        }
+
+        function setTheme(theme) {
+            // Reset buttons
+            document.querySelectorAll('.btn-group button').forEach(b => {
+                if(b.id.startsWith('btn-')) b.classList.remove('active');
+            });
+            document.getElementById(`btn-${theme}`).classList.add('active');
+
+            if (theme === 'terra') {
+                document.documentElement.style.setProperty('--floor-color', '#d4a373');
+                document.documentElement.style.setProperty('--floor-grid', '#bc8a5f');
+                document.documentElement.style.setProperty('--beam-color', '#5c3a21');
+                document.documentElement.style.setProperty('--wall-color', '#fefae0');
+            } else if (theme === 'slate') {
+                document.documentElement.style.setProperty('--floor-color', '#334155');
+                document.documentElement.style.setProperty('--floor-grid', '#475569');
+                document.documentElement.style.setProperty('--beam-color', '#1e293b');
+                document.documentElement.style.setProperty('--wall-color', '#94a3b8');
+            } else if (theme === 'wood') {
+                document.documentElement.style.setProperty('--floor-color', '#8B4513');
+                document.documentElement.style.setProperty('--floor-grid', '#654321');
+                document.documentElement.style.setProperty('--beam-color', '#A0522D');
+                document.documentElement.style.setProperty('--wall-color', '#DEB887');
+            }
+        }
+
+        // Event Listeners
+        timeSlider.addEventListener('input', updateLighting);
+
+        // Init
+        initScene();
+        updateLighting(); // Set initial state
+
+    </script>
+</body>
+</html>

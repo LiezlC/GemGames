@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Watercolor Journey</title>
+    <style>
+        :root {
+            --paper: #fdfbf7;
+            --blue-coat: #2c3e50;
+            --blue-accent: #3498db;
+            --warm-light: #ffecb3;
+            --warm-orange: #ffcc80;
+            --warm-deep: #ffab40;
+            --text-color: #5d4037;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--paper);
+            font-family: 'Georgia', serif;
+            user-select: none;
+            cursor: crosshair;
+        }
+
+        /* Paper Texture Effect */
+        body::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: radial-gradient(#d7ccc8 1px, transparent 1px);
+            background-size: 20px 20px;
+            opacity: 0.2;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* UI Overlay */
+        #ui-layer {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            z-index: 100;
+            pointer-events: none;
+            width: 80%;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            color: var(--text-color);
+            opacity: 0.7;
+            margin-bottom: 10px;
+            font-style: italic;
+        }
+
+        #narrative-box {
+            min-height: 60px;
+            font-size: 1.2rem;
+            color: #3e2723;
+            text-shadow: 0 1px 2px rgba(255,255,255,0.8);
+            transition: opacity 1s ease;
+        }
+
+        /* The Guardian Spirit (Right Side) */
+        .guardian-container {
+            position: absolute;
+            top: 10%;
+            right: -10%;
+            width: 60vw;
+            height: 80vh;
+            z-index: 1;
+            pointer-events: none;
+            animation: float 8s ease-in-out infinite;
+        }
+
+        .guardian-blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(40px);
+            opacity: 0.6;
+            mix-blend-mode: multiply;
+        }
+
+        .g-1 { width: 400px; height: 500px; background: var(--warm-light); top: 0; right: 100px; animation: morph 10s infinite alternate; }
+        .g-2 { width: 300px; height: 400px; background: var(--warm-orange); top: 100px; right: 50px; animation: morph 12s infinite alternate-reverse; }
+        .g-3 { width: 200px; height: 300px; background: var(--warm-deep); top: 50px; right: 200px; opacity: 0.4; }
+
+        /* The Child (Player) */
+        #player {
+            position: absolute;
+            width: 40px;
+            height: 60px;
+            z-index: 50;
+            transition: top 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
+                        left 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            will-change: top, left;
+        }
+
+        /* CSS Drawing of the Child */
+        .child-body {
+            width: 100%;
+            height: 100%;
+            background: var(--blue-coat);
+            border-radius: 50% 50% 10% 10% / 80% 80% 20% 20%;
+            position: relative;
+            box-shadow: 0 10px 20px rgba(44, 62, 80, 0.3);
+        }
+        
+        .child-head {
+            width: 20px;
+            height: 20px;
+            background: #333;
+            border-radius: 50%;
+            position: absolute;
+            top: -10px;
+            left: 10px;
+        }
+
+        .scarf {
+            position: absolute;
+            top: 5px;
+            left: -5px;
+            width: 50px;
+            height: 15px;
+            background: #ecf0f1;
+            border-radius: 10px;
+            transform: rotate(-5deg);
+            z-index: 2;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .scarf-tail {
+            position: absolute;
+            top: 10px;
+            right: 5px;
+            width: 12px;
+            height: 30px;
+            background: #ecf0f1;
+            border-radius: 5px;
+            transform: rotate(10deg);
+        }
+
+        /* Memories (Collectibles) */
+        .memory {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: radial-gradient(circle at 30% 30%, #ffd54f, #ffca28);
+            border-radius: 50%;
+            filter: blur(5px);
+            opacity: 0.7;
+            cursor: pointer;
+            z-index: 10;
+            animation: pulse 3s infinite;
+            transition: transform 0.3s, opacity 0.3s;
+        }
+
+        .memory:hover {
+            transform: scale(1.2);
+            filter: blur(2px);
+        }
+
+        /* Watercolor Splashes (Decor) */
+        .splash {
+            position: absolute;
+            background: var(--warm-orange);
+            opacity: 0.3;
+            mix-blend-mode: multiply;
+            pointer-events: none;
+            z-index: 2;
+            filter: blur(10px);
+        }
+
+        /* Animations */
+        @keyframes morph {
+            0% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
+            50% { border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%; }
+            100% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.7; }
+            50% { transform: scale(1.1); opacity: 0.9; }
+            100% { transform: scale(1); opacity: 0.7; }
+        }
+
+        @keyframes pop {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(2); opacity: 0; }
+        }
+
+        .collected {
+            animation: pop 0.5s forwards;
+        }
+
+        /* Footprints */
+        .footprint {
+            position: absolute;
+            width: 8px;
+            height: 5px;
+            background: rgba(44, 62, 80, 0.2);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 4;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="ui-layer">
+        <h1>The Journey Home</h1>
+        <div id="narrative-box">Click to guide the child. Collect the memories.</div>
+    </div>
+
+    <!-- The Guardian Spirit -->
+    <div class="guardian-container">
+        <div class="guardian-blob g-1"></div>
+        <div class="guardian-blob g-2"></div>
+        <div class="guardian-blob g-3"></div>
+    </div>
+
+    <!-- The Player -->
+    <div id="player" style="top: 70%; left: 20%;">
+        <div class="child-head"></div>
+        <div class="scarf"></div>
+        <div class="scarf-tail"></div>
+        <div class="child-body"></div>
+    </div>
+
+    <script>
+        const player = document.getElementById('player');
+        const narrativeBox = document.getElementById('narrative-box');
+        const body = document.body;
+        
+        // Game State
+        let playerPos = { x: 20, y: 70 }; // Percentages
+        let memories = [];
+        let collectedCount = 0;
+        
+        const narratives = [
+            "A warm voice echoes in the distance...",
+            "The scarf smells of winter and comfort.",
+            "Shadows are just light looking for a place to rest.",
+            "Every step forward is a memory kept.",
+            "You are never truly walking alone."
+        ];
+
+        const finalMessage = "The journey is the destination. You are home.";
+
+        // Initialize
+        function init() {
+            createBackgroundSplashes();
+            spawnMemories(5);
+            
+            // Click to move
+            document.addEventListener('click', (e) => {
+                movePlayerTo(e.clientX, e.clientY);
+            });
+        }
+
+        // Create decorative background splashes
+        function createBackgroundSplashes() {
+            for(let i=0; i<8; i++) {
+                const splash = document.createElement('div');
+                splash.classList.add('splash');
+                const size = Math.random() * 200 + 100;
+                splash.style.width = `${size}px`;
+                splash.style.height = `${size}px`;
+                splash.style.left = `${Math.random() * 100}%`;
+                splash.style.top = `${Math.random() * 100}%`;
+                splash.style.borderRadius = getRandomBorderRadius();
+                
+                // Random colors between blue and orange
+                const isBlue = Math.random() > 0.7;
+                splash.style.background = isBlue ? 'var(--blue-accent)' : 'var(--warm-orange)';
+                
+                body.appendChild(splash);
+            }
+        }
+
+        function getRandomBorderRadius() {
+            const r = () => Math.floor(Math.random() * 40) + 30;
+            return `${r()}% ${r()}% ${r()}% ${r()}% / ${r()}% ${r()}% ${r()}% ${r()}%`;
+        }
+
+        function spawnMemories(count) {
+            for(let i=0; i<count; i++) {
+                const mem = document.createElement('div');
+                mem.classList.add('memory');
+                
+                // Random position, but keep away from edges slightly
+                const x = Math.random() * 80 + 10; 
+                const y = Math.random() * 80 + 10;
+                
+                mem.style.left = `${x}%`;
+                mem.style.top = `${y}%`;
+                mem.style.borderRadius = getRandomBorderRadius();
+                
+                mem.dataset.index = i;
+                
+                body.appendChild(mem);
+                memories.push({ el: mem, x: x, y: y, collected: false });
+            }
+        }
+
+        function movePlayerTo(targetX, targetY) {
+            // Convert pixels to percentages for responsive positioning
+            const xPercent = (targetX / window.innerWidth) * 100;
+            const yPercent = (targetY / window.innerHeight) * 100;
+            
+            // Face direction
+            if (xPercent > playerPos.x) {
+                player.style.transform = "scaleX(1)"; // Face right
+            } else {
+                player.style.transform = "scaleX(-1)"; // Face left
+            }
+
+            // Update State
+            playerPos.x = xPercent;
+            playerPos.y = yPercent;
+
+            // Apply CSS
+            // Center the player on the click (subtract half width/height in %)
+            // Approx width 40px is ~2-3% depending on screen, hardcoding offset for smoothness
+            player.style.left = `calc(${xPercent}% - 20px)`;
+            player.style.top = `calc(${yPercent}% - 60px)`;
+
+            createFootprint(targetX, targetY);
+            checkCollisions();
+        }
+
+        function createFootprint(x, y) {
+            const fp = document.createElement('div');
+            fp.classList.add('footprint');
+            fp.style.left = `${x}px`;
+            fp.style.top = `${y}px`;
+            body.appendChild(fp);
+            
+            // Fade out footprint
+            setTimeout(() => {
+                fp.style.transition = "opacity 2s";
+                fp.style.opacity = 0;
+                setTimeout(() => fp.remove(), 2000);
+            }, 1000);
+        }
+
+        function checkCollisions() {
+            // Simple distance check
+            // We use a timeout to allow the player to "walk" there visually first
+            // but for responsiveness we check logically immediately, 
+            // or we can check after transition. Let's check continuously during movement?
+            // For simplicity in this CSS-driven movement, we check if the destination is close to a memory.
+            
+            // Actually, let's check immediately. If user clicks ON a memory, they go there and collect it.
+            
+            memories.forEach((mem, index) => {
+                if (mem.collected) return;
+
+                // Calculate distance in percentages (rough approximation)
+                const dx = playerPos.x - mem.x;
+                const dy = playerPos.y - mem.y;
+                const distance = Math.sqrt(dx*dx + dy*dy);
+
+                // Threshold of ~8% screen distance
+                if (distance < 8) {
+                    collectMemory(index);
+                }
+            });
+        }
+
+        function collectMemory(index) {
+            const memObj = memories[index];
+            memObj.collected = true;
+            
+            // Visual feedback
+            memObj.el.classList.add('collected');
+            
+            // Narrative update
+            if (collectedCount < narratives.length) {
+                narrativeBox.style.opacity = 0;
+                setTimeout(() => {
+                    narrativeBox.innerText = narratives[collectedCount];
+                    narrativeBox.style.opacity = 1;
+                    collectedCount++;
+                    
+                    if (collectedCount === memories.length) {
+                        setTimeout(() => {
+                            narrativeBox.innerText = finalMessage;
+                            triggerEnding();
+                        }, 3000);
+                    }
+                }, 500);
+            }
+        }
+
+        function triggerEnding() {
+            // Make the guardian massive and encompass the screen
+            const guardian = document.querySelector('.guardian-container');
+            guardian.style.transition = "all 5s ease";
+            guardian.style.width = "150vw";
+            guardian.style.height = "150vh";
+            guardian.style.right = "-25vw";
+            guardian.style.top = "-25vh";
+            guardian.style.opacity = "0.8";
+            
+            // Add many sparkles
+            setInterval(() => {
+                const sparkle = document.createElement('div');
+                sparkle.style.position = 'absolute';
+                sparkle.style.left = Math.random() * 100 + '%';
+                sparkle.style.top = Math.random() * 100 + '%';
+                sparkle.style.width = '5px';
+                sparkle.style.height = '5px';
+                sparkle.style.background = '#fff';
+                sparkle.style.borderRadius = '50%';
+                sparkle.style.boxShadow = '0 0 10px #fff';
+                sparkle.style.zIndex = 100;
+                sparkle.animate([
+                    { transform: 'scale(0)', opacity: 1 },
+                    { transform: 'scale(2)', opacity: 0 }
+                ], {
+                    duration: 1000,
+                    easing: 'ease-out'
+                });
+                body.appendChild(sparkle);
+                setTimeout(() => sparkle.remove(), 1000);
+            }, 100);
+        }
+
+        // Start
+        init();
+
+    </script>
+</body>
+</html>

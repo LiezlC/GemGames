@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyber-Bloom Synthesis</title>
+    <style>
+        :root {
+            --tech-color: #00f7ff;
+            --tech-bg: #001a25;
+            --bio-color: #ff0055;
+            --bio-bg: #25000d;
+            --vine-color: #887766;
+            --grid-size: 60px;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: black;
+            color: white;
+            font-family: 'Courier New', Courier, monospace;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+        }
+
+        /* Background Split Effect */
+        .background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, var(--tech-bg) 0%, #000 50%, var(--bio-bg) 100%);
+            z-index: -2;
+        }
+
+        .scanlines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.3),
+                rgba(0, 0, 0, 0.3) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        #background-image-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('background.png');
+            background-size: cover;
+            background-position: center;
+            opacity: 0.2;
+            z-index: -3; /* Place it behind the gradient and scanlines */
+        }
+
+        /* HUD */
+        header {
+            width: 100%;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            box-sizing: border-box;
+            background: rgba(0,0,0,0.5);
+            border-bottom: 1px solid #333;
+            z-index: 10;
+        }
+
+        .stat-box {
+            text-align: center;
+            width: 200px;
+        }
+
+        .tech-text { color: var(--tech-color); text-shadow: 0 0 10px var(--tech-color); }
+        .bio-text { color: var(--bio-color); text-shadow: 0 0 10px var(--bio-color); }
+        
+        .balance-meter {
+            width: 300px;
+            height: 10px;
+            background: #333;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 5px;
+            position: relative;
+        }
+        .balance-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--tech-color), var(--bio-color));
+            width: 50%; /* Starts balanced */
+            transition: width 0.5s ease;
+        }
+        .balance-marker {
+            position: absolute;
+            top: -2px;
+            left: 50%;
+            width: 2px;
+            height: 14px;
+            background: white;
+            transform: translateX(-50%);
+        }
+
+        /* Game Board */
+        #game-container {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            width: 100%;
+        }
+
+        #grid {
+            display: grid;
+            grid-template-columns: repeat(8, var(--grid-size));
+            grid-template-rows: repeat(6, var(--grid-size));
+            gap: 8px;
+            position: relative;
+        }
+
+        .cell {
+            width: var(--grid-size);
+            height: var(--grid-size);
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            position: relative;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+        }
+
+        .cell:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: scale(1.05);
+        }
+
+        /* Tech Style */
+        .cell.tech {
+            background: rgba(0, 247, 255, 0.1);
+            border: 1px solid var(--tech-color);
+            box-shadow: 0 0 15px rgba(0, 247, 255, 0.3);
+        }
+        .cell.tech::after {
+            content: '';
+            position: absolute;
+            width: 60%;
+            height: 60%;
+            border: 2px solid var(--tech-color);
+            background: 
+                linear-gradient(90deg, transparent 45%, var(--tech-color) 45%, var(--tech-color) 55%, transparent 55%),
+                linear-gradient(0deg, transparent 45%, var(--tech-color) 45%, var(--tech-color) 55%, transparent 55%);
+        }
+
+        /* Bio Style */
+        .cell.bio {
+            background: rgba(255, 0, 85, 0.1);
+            border: 1px solid var(--bio-color);
+            box-shadow: 0 0 15px rgba(255, 0, 85, 0.3);
+            border-radius: 50%; /* Organic shape */
+        }
+        .cell.bio::after {
+            content: '🌸';
+            font-size: 30px;
+            animation: pulse 2s infinite;
+            filter: drop-shadow(0 0 5px var(--bio-color));
+        }
+
+        /* Vine (Conflict) Style */
+        .cell.vine {
+            background: #2a2a2a;
+            border: 1px dashed #888;
+        }
+        .cell.vine::after {
+            content: '🕸️';
+            font-size: 28px;
+            opacity: 0.7;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 0.8; }
+        }
+
+        /* Controls */
+        #controls {
+            padding: 20px;
+            background: rgba(0,0,0,0.8);
+            border-top: 1px solid #444;
+            display: flex;
+            gap: 20px;
+            z-index: 10;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            font-family: inherit;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: bold;
+        }
+
+        .btn-tech {
+            background: transparent;
+            border: 2px solid var(--tech-color);
+            color: var(--tech-color);
+            box-shadow: 0 0 10px rgba(0, 247, 255, 0.2);
+        }
+        .btn-tech.active, .btn-tech:hover {
+            background: var(--tech-color);
+            color: black;
+            box-shadow: 0 0 20px rgba(0, 247, 255, 0.6);
+        }
+
+        .btn-bio {
+            background: transparent;
+            border: 2px solid var(--bio-color);
+            color: var(--bio-color);
+            box-shadow: 0 0 10px rgba(255, 0, 85, 0.2);
+        }
+        .btn-bio.active, .btn-bio:hover {
+            background: var(--bio-color);
+            color: white;
+            box-shadow: 0 0 20px rgba(255, 0, 85, 0.6);
+        }
+
+        /* Overlay SVG for Vines */
+        #vine-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+        }
+        
+        .vine-path {
+            fill: none;
+            stroke: #aaa;
+            stroke-width: 2;
+            stroke-dasharray: 5;
+            animation: dash 20s linear infinite;
+            opacity: 0.4;
+        }
+
+        @keyframes dash {
+            to {
+                stroke-dashoffset: 100;
+            }
+        }
+
+        #message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.9);
+            padding: 40px;
+            border: 2px solid white;
+            text-align: center;
+            display: none;
+            z-index: 100;
+        }
+        #message h2 { margin-top: 0; }
+
+    </style>
+</head>
+<body>
+
+    <div class="background"></div>
+    <div class="scanlines"></div>
+    <div id="background-image-layer"></div>
+
+    <header>
+        <div class="stat-box">
+            <div class="tech-text">SYSTEM INTEGRITY</div>
+            <div id="tech-score">50%</div>
+        </div>
+        
+        <div>
+            <div style="text-align: center; font-size: 12px; opacity: 0.7; margin-bottom: 5px;">SYNTHESIS STATUS</div>
+            <div class="balance-meter">
+                <div class="balance-fill" id="balance-bar"></div>
+                <div class="balance-marker"></div>
+            </div>
+        </div>
+
+        <div class="stat-box">
+            <div class="bio-text">ORGANIC GROWTH</div>
+            <div id="bio-score">50%</div>
+        </div>
+    </header>
+
+    <div id="game-container">
+        <svg id="vine-layer"></svg>
+        <div id="grid"></div>
+    </div>
+
+    <div id="controls">
+        <button id="btn-tech" class="btn-tech active" onclick="setMode('tech')">Install Chip [10 Data]</button>
+        <button id="btn-bio" class="btn-bio" onclick="setMode('bio')">Plant Seed [10 Spores]</button>
+    </div>
+
+    <div id="message">
+        <h2 id="msg-title">GAME OVER</h2>
+        <p id="msg-body">System Crash.</p>
+        <button class="btn-tech" onclick="resetGame()">REBOOT SYSTEM</button>
+    </div>
+
+    <script>
+        // Game Config
+        const ROWS = 6;
+        const COLS = 8;
+        const GRID_SIZE = 60;
+        const TICK_RATE = 1000; // Resource generation speed
+        const SPREAD_CHANCE = 0.1; // Chance for bio to spread naturally
+
+        // State
+        let grid = [];
+        let mode = 'tech'; // 'tech' or 'bio'
+        let resources = {
+            tech: 50,
+            bio: 50
+        };
+        let isGameOver = false;
+
+        // DOM Elements
+        const gridEl = document.getElementById('grid');
+        const vineLayer = document.getElementById('vine-layer');
+        const techBtn = document.getElementById('btn-tech');
+        const bioBtn = document.getElementById('btn-bio');
+        const techScoreEl = document.getElementById('tech-score');
+        const bioScoreEl = document.getElementById('bio-score');
+        const balanceBar = document.getElementById('balance-bar');
+        const msgEl = document.getElementById('message');
+        const msgTitle = document.getElementById('msg-title');
+        const msgBody = document.getElementById('msg-body');
+
+        // --- Audio Engine ---
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioContext();
+
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+
+            if (type === 'tech') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, now);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                osc.start(now);
+                osc.stop(now + 0.2);
+            } else if (type === 'bio') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(400, now);
+                gain.gain.setValueAtTime(0.4, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                osc.start(now);
+                osc.stop(now + 0.15);
+            } else if (type === 'vine') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(200, now);
+                osc.frequency.exponentialRampToValueAtTime(100, now + 0.3);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            } else if (type === 'gameOver') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.exponentialRampToValueAtTime(50, now + 0.8);
+                gain.gain.setValueAtTime(0.4, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.8);
+                osc.start(now);
+                osc.stop(now + 0.8);
+            } else if (type === 'click') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(1000, now);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now);
+                osc.stop(now + 0.1);
+            }
+        }
+        // --- End Audio Engine ---
+
+        function init() {
+            gridEl.innerHTML = '';
+            grid = [];
+            
+            // Initialize Grid Data
+            for (let r = 0; r < ROWS; r++) {
+                let row = [];
+                for (let c = 0; c < COLS; c++) {
+                    // Create DOM element
+                    const cell = document.createElement('div');
+                    cell.classList.add('cell');
+                    cell.dataset.r = r;
+                    cell.dataset.c = c;
+                    cell.addEventListener('click', () => handleCellClick(r, c));
+                    gridEl.appendChild(cell);
+
+                    // Determine initial state based on image split (Left Tech, Right Bio)
+                    let type = 'empty';
+                    if (c < 3) type = 'tech';
+                    else if (c > 4) type = 'bio';
+                    
+                    // Randomize slightly for "messy" look
+                    if (Math.random() > 0.7) type = 'empty';
+
+                    row.push({
+                        type: type,
+                        el: cell
+                    });
+                }
+                grid.push(row);
+            }
+            
+            renderGrid();
+            drawVines();
+            startGameLoop();
+        }
+
+        function setMode(newMode) {
+            playSound('click');
+            mode = newMode;
+            if (mode === 'tech') {
+                techBtn.classList.add('active');
+                bioBtn.classList.remove('active');
+            } else {
+                techBtn.classList.remove('active');
+                bioBtn.classList.add('active');
+            }
+        }
+
+        function handleCellClick(r, c) {
+            if (isGameOver) return;
+            const cell = grid[r][c];
+            let soundToPlay = null;
+
+            if (mode === 'tech') {
+                if (resources.tech >= 10) {
+                    if (cell.type === 'bio') {
+                        resources.tech -= 10;
+                        cell.type = 'vine';
+                        soundToPlay = 'vine';
+                    } else if (cell.type === 'vine') {
+                        resources.tech -= 10;
+                        cell.type = 'tech';
+                        soundToPlay = 'tech';
+                    } else if (cell.type === 'empty') {
+                        resources.tech -= 10;
+                        cell.type = 'tech';
+                        soundToPlay = 'tech';
+                    }
+                }
+            } else {
+                if (resources.bio >= 10) {
+                    if (cell.type === 'tech') {
+                        resources.bio -= 10;
+                        cell.type = 'vine';
+                        soundToPlay = 'vine';
+                    } else if (cell.type === 'vine') {
+                        resources.bio -= 10;
+                        cell.type = 'bio';
+                        soundToPlay = 'bio';
+                    } else if (cell.type === 'empty') {
+                        resources.bio -= 10;
+                        cell.type = 'bio';
+                        soundToPlay = 'bio';
+                    }
+                }
+            }
+
+            if(soundToPlay) playSound(soundToPlay);
+
+            renderGrid();
+            updateUI();
+            drawVines();
+        }
+
+        function renderGrid() {
+            let techCount = 0;
+            let bioCount = 0;
+            let total = ROWS * COLS;
+
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    const cellData = grid[r][c];
+                    cellData.el.className = 'cell'; // Reset
+                    if (cellData.type !== 'empty') {
+                        cellData.el.classList.add(cellData.type);
+                    }
+                    
+                    if (cellData.type === 'tech') techCount++;
+                    if (cellData.type === 'bio') bioCount++;
+                }
+            }
+
+            // Check Win/Loss
+            if (techCount === 0) gameOver('NATURE DOMINATES', 'The machine has been reclaimed by the earth.');
+            if (bioCount === 0) gameOver('SYSTEM PURIFIED', 'All organic life has been purged.');
+            if (techCount + bioCount === total) gameOver('SYNTHESIS COMPLETE', 'Perfect density achieved.');
+        }
+
+        function updateUI() {
+            techBtn.innerText = `Install Chip [${resources.tech}]`;
+            bioBtn.innerText = `Plant Seed [${resources.bio}]`;
+            
+            // Calculate percentages for the bar
+            let totalRes = resources.tech + resources.bio;
+            let techPct = totalRes > 0 ? (resources.tech / totalRes) * 100 : 50;
+            
+            balanceBar.style.width = `${techPct}%`;
+            techScoreEl.innerText = resources.tech;
+            bioScoreEl.innerText = resources.bio;
+        }
+
+        function drawVines() {
+            // Clear SVG
+            vineLayer.innerHTML = '';
+            
+            const width = gridEl.offsetWidth;
+            const height = gridEl.offsetHeight;
+            vineLayer.setAttribute('viewBox', `0 0 ${width} ${height}`);
+
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    const current = grid[r][c];
+                    if (current.type === 'empty') continue;
+
+                    const neighbors = [ {r: r, c: c+1}, {r: r+1, c: c} ];
+
+                    neighbors.forEach(n => {
+                        if (n.r < ROWS && n.c < COLS) {
+                            const neighbor = grid[n.r][n.c];
+                            if (neighbor.type !== 'empty') {
+                                createConnection(r, c, n.r, n.c, current.type, neighbor.type);
+                            }
+                        }
+                    });
+                }
+            }
+        }
+
+        function createConnection(r1, c1, r2, c2, type1, type2) {
+            const x1 = c1 * (GRID_SIZE + 8) + GRID_SIZE/2;
+            const y1 = r1 * (GRID_SIZE + 8) + GRID_SIZE/2;
+            const x2 = c2 * (GRID_SIZE + 8) + GRID_SIZE/2;
+            const y2 = r2 * (GRID_SIZE + 8) + GRID_SIZE/2;
+
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            
+            let d = '';
+            let color = '#fff';
+
+            if (type1 !== type2 || type1 === 'vine' || type2 === 'vine') {
+                const mx = (x1 + x2) / 2;
+                const my = (y1 + y2) / 2;
+                const ox = (Math.random() - 0.5) * 20;
+                const oy = (Math.random() - 0.5) * 20;
+                d = `M ${x1} ${y1} Q ${mx+ox} ${my+oy} ${x2} ${y2}`;
+                color = '#887766';
+                line.style.strokeWidth = '3';
+            } else if (type1 === 'tech') {
+                d = `M ${x1} ${y1} L ${x2} ${y2}`;
+                color = 'var(--tech-color)';
+                line.style.strokeWidth = '1';
+                line.style.opacity = '0.5';
+            } else if (type1 === 'bio') {
+                d = `M ${x1} ${y1} C ${x1} ${y2} ${x2} ${y1} ${x2} ${y2}`;
+                color = 'var(--bio-color)';
+                line.style.strokeWidth = '2';
+                line.style.opacity = '0.6';
+            }
+
+            line.setAttribute('d', d);
+            line.setAttribute('stroke', color);
+            line.classList.add('vine-path');
+            vineLayer.appendChild(line);
+        }
+
+        function gameTick() {
+            if (isGameOver) return;
+
+            let techNodes = 0;
+            let bioNodes = 0;
+
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    if (grid[r][c].type === 'tech') techNodes++;
+                    if (grid[r][c].type === 'bio') bioNodes++;
+                }
+            }
+
+            resources.tech += Math.floor(techNodes * 0.5) + 1;
+            resources.bio += Math.floor(bioNodes * 0.5) + 1;
+
+            if (Math.random() < SPREAD_CHANCE) {
+                spreadBio();
+            }
+
+            updateUI();
+            drawVines();
+        }
+
+        function spreadBio() {
+            let bioCells = [];
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    if (grid[r][c].type === 'bio') bioCells.push({r, c});
+                }
+            }
+
+            if (bioCells.length > 0) {
+                const source = bioCells[Math.floor(Math.random() * bioCells.length)];
+                const dirs = [[0,1], [0,-1], [1,0], [-1,0]];
+                const dir = dirs[Math.floor(Math.random() * dirs.length)];
+                const nr = source.r + dir[0];
+                const nc = source.c + dir[1];
+
+                if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) {
+                    const target = grid[nr][nc];
+                    if (target.type === 'empty') {
+                        target.type = 'bio';
+                    } else if (target.type === 'tech') {
+                        if (Math.random() < 0.3) target.type = 'vine';
+                    }
+                }
+                renderGrid();
+            }
+        }
+
+        function startGameLoop() {
+            setInterval(gameTick, TICK_RATE);
+        }
+
+        function gameOver(title, body) {
+            if(isGameOver) return;
+            playSound('gameOver');
+            isGameOver = true;
+            msgTitle.innerText = title;
+            msgBody.innerText = body;
+            msgEl.style.display = 'block';
+        }
+
+        function resetGame() {
+            playSound('click');
+            isGameOver = false;
+            msgEl.style.display = 'none';
+            resources.tech = 50;
+            resources.bio = 50;
+            init();
+        }
+
+        // Start
+        init();
+
+    </script>
+</body>
+</html>

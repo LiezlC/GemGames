@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Omni-Canvas: Multimedium Artspace</title>
+    <!-- html2canvas for capturing composited iframes -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Artboard Layer Stack -->
+    <div id="artboard-wrapper">
+        <div id="artboard">
+            <!-- Layers — ordered back to front -->
+            <iframe id="layer-noir" src="applets/noir-abstract-studio/index.html" class="art-layer active"></iframe>
+            <iframe id="layer-abstractify" src="applets/abstractify-kinetic-canvas/index.html" class="art-layer active"></iframe>
+            <iframe id="layer-chromatic" src="applets/chromatic-dialogue/index.html" class="art-layer"></iframe>
+            <iframe id="layer-impasto" src="applets/impasto-abstract-art-generator/index.html" class="art-layer active"></iframe>
+            <iframe id="layer-trippy" src="applets/trippy-neural-art/index.html" class="art-layer"></iframe>
+            <iframe id="layer-neon" src="applets/neon-neural-flow/index.html" class="art-layer active"></iframe>
+            <iframe id="layer-entropy" src="applets/digital-entropy-cube/index.html" class="art-layer active"></iframe>
+        </div>
+        
+        <!-- The Invisible Interaction Pane -->
+        <div id="interaction-pane"></div>
+    </div>
+
+    <!-- UI Overlay -->
+    <div id="ui-panel">
+        <div class="header">
+            <h1>OMNI-CANVAS</h1>
+            <p>Multimedium Artspace</p>
+        </div>
+
+        <div class="layer-manager">
+            <h3>Active Media Layers</h3>
+
+            <div class="layer-row" data-layer="layer-noir">
+                <input type="checkbox" data-target="layer-noir" checked>
+                <span class="name">🌆 Noir Studio</span>
+                <input type="range" class="layer-opacity" data-target="layer-noir" min="0" max="100" value="100" title="Opacity">
+                <select class="layer-blend" data-target="layer-noir" title="Blend Mode">
+                    <option value="normal">Normal</option>
+                    <option value="multiply" selected>Multiply</option>
+                    <option value="screen">Screen</option>
+                    <option value="overlay">Overlay</option>
+                    <option value="difference">Difference</option>
+                    <option value="color-dodge">Color Dodge</option>
+                    <option value="exclusion">Exclusion</option>
+                    <option value="luminosity">Luminosity</option>
+                </select>
+            </div>
+
+            <div class="layer-row" data-layer="layer-abstractify">
+                <input type="checkbox" data-target="layer-abstractify" checked>
+                <span class="name">🎨 Kinetic Canvas</span>
+                <input type="range" class="layer-opacity" data-target="layer-abstractify" min="0" max="100" value="100" title="Opacity">
+                <select class="layer-blend" data-target="layer-abstractify" title="Blend Mode">
+                    <option value="normal">Normal</option><option value="multiply">Multiply</option><option value="screen">Screen</option><option value="overlay">Overlay</option><option value="difference">Difference</option><option value="color-dodge">Color Dodge</option><option value="exclusion">Exclusion</option><option value="luminosity">Luminosity</option>
+                </select>
+            </div>
+
+            <div class="layer-row" data-layer="layer-chromatic">
+                <input type="checkbox" data-target="layer-chromatic">
+                <span class="name">💧 Chromatic Dialogue</span>
+                <input type="range" class="layer-opacity" data-target="layer-chromatic" min="0" max="100" value="100" title="Opacity">
+                <select class="layer-blend" data-target="layer-chromatic" title="Blend Mode">
+                    <option value="normal">Normal</option><option value="multiply">Multiply</option><option value="screen" selected>Screen</option><option value="overlay">Overlay</option><option value="difference">Difference</option><option value="color-dodge">Color Dodge</option><option value="exclusion">Exclusion</option><option value="luminosity">Luminosity</option>
+                </select>
+            </div>
+
+            <div class="layer-row" data-layer="layer-impasto">
+                <input type="checkbox" data-target="layer-impasto" checked>
+                <span class="name">🔪 Impasto Strokes</span>
+                <input type="range" class="layer-opacity" data-target="layer-impasto" min="0" max="100" value="100" title="Opacity">
+                <select class="layer-blend" data-target="layer-impasto" title="Blend Mode">
+                    <option value="normal">Normal</option><option value="multiply">Multiply</option><option value="screen">Screen</option><option value="overlay">Overlay</option><option value="difference">Difference</option><option value="color-dodge">Color Dodge</option><option value="exclusion">Exclusion</option><option value="luminosity">Luminosity</option>
+                </select>
+            </div>
+
+            <div class="layer-row" data-layer="layer-trippy">
+                <input type="checkbox" data-target="layer-trippy">
+                <span class="name">🌀 Trippy Neural Art</span>
+                <input type="range" class="layer-opacity" data-target="layer-trippy" min="0" max="100" value="70" title="Opacity">
+                <select class="layer-blend" data-target="layer-trippy" title="Blend Mode">
+                    <option value="normal">Normal</option><option value="multiply">Multiply</option><option value="screen" selected>Screen</option><option value="overlay">Overlay</option><option value="difference">Difference</option><option value="color-dodge">Color Dodge</option><option value="exclusion">Exclusion</option><option value="luminosity">Luminosity</option>
+                </select>
+            </div>
+
+            <div class="layer-row" data-layer="layer-neon">
+                <input type="checkbox" data-target="layer-neon" checked>
+                <span class="name">💫 Neon Neural Flow</span>
+                <input type="range" class="layer-opacity" data-target="layer-neon" min="0" max="100" value="100" title="Opacity">
+                <select class="layer-blend" data-target="layer-neon" title="Blend Mode">
+                    <option value="normal">Normal</option><option value="multiply">Multiply</option><option value="screen" selected>Screen</option><option value="overlay">Overlay</option><option value="difference">Difference</option><option value="color-dodge">Color Dodge</option><option value="exclusion">Exclusion</option><option value="luminosity">Luminosity</option>
+                </select>
+            </div>
+
+            <div class="layer-row" data-layer="layer-entropy">
+                <input type="checkbox" data-target="layer-entropy" checked>
+                <span class="name">🧊 Entropy Cube</span>
+                <input type="range" class="layer-opacity" data-target="layer-entropy" min="0" max="100" value="100" title="Opacity">
+                <select class="layer-blend" data-target="layer-entropy" title="Blend Mode">
+                    <option value="normal">Normal</option><option value="multiply">Multiply</option><option value="screen" selected>Screen</option><option value="overlay">Overlay</option><option value="difference">Difference</option><option value="color-dodge">Color Dodge</option><option value="exclusion">Exclusion</option><option value="luminosity">Luminosity</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Brush Dynamics -->
+        <div class="settings-section">
+            <h3>Brush Dynamics</h3>
+            <div class="slider-row">
+                <label>Thickness <span id="val-size">50%</span></label>
+                <input type="range" id="global-size" min="1" max="100" value="50">
+            </div>
+            <div class="slider-row">
+                <label>Viscosity / Chaos <span id="val-visc">50%</span></label>
+                <input type="range" id="global-visc" min="1" max="100" value="50">
+            </div>
+        </div>
+
+        <!-- Global Effects Engine -->
+        <div class="settings-section">
+            <h3>Effects Engine</h3>
+            <div class="slider-row">
+                <label>Time Warp <span id="val-speed">1.0x</span></label>
+                <input type="range" id="global-speed" min="10" max="300" value="100">
+            </div>
+            <div class="slider-row">
+                <label>Bloom / Glow <span id="val-bloom">0%</span></label>
+                <input type="range" id="global-bloom" min="0" max="100" value="0">
+            </div>
+            <div class="effects-grid">
+                <button id="btn-scatter" class="btn-fx" title="Random paint burst on all layers">💥 Scatter</button>
+                <button id="btn-mirror" class="btn-fx" title="Flip canvas horizontally">🪞 Mirror</button>
+                <button id="btn-kaleidoscope" class="btn-fx" title="Cycle kaleidoscope symmetry">🔮 Kaleidoscope</button>
+                <button id="btn-glitch" class="btn-fx" title="Random glitch distortion">⚡ Glitch</button>
+                <button id="btn-invert" class="btn-fx" title="Invert all colors">🔄 Invert</button>
+                <button id="btn-randomize" class="btn-fx" title="Randomize all layer palettes">🎲 Randomize</button>
+            </div>
+        </div>
+
+        <!-- Color -->
+        <div class="settings-section">
+            <div class="color-picker-wrapper">
+                <label for="global-color">Brush Color:</label>
+                <input type="color" id="global-color" value="#ff3366">
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="actions">
+            <button id="btn-clear" class="btn secondary">Reset Canvas</button>
+            <button id="btn-fullscreen" class="btn secondary">⛶ Fullscreen</button>
+            <button id="btn-save" class="btn primary">💾 Save Artwork</button>
+        </div>
+
+        <!-- Oracle Readings -->
+        <div class="settings-section oracle-section">
+            <h3>Oracle Readings</h3>
+            <div class="oracle-grid">
+                <button id="btn-psycho" class="btn-oracle" data-oracle="psycho">🧠 The Psychoanalyst</button>
+                <button id="btn-fortune" class="btn-oracle" data-oracle="fortune">🔮 Fortune Teller</button>
+                <button id="btn-critic" class="btn-oracle" data-oracle="critic">🎩 Art Critic</button>
+                <button id="btn-astro" class="btn-oracle" data-oracle="astro">⭐ Astrologer</button>
+            </div>
+            <details class="api-settings">
+                <summary>🔑 Premium Readings (API Key)</summary>
+                <p class="api-hint">Add your API key to unlock AI-powered vision readings</p>
+                <select id="api-provider">
+                    <option value="anthropic">Anthropic (Claude)</option>
+                    <option value="openai">OpenAI (GPT-4V)</option>
+                </select>
+                <input type="password" id="api-key" placeholder="sk-... or your API key">
+                <button id="btn-save-key" class="btn secondary">Save Key</button>
+                <div class="premium-oracles hidden" id="premium-oracles">
+                    <button id="btn-deep-vision" class="btn-oracle premium" data-oracle="vision">👁️ Deep Vision Oracle</button>
+                    <button id="btn-story" class="btn-oracle premium" data-oracle="story">📜 Story Weaver</button>
+                    <button id="btn-appraisal" class="btn-oracle premium" data-oracle="appraisal">💰 Collector's Appraisal</button>
+                </div>
+            </details>
+        </div>
+    </div>
+
+    <!-- Psychoanalysis Modal -->
+    <div id="modal-backdrop" class="hidden">
+        <div id="psycho-modal">
+            <h2>Psychoanalytical Interpretation</h2>
+            <div id="analysis-loader">
+                <div class="spinner"></div>
+                <p>Analyzing stroke patterns, media interplay, and chaotic resonances...</p>
+            </div>
+            <div id="analysis-result" class="hidden">
+                <p id="analysis-text"></p>
+                <div class="metrics">
+                    <div class="metric"><span id="m-strokes">0</span><label>Gestures</label></div>
+                    <div class="metric"><span id="m-layers">4</span><label>Complexes</label></div>
+                    <div class="metric"><span id="m-chaos">High</span><label>Entropy</label></div>
+                </div>
+                <button id="btn-close-modal" class="btn primary">Acknowledge</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="main.js"></script>
+</body>
+</html>

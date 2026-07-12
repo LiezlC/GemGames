@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Rain: Zen Walk</title>
+    <style>
+        :root {
+            --primary-hue: 320; /* Pink/Magenta */
+            --leaf-color: hsl(var(--primary-hue), 80%, 60%);
+            --fog-color: hsl(var(--primary-hue), 60%, 10%);
+            --road-color: hsl(var(--primary-hue), 30%, 5%);
+            --glow-color: hsl(var(--primary-hue), 100%, 70%);
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #050005;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+        }
+
+        /* The 3D Scene Container */
+        .scene {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            perspective: 600px;
+            overflow: hidden;
+            background: linear-gradient(to bottom, #1a001a 0%, var(--fog-color) 60%, #000 100%);
+        }
+
+        /* The Fog Overlay */
+        .fog-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, transparent 0%, var(--fog-color) 40%, var(--fog-color) 100%);
+            pointer-events: none;
+            z-index: 10;
+            opacity: 0.6;
+        }
+
+        /* The Road */
+        .road-container {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%) rotateX(80deg);
+            transform-origin: bottom center;
+            width: 200vw;
+            height: 100vh;
+            background: 
+                linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.8) 100%),
+                repeating-linear-gradient(90deg, transparent 0, transparent 48%, rgba(255,255,255,0.05) 50%, transparent 52%, transparent 100%),
+                linear-gradient(to bottom, #111 0%, #000 100%);
+            z-index: 1;
+            box-shadow: 0 0 50px var(--glow-color);
+        }
+
+        /* Reflections on the road */
+        .road-reflection {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, var(--glow-color), transparent);
+            opacity: 0.1;
+            filter: blur(20px);
+            animation: pulseRoad 4s infinite alternate;
+        }
+
+        /* Trees */
+        .tree-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            transform-style: preserve-3d;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .tree {
+            position: absolute;
+            bottom: 0; /* Will be adjusted by JS */
+            width: 300px;
+            height: 500px;
+            transform-origin: bottom center;
+            will-change: transform, opacity;
+        }
+
+        /* SVG Styling for Trees */
+        .tree svg {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 0 10px var(--glow-color));
+        }
+        
+        .tree-trunk {
+            stroke: #2a0a1a;
+            stroke-width: 8;
+            fill: none;
+            stroke-linecap: round;
+        }
+
+        .tree-leaf {
+            stroke: var(--leaf-color);
+            stroke-width: 2;
+            fill: none;
+            stroke-opacity: 0.8;
+            animation: swayLeaf 3s ease-in-out infinite alternate;
+        }
+
+        /* Rain Canvas */
+        #rainCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        /* UI Controls */
+        .ui-panel {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 600px;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 105, 180, 0.3);
+            border-radius: 16px;
+            padding: 20px;
+            z-index: 100;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            box-shadow: 0 0 20px rgba(255, 0, 127, 0.2);
+        }
+
+        .ui-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--leaf-color);
+            text-shadow: 0 0 10px var(--primary-hue);
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        label {
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 3px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: var(--leaf-color);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--leaf-color);
+        }
+
+        .action-btn {
+            background: transparent;
+            border: 1px solid var(--leaf-color);
+            color: var(--leaf-color);
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .action-btn:hover {
+            background: var(--leaf-color);
+            color: black;
+            box-shadow: 0 0 15px var(--leaf-color);
+        }
+
+        /* Animations */
+        @keyframes swayLeaf {
+            0% { transform: rotate(-5deg); }
+            100% { transform: rotate(5deg); }
+        }
+
+        @keyframes pulseRoad {
+            0% { opacity: 0.1; }
+            100% { opacity: 0.2; }
+        }
+
+        /* Floating Orbs (Interactive elements) */
+        .orb {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: white;
+            box-shadow: 0 0 20px white, 0 0 40px var(--leaf-color);
+            z-index: 15;
+            pointer-events: auto;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .orb:hover {
+            transform: scale(1.5);
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="scene" id="scene">
+        <!-- Background Sky -->
+        <div class="sky"></div>
+
+        <!-- The Road -->
+        <div class="road-container">
+            <div class="road-reflection"></div>
+        </div>
+
+        <!-- Trees Container -->
+        <div class="tree-layer" id="treeLayer">
+            <!-- Trees generated by JS -->
+        </div>
+
+        <!-- Fog -->
+        <div class="fog-overlay" id="fogOverlay"></div>
+
+        <!-- Rain -->
+        <canvas id="rainCanvas"></canvas>
+    </div>
+
+    <!-- Controls -->
+    <div class="ui-panel">
+        <div class="ui-header">
+            <span>Neon Zen</span>
+            <button class="action-btn" id="pauseBtn">⏸ Pause</button>
+        </div>
+        <div class="controls-grid">
+            <div class="control-group">
+                <label>Atmosphere Hue</label>
+                <input type="range" id="hueRange" min="0" max="360" value="320">
+            </div>
+            <div class="control-group">
+                <label>Rain Intensity</label>
+                <input type="range" id="rainRange" min="0" max="100" value="60">
+            </div>
+            <div class="control-group">
+                <label>Walk Speed</label>
+                <input type="range" id="speedRange" min="0" max="50" value="15">
+            </div>
+            <div class="control-group">
+                <label>Fog Density</label>
+                <input type="range" id="fogRange" min="0" max="100" value="60">
+            </div>
+        </div>
+        <div style="text-align: center; font-size: 0.8rem; margin-top: 10px; color: rgba(255,255,255,0.5);">
+            Click floating orbs to collect energy • Drag to look around
+        </div>
+    </div>
+
+    <script>
+        /* --- Configuration & State --- */
+        const state = {
+            hue: 320,
+            speed: 15,
+            rainIntensity: 60,
+            fogDensity: 0.6,
+            paused: false,
+            trees: [],
+            orbs: [],
+            zCamera: 0,
+            mouseX: 0
+        };
+
+        const scene = document.getElementById('scene');
+        const treeLayer = document.getElementById('treeLayer');
+        const root = document.documentElement;
+
+        /* --- SVG Tree Generator --- */
+        // Generates a drooping willow/palm style tree using SVG paths
+        function generateTreeSVG() {
+            const width = 300;
+            const height = 500;
+            const trunkHeight = 400;
+            
+            // Main trunk
+            let svgContent = `<path d="M${width/2},${height} Q${width/2 + (Math.random()*20-10)},${height/2} ${width/2 + (Math.random()*60-30)},${height-trunkHeight}" class="tree-trunk" />`;
+            
+            // Leaves
+            const leafCount = 30;
+            const startY = height - trunkHeight;
+            const centerX = width/2 + (Math.random()*60-30);
+
+            for(let i=0; i<leafCount; i++) {
+                // Randomize leaf properties
+                const length = 100 + Math.random() * 150;
+                const angle = (Math.random() * 180 + 180) * (Math.PI / 180); // downward arc
+                const spread = (Math.random() * 200 - 100);
+                
+                // Create a quadratic bezier curve for the drooping leaf
+                const cp1x = centerX + spread * 0.5;
+                const cp1y = startY - Math.random() * 50;
+                const endX = centerX + spread;
+                const endY = startY + length;
+
+                // Add animation delay for variety
+                const delay = Math.random() * 2;
+                
+                svgContent += `<path d="M${centerX},${startY} Q${cp1x},${cp1y} ${endX},${endY}" class="tree-leaf" style="animation-delay: -${delay}s" />`;
+            }
+
+            return `<svg viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">${svgContent}</svg>`;
+        }
+
+        /* --- 3D Logic --- */
+        // We simulate 3D by scaling elements based on their Z position relative to camera
+        const MAX_Z = 2000;
+        const TREE_COUNT = 24;
+
+        function initTrees() {
+            for(let i=0; i<TREE_COUNT; i++) {
+                createTreeElement(i * (MAX_Z / TREE_COUNT));
+            }
+        }
+
+        function createTreeElement(z) {
+            const el = document.createElement('div');
+            el.className = 'tree';
+            el.innerHTML = generateTreeSVG();
+            
+            // Randomize side (Left or Right of road)
+            // Road is roughly center. Let's say road width varies by perspective.
+            // We place trees at X = -500 to -200 (left) and 200 to 500 (right)
+            const isLeft = Math.random() > 0.5;
+            const xOffset = isLeft ? -(300 + Math.random()*400) : (300 + Math.random()*400);
+            
+            const treeObj = {
+                el: el,
+                x: xOffset,
+                z: z,
+                id: Math.random().toString(36).substr(2, 9)
+            };
+            
+            treeLayer.appendChild(el);
+            state.trees.push(treeObj);
+        }
+
+        /* --- Rain Engine --- */
+        const canvas = document.getElementById('rainCanvas');
+        const ctx = canvas.getContext('2d');
+        let drops = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        class Drop {
+            constructor() {
+                this.reset();
+            }
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * -100;
+                this.z = Math.random() * 20; // Depth for parallax/size
+                this.len = 10 + Math.random() * 20;
+                this.speed = 5 + Math.random() * 10 + (state.rainIntensity / 10);
+            }
+            update() {
+                this.y += this.speed;
+                if (this.y > canvas.height) {
+                    this.reset();
+                    // Chance to create a splash/ripple logic here if we wanted
+                }
+            }
+            draw() {
+                ctx.beginPath();
+                const color = `hsla(${state.hue}, 100%, 80%, ${0.3 + (this.z/40)})`;
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 1 + (this.z / 10);
+                ctx.moveTo(this.x, this.y);
+                ctx.lineTo(this.x + (state.mouseX * 2), this.y + this.len); // Tilt with mouse
+                ctx.stroke();
+            }
+        }
+
+        // Initialize drops
+        function initRain() {
+            drops = [];
+            for(let i=0; i<500; i++) {
+                drops.push(new Drop());
+            }
+        }
+
+        /* --- Orb Interaction --- */
+        function spawnOrb() {
+            if(state.paused) return;
+            
+            const orb = document.createElement('div');
+            orb.className = 'orb';
+            
+            // Start far away
+            const startX = (Math.random() * window.innerWidth);
+            const startY = (window.innerHeight / 2) - 50; // Horizon line approx
+            
+            orb.style.left = startX + 'px';
+            orb.style.top = startY + 'px';
+            
+            // Data for animation
+            const orbData = {
+                el: orb,
+                x: (Math.random() - 0.5) * 2000, // 3D world X
+                y: -200, // Height above ground
+                z: MAX_Z,
+                active: true
+            };
+            
+            orb.addEventListener('click', (e) => {
+                e.stopPropagation();
+                collectOrb(orbData);
+            });
+
+            scene.appendChild(orb);
+            state.orbs.push(orbData);
+        }
+
+        function collectOrb(orbData) {
+            if(!orbData.active) return;
+            orbData.active = false;
+            
+            // Visual feedback
+            orbData.el.style.transform = "scale(3)";
+            orbData.el.style.opacity = "0";
+            orbData.el.style.boxShadow = "0 0 100px white";
+            
+            // Flash screen slightly
+            const flash = document.createElement('div');
+            flash.style.position = 'fixed';
+            flash.style.top = 0; flash.style.left = 0; flash.style.width='100%'; flash.style.height='100%';
+            flash.style.background = 'white';
+            flash.style.opacity = 0.2;
+            flash.style.pointerEvents = 'none';
+            flash.style.transition = 'opacity 0.5s';
+            document.body.appendChild(flash);
+            setTimeout(() => { flash.style.opacity = 0; setTimeout(()=>flash.remove(), 500); }, 50);
+
+            setTimeout(() => {
+                if(orbData.el.parentNode) orbData.el.parentNode.removeChild(orbData.el);
+            }, 500);
+        }
+
+        setInterval(spawnOrb, 2000); // Spawn orb every 2s
+
+        /* --- Main Loop --- */
+        function update() {
+            if (!state.paused) {
+                // Move Camera/Trees
+                state.trees.forEach(tree => {
+                    tree.z -= state.speed;
+                    if (tree.z < -200) {
+                        tree.z = MAX_Z; // Recycle to back
+                        // Randomize X again for variety
+                        const isLeft = Math.random() > 0.5;
+                        tree.x = isLeft ? -(300 + Math.random()*400) : (300 + Math.random()*400);
+                    }
+                });
+
+                // Move Orbs
+                for(let i = state.orbs.length - 1; i >= 0; i--) {
+                    const orb = state.orbs[i];
+                    if(!orb.active) {
+                        state.orbs.splice(i, 1);
+                        continue;
+                    }
+                    orb.z -= state.speed;
+                    if(orb.z < 10) {
+                        if(orb.el.parentNode) orb.el.parentNode.removeChild(orb.el);
+                        state.orbs.splice(i, 1);
+                    }
+                }
+            }
+
+            render();
+            requestAnimationFrame(update);
+        }
+
+        function render() {
+            const cx = window.innerWidth / 2;
+            const cy = window.innerHeight / 2;
+            const fov = 600;
+
+            // Render Trees
+            state.trees.forEach(tree => {
+                // Simple 3D projection
+                const scale = fov / (fov + tree.z);
+                
+                // Parallax X based on mouse
+                const parallaxX = (state.mouseX * 100) * scale;
+
+                const x2d = (tree.x * scale) + cx + parallaxX;
+                const y2d = (100 * scale) + cy + (scale * 200); // Adjust Y to anchor to "ground"
+
+                tree.el.style.transform = `translate3d(${x2d}px, ${y2d}px, 0) scale(${scale})`;
+                tree.el.style.zIndex = Math.floor(MAX_Z - tree.z);
+                
+                // Fade in/out based on distance
+                const opacity = Math.min(1, (MAX_Z - tree.z) / 500);
+                tree.el.style.opacity = opacity;
+                // Blur distant trees
+                const blur = Math.max(0, (tree.z - 500) / 100);
+                tree.el.style.filter = `blur(${blur}px) drop-shadow(0 0 10px var(--glow-color))`;
+            });
+
+            // Render Orbs
+            state.orbs.forEach(orb => {
+                if(!orb.active) return;
+                const scale = fov / (fov + orb.z);
+                const parallaxX = (state.mouseX * 100) * scale;
+                const x2d = (orb.x * scale) + cx + parallaxX;
+                const y2d = (orb.y * scale) + cy;
+                
+                orb.el.style.transform = `translate(-50%, -50%)`; // Center anchor
+                orb.el.style.left = `${x2d}px`;
+                orb.el.style.top = `${y2d}px`;
+                orb.el.style.width = `${20 * scale}px`;
+                orb.el.style.height = `${20 * scale}px`;
+                orb.el.style.zIndex = Math.floor(MAX_Z - orb.z + 10);
+            });
+
+            // Render Rain
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // Only draw rain if intensity > 0
+            const activeDrops = Math.floor(drops.length * (state.rainIntensity / 100));
+            for(let i=0; i<activeDrops; i++) {
+                drops[i].update();
+                drops[i].draw();
+            }
+        }
+
+        /* --- Event Listeners --- */
+        
+        // Mouse Parallax
+        document.addEventListener('mousemove', (e) => {
+            // Normalize -1 to 1
+            state.mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+        });
+
+        // UI Controls
+        document.getElementById('hueRange').addEventListener('input', (e) => {
+            state.hue = e.target.value;
+            root.style.setProperty('--primary-hue', state.hue);
+        });
+
+        document.getElementById('rainRange').addEventListener('input', (e) => {
+            state.rainIntensity = parseInt(e.target.value);
+        });
+
+        document.getElementById('speedRange').addEventListener('input', (e) => {
+            state.speed = parseInt(e.target.value);
+        });
+
+        document.getElementById('fogRange').addEventListener('input', (e) => {
+            const val = e.target.value / 100;
+            document.getElementById('fogOverlay').style.opacity = val;
+        });
+
+        document.getElementById('pauseBtn').addEventListener('click', (e) => {
+            state.paused = !state.paused;
+            e.target.innerText = state.paused ? "▶ Resume" : "⏸ Pause";
+        });
+
+        /* --- Init --- */
+        initTrees();
+        initRain();
+        update();
+
+    </script>
+</body>
+</html>

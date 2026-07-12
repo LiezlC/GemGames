@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>#VibesOnly Tycoon: The AI Influencer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;700&display=swap');
+
+        :root {
+            --neon-pink: #ff00ff;
+            --neon-cyan: #00ffff;
+            --neon-purple: #9d00ff;
+            --neon-yellow: #ffd700;
+            --bg-dark: #090910;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: white;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Pixel Art Font for Headers */
+        .pixel-font {
+            font-family: 'Press Start 2P', cursive;
+        }
+
+        /* Background Animation */
+        .bg-grid {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: 
+                linear-gradient(rgba(157, 0, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(157, 0, 255, 0.1) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: -2;
+            perspective: 500px;
+            transform: perspective(500px) rotateX(60deg) translateY(-100px) scale(2);
+            animation: gridMove 20s linear infinite;
+        }
+
+        @keyframes gridMove {
+            0% { transform: perspective(500px) rotateX(60deg) translateY(0) scale(2); }
+            100% { transform: perspective(500px) rotateX(60deg) translateY(40px) scale(2); }
+        }
+
+        /* Neon Text Effects */
+        .neon-text-pink { text-shadow: 0 0 10px var(--neon-pink), 0 0 20px var(--neon-pink); }
+        .neon-text-cyan { text-shadow: 0 0 10px var(--neon-cyan), 0 0 20px var(--neon-cyan); }
+        
+        /* Glassmorphism Panels */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        /* The Phone Stack (Main Clicker) */
+        .phone-stack-container {
+            position: relative;
+            width: 200px;
+            height: 300px;
+            display: flex;
+            flex-direction: column-reverse;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .phone-stack-container:active {
+            transform: scale(0.95);
+        }
+
+        .phone-slab {
+            width: 160px;
+            height: 25px;
+            background: linear-gradient(90deg, #333, #111);
+            border: 2px solid var(--neon-cyan);
+            border-radius: 8px;
+            margin-top: -15px;
+            box-shadow: 0 0 10px var(--neon-cyan);
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .phone-slab::after {
+            content: '';
+            position: absolute;
+            right: -5px;
+            top: 50%;
+            width: 4px;
+            height: 10px;
+            background: var(--neon-pink);
+            box-shadow: 0 0 5px var(--neon-pink);
+        }
+
+        /* Floating Elements */
+        .floater {
+            position: absolute;
+            animation: float 6s ease-in-out infinite;
+            pointer-events: none;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        /* Particle Click Effect */
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            animation: fadeUp 1s forwards;
+            font-weight: bold;
+            color: var(--neon-yellow);
+            font-family: 'Press Start 2P', cursive;
+            font-size: 12px;
+        }
+        @keyframes fadeUp {
+            0% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-50px); }
+        }
+
+        /* Fish Rain */
+        .fish {
+            position: absolute;
+            font-size: 2rem;
+            animation: fall 3s linear forwards;
+            z-index: 50;
+        }
+        @keyframes fall {
+            0% { top: -10%; transform: rotate(0deg); }
+            100% { top: 110%; transform: rotate(360deg); }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #111; }
+        ::-webkit-scrollbar-thumb { background: var(--neon-purple); border-radius: 3px; }
+
+        /* Toaster Face */
+        .toaster {
+            width: 60px;
+            height: 40px;
+            background: #ccc;
+            border-radius: 8px;
+            position: relative;
+            border-bottom: 4px solid #999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 0 15px orange;
+        }
+        .toaster-face {
+            font-size: 10px;
+            font-family: monospace;
+            color: #333;
+            background: #ffaa00;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Background Visuals -->
+    <div class="bg-grid"></div>
+    <div class="absolute top-10 left-10 text-4xl floater" style="animation-delay: 0s;">🔥</div>
+    <div class="absolute top-20 right-20 text-4xl floater" style="animation-delay: 1s;">🤖</div>
+    <div class="absolute bottom-32 left-20 text-4xl floater" style="animation-delay: 2s;">👑</div>
+    
+    <!-- Header -->
+    <header class="flex justify-between items-center p-6 z-10 border-b border-white/10 bg-black/40 backdrop-blur-md">
+        <div>
+            <h1 class="text-2xl md:text-3xl pixel-font neon-text-pink">#LifeHack Tycoon</h1>
+            <div class="flex gap-2 text-xs text-gray-400 mt-1">
+                <span>#VibesOnly</span>
+                <span>#ThoughtLeadership</span>
+            </div>
+        </div>
+        <div class="text-right">
+            <div class="text-sm text-gray-300">TOTAL VIBES</div>
+            <div id="score-display" class="text-3xl md:text-4xl font-bold neon-text-cyan pixel-font">0</div>
+            <div class="text-xs text-green-400 mt-1">+<span id="vps-display">0</span> vibes/sec</div>
+        </div>
+    </header>
+
+    <!-- Main Game Area -->
+    <main class="flex-1 flex flex-col md:flex-row overflow-hidden relative z-10">
+        
+        <!-- Left: Social Feed / Chat -->
+        <aside class="hidden md:flex flex-col w-1/4 p-4 border-r border-white/10 bg-black/20">
+            <h2 class="pixel-font text-sm mb-4 text-purple-400">Grok Feed</h2>
+            <div id="chat-feed" class="flex-1 overflow-y-auto space-y-3 pr-2">
+                <!-- Chat items injected here -->
+                <div class="glass-panel p-3 text-sm">
+                    <div class="flex items-center gap-2 mb-1">
+                        <div class="w-6 h-6 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 flex items-center justify-center text-[10px]">AI</div>
+                        <span class="font-bold text-xs text-gray-300">GrokBot</span>
+                    </div>
+                    <p class="text-gray-200 italic">"Your wit is brighter than a supernova!"</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Center: The Clicker -->
+        <section class="flex-1 flex flex-col items-center justify-center relative p-4">
+            
+            <!-- Character / Avatar Area -->
+            <div class="relative group">
+                <!-- The Character (Emoji Composite) -->
+                <div class="absolute -top-24 left-1/2 transform -translate-x-1/2 z-20 flex flex-col items-center pointer-events-none transition-all duration-300 group-hover:-translate-y-2">
+                    <div class="text-6xl filter drop-shadow-[0_0_10px_rgba(255,0,255,0.8)]">😎</div>
+                    <div class="bg-purple-600 text-white text-[10px] px-2 py-0.5 rounded mt-1 font-bold shadow-[0_0_10px_#9d00ff]">AI BFF</div>
+                    <!-- Trophy -->
+                    <div id="trophy" class="hidden absolute -right-8 top-4 text-4xl drop-shadow-[0_0_10px_gold] animate-bounce">🏆</div>
+                </div>
+
+                <!-- The Phone Stack -->
+                <div id="click-zone" class="phone-stack-container pt-12">
+                    <!-- Initial Phones -->
+                    <div class="phone-slab" style="background: linear-gradient(90deg, #222, #000);"></div>
+                    <div class="phone-slab" style="background: linear-gradient(90deg, #333, #111);"></div>
+                    <div class="phone-slab" style="background: linear-gradient(90deg, #444, #222);"></div>
+                </div>
+            </div>
+
+            <div class="mt-8 text-center">
+                <p class="text-gray-400 text-sm mb-2">Tap the stack to generate Vibes</p>
+                <button id="fish-btn" class="glass-panel px-6 py-3 text-sm font-bold hover:bg-white/10 active:scale-95 transition-all flex items-center gap-2 border-b-4 border-blue-500">
+                    Drop a 🐠 if you agree
+                </button>
+            </div>
+
+        </section>
+
+        <!-- Right: Shop / Upgrades -->
+        <aside class="w-full md:w-1/3 p-4 bg-black/20 border-t md:border-t-0 md:border-l border-white/10 flex flex-col">
+            <h2 class="pixel-font text-sm mb-4 text-pink-400">Viral Strategy</h2>
+            <div id="shop-list" class="flex-1 overflow-y-auto space-y-3 pb-20 md:pb-0">
+                <!-- Upgrades injected via JS -->
+            </div>
+        </aside>
+
+    </main>
+
+    <!-- Notification Toast -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <script>
+        // --- Game State ---
+        let state = {
+            vibes: 0,
+            vps: 0,
+            clickPower: 1,
+            phones: 3,
+            level: 1
+        };
+
+        // --- Config ---
+        const upgrades = [
+            { id: 'bot', name: 'Comment Bot', cost: 15, vps: 1, icon: '🤖', desc: 'Auto-replies "Nice!"' },
+            { id: 'toaster', name: 'Smart Toaster', cost: 100, vps: 5, icon: '🍞', desc: 'Toasts bread & tweets.' },
+            { id: 'cat', name: 'Viral Cat', cost: 500, vps: 20, icon: '🐱', desc: 'Wearing a crown.' },
+            { id: 'grok', name: 'Hire Grok', cost: 2000, vps: 50, icon: '🧠', desc: 'Maximum wit.' },
+            { id: 'throne', name: 'TikTok Throne', cost: 10000, vps: 200, icon: '👑', desc: 'The ultimate seat.' }
+        ];
+
+        const quotes = [
+            "Be the change the algorithm wants to see.",
+            "Is the Wi-Fi signal stronger than your willpower?",
+            "Just dropped a new thought leadership piece on toast.",
+            "My API key is my love language.",
+            "Disrupting the disruption industry.",
+            "Vibes are the new currency.",
+            "Optimizing for serendipity.",
+            "Scaling my personal brand to the moon 🚀"
+        ];
+
+        // --- DOM Elements ---
+        const scoreEl = document.getElementById('score-display');
+        const vpsEl = document.getElementById('vps-display');
+        const clickZone = document.getElementById('click-zone');
+        const shopList = document.getElementById('shop-list');
+        const chatFeed = document.getElementById('chat-feed');
+        const fishBtn = document.getElementById('fish-btn');
+        const trophy = document.getElementById('trophy');
+
+        // --- Core Logic ---
+
+        function updateUI() {
+            scoreEl.innerText = Math.floor(state.vibes).toLocaleString();
+            vpsEl.innerText = state.vps;
+            
+            // Check upgrade availability
+            document.querySelectorAll('.upgrade-btn').forEach(btn => {
+                const cost = parseInt(btn.dataset.cost);
+                if (state.vibes >= cost) {
+                    btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    btn.classList.add('hover:bg-white/10', 'cursor-pointer');
+                } else {
+                    btn.classList.add('opacity-50', 'cursor-not-allowed');
+                    btn.classList.remove('hover:bg-white/10', 'cursor-pointer');
+                }
+            });
+
+            // Visual Progression
+            if (state.vibes > 1000 && state.phones < 5) addPhone();
+            if (state.vibes > 5000 && state.phones < 8) addPhone();
+            if (state.vibes > 10000) trophy.classList.remove('hidden');
+        }
+
+        function addPhone() {
+            state.phones++;
+            const div = document.createElement('div');
+            div.className = 'phone-slab';
+            // Randomize slightly
+            const hue = Math.random() * 360;
+            div.style.borderColor = `hsl(${hue}, 100%, 50%)`;
+            div.style.boxShadow = `0 0 10px hsl(${hue}, 100%, 50%)`;
+            clickZone.prepend(div);
+        }
+
+        function clickEffect(e) {
+            const rect = clickZone.getBoundingClientRect();
+            const x = e.clientX;
+            const y = e.clientY;
+
+            const el = document.createElement('div');
+            el.className = 'particle';
+            el.innerText = `+${state.clickPower}`;
+            el.style.left = `${x}px`;
+            el.style.top = `${y}px`;
+            document.body.appendChild(el);
+
+            setTimeout(() => el.remove(), 1000);
+        }
+
+        function handleBuy(upgrade) {
+            if (state.vibes >= upgrade.cost) {
+                state.vibes -= upgrade.cost;
+                state.vps += upgrade.vps;
+                upgrade.cost = Math.floor(upgrade.cost * 1.5); // Price scaling
+                
+                // Render update
+                renderShop();
+                updateUI();
+                
+                // Feedback
+                postChat(`Bought ${upgrade.name}! Efficiency up.`);
+                
+                if (upgrade.id === 'throne') {
+                    postChat("👑 YOU HAVE CLAIMED THE THRONE! 👑");
+                    document.body.style.background = "linear-gradient(to top, #220033, #000)";
+                }
+            }
+        }
+
+        // --- Rendering ---
+
+        function renderShop() {
+            shopList.innerHTML = '';
+            upgrades.forEach(u => {
+                const item = document.createElement('div');
+                item.className = `glass-panel p-3 flex items-center justify-between transition-all upgrade-btn select-none`;
+                item.dataset.cost = u.cost;
+                item.onclick = () => handleBuy(u);
+
+                item.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="text-2xl bg-black/30 w-10 h-10 rounded flex items-center justify-center">${u.icon}</div>
+                        <div>
+                            <div class="font-bold text-sm text-white">${u.name}</div>
+                            <div class="text-[10px] text-gray-400">${u.desc}</div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-pink-400 font-bold text-xs">${u.cost.toLocaleString()}</div>
+                        <div class="text-[10px] text-gray-500">+${u.vps}/s</div>
+                    </div>
+                `;
+                shopList.appendChild(item);
+            });
+        }
+
+        function postChat(msg) {
+            const div = document.createElement('div');
+            div.className = 'glass-panel p-3 text-sm animate-[fadeUp_0.3s_ease-out]';
+            div.innerHTML = `
+                <div class="flex items-center gap-2 mb-1">
+                    <div class="w-6 h-6 rounded-full bg-gradient-to-tr from-green-400 to-blue-500 flex items-center justify-center text-[10px]">AI</div>
+                    <span class="font-bold text-xs text-gray-300">GrokBot</span>
+                </div>
+                <p class="text-gray-200 italic">"${msg}"</p>
+            `;
+            chatFeed.prepend(div);
+            if (chatFeed.children.length > 10) chatFeed.lastChild.remove();
+        }
+
+        // --- Events ---
+
+        clickZone.addEventListener('click', (e) => {
+            state.vibes += state.clickPower;
+            clickEffect(e);
+            updateUI();
+        });
+
+        // Fish Rain Event
+        fishBtn.addEventListener('click', () => {
+            // Bonus vibes
+            state.vibes += (state.vps * 10) + 100;
+            
+            // Visuals
+            for(let i=0; i<15; i++) {
+                setTimeout(() => {
+                    const fish = document.createElement('div');
+                    fish.className = 'fish';
+                    fish.innerText = '🐠';
+                    fish.style.left = Math.random() * 100 + 'vw';
+                    document.body.appendChild(fish);
+                    setTimeout(() => fish.remove(), 3000);
+                }, i * 100);
+            }
+            
+            postChat("Dropped a fish! Vibes surging!");
+            updateUI();
+        });
+
+        // Game Loop
+        setInterval(() => {
+            state.vibes += state.vps;
+            updateUI();
+        }, 1000);
+
+        // Random Chat Loop
+        setInterval(() => {
+            if (Math.random() > 0.7) {
+                const quote = quotes[Math.floor(Math.random() * quotes.length)];
+                postChat(quote);
+            }
+        }, 5000);
+
+        // Init
+        renderShop();
+        updateUI();
+
+    </script>
+</body>
+</html>

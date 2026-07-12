@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neuro-Harmonic Resonator</title>
+    <style>
+        :root {
+            --neon-pink: #ff00ff;
+            --neon-cyan: #00ffff;
+            --neon-yellow: #ffff00;
+            --neon-green: #00ff00;
+            --bg-dark: #050010;
+            --glass: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-dark);
+            color: white;
+            font-family: 'Courier New', Courier, monospace;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Background Psychedelic Vortex */
+        .vortex-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+            filter: blur(20px) contrast(1.5);
+        }
+
+        .ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            border: 2px solid transparent;
+            box-shadow: 0 0 50px var(--color);
+            opacity: 0.6;
+            animation: pulse-ring 8s infinite linear;
+        }
+
+        @keyframes pulse-ring {
+            0% { width: 10px; height: 10px; border-color: var(--color); transform: translate(-50%, -50%) rotate(0deg); }
+            100% { width: 200vmax; height: 200vmax; border-color: transparent; transform: translate(-50%, -50%) rotate(180deg); }
+        }
+
+        /* Main UI Container */
+        .interface {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 10;
+            width: 100%;
+            max-width: 800px;
+            height: 90vh;
+            justify-content: space-between;
+        }
+
+        /* The Brain SVG */
+        .brain-container {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            filter: drop-shadow(0 0 20px rgba(0, 255, 255, 0.5));
+            transition: transform 0.3s ease;
+        }
+
+        .brain-svg {
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+        }
+
+        .brain-part {
+            fill: rgba(255, 255, 255, 0.1);
+            stroke: white;
+            stroke-width: 2;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .brain-part:hover {
+            fill: rgba(255, 255, 255, 0.3);
+            filter: drop-shadow(0 0 10px white);
+        }
+
+        .brain-part.active {
+            fill: var(--active-color) !important;
+            stroke: #fff;
+            filter: drop-shadow(0 0 20px var(--active-color));
+            transform: scale(1.02);
+        }
+
+        /* Controls Panel */
+        .controls {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px;
+            padding: 20px;
+            width: 90%;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+        }
+
+        .tabs {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            padding: 8px 16px;
+            cursor: pointer;
+            font-weight: bold;
+            text-transform: uppercase;
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active {
+            background: var(--neon-cyan);
+            color: black;
+            box-shadow: 0 0 15px var(--neon-cyan);
+        }
+
+        .panel-content {
+            display: none;
+        }
+        .panel-content.active {
+            display: block;
+        }
+
+        /* Sliders for Tuner */
+        .slider-group {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        
+        input[type=range] {
+            width: 60%;
+            accent-color: var(--neon-pink);
+        }
+
+        /* Game UI */
+        .game-status {
+            text-align: center;
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            text-shadow: 0 0 5px white;
+        }
+
+        .start-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(90deg, var(--neon-pink), var(--neon-cyan));
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            animation: glow 2s infinite alternate;
+        }
+
+        @keyframes glow {
+            from { box-shadow: 0 0 10px var(--neon-pink); }
+            to { box-shadow: 0 0 20px var(--neon-cyan); }
+        }
+
+        /* Header */
+        header {
+            text-align: center;
+            margin-top: 20px;
+        }
+        h1 {
+            margin: 0;
+            font-size: 2rem;
+            background: linear-gradient(to right, var(--neon-pink), var(--neon-yellow), var(--neon-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+        }
+        .subtitle {
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.7);
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Background Animation -->
+    <div class="vortex-container" id="vortex">
+        <!-- JS will populate rings -->
+    </div>
+
+    <div class="interface">
+        <header>
+            <h1>Neuro-Resonator</h1>
+            <div class="subtitle">Interactive Cognitive Synthesizer</div>
+        </header>
+
+        <!-- The Brain Visualization -->
+        <div class="brain-container">
+            <svg class="brain-svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:var(--neon-pink);stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:var(--neon-cyan);stop-opacity:1" />
+                    </linearGradient>
+                    <filter id="glow">
+                        <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+                        <feMerge>
+                            <feMergeNode in="coloredBlur"/>
+                            <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                    </filter>
+                </defs>
+                
+                <!-- Frontal Lobe -->
+                <path id="lobe-frontal" class="brain-part" d="M 40,100 C 40,60 70,40 100,40 C 110,40 120,45 125,50 L 120,90 L 80,100 Z" 
+                      style="--active-color: var(--neon-yellow);" onclick="handleBrainClick('frontal')"/>
+                
+                <!-- Parietal Lobe -->
+                <path id="lobe-parietal" class="brain-part" d="M 100,40 C 140,40 160,60 165,90 L 120,90 L 125,50 Z" 
+                      style="--active-color: var(--neon-green);" onclick="handleBrainClick('parietal')"/>
+
+                <!-- Occipital Lobe -->
+                <path id="lobe-occipital" class="brain-part" d="M 165,90 C 170,120 160,140 140,145 L 130,110 L 120,90 Z" 
+                      style="--active-color: var(--neon-pink);" onclick="handleBrainClick('occipital')"/>
+
+                <!-- Temporal Lobe -->
+                <path id="lobe-temporal" class="brain-part" d="M 40,100 C 40,130 70,140 100,135 L 110,110 L 120,90 L 80,100 Z" 
+                      style="--active-color: var(--neon-cyan);" onclick="handleBrainClick('temporal')"/>
+
+                <!-- Cerebellum -->
+                <path id="lobe-cerebellum" class="brain-part" d="M 110,140 C 110,140 130,165 150,150 C 160,140 140,145 140,145 L 130,110 L 110,140 Z" 
+                      style="--active-color: #ff5500;" onclick="handleBrainClick('cerebellum')"/>
+                
+                <!-- Brain Stem -->
+                <path class="brain-stem" d="M 100,135 C 100,135 105,170 100,190 L 115,190 C 110,170 120,150 110,140" 
+                      fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="4" stroke-linecap="round"/>
+            </svg>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls">
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('tuner')">Visualizer</button>
+                <button class="tab-btn" onclick="switchTab('game')">Memory Matrix</button>
+            </div>
+
+            <!-- Tab 1: Visualizer Tuner -->
+            <div id="tuner-panel" class="panel-content active">
+                <div class="slider-group">
+                    <label>Frequency (Speed)</label>
+                    <input type="range" min="1" max="20" value="5" oninput="updateVisuals(this.value, 'speed')">
+                </div>
+                <div class="slider-group">
+                    <label>Neuroplasticity (Color)</label>
+                    <input type="range" min="0" max="360" value="0" oninput="updateVisuals(this.value, 'hue')">
+                </div>
+                <div class="slider-group">
+                    <label>Synapse Glow</label>
+                    <input type="range" min="0" max="50" value="20" oninput="updateVisuals(this.value, 'glow')">
+                </div>
+                <div style="text-align: center; margin-top: 10px; font-size: 0.8rem; opacity: 0.7;">
+                    Adjust sliders to tune your brainwaves.
+                </div>
+            </div>
+
+            <!-- Tab 2: Memory Game -->
+            <div id="game-panel" class="panel-content">
+                <div class="game-status" id="status-text">Ready to Sync?</div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.9rem;">
+                    <span>Level: <span id="level-display">1</span></span>
+                    <span>Score: <span id="score-display">0</span></span>
+                </div>
+                <button class="start-btn" onclick="startGame()">Initiate Sequence</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Visualizer Logic ---
+        const vortex = document.getElementById('vortex');
+        const brainContainer = document.querySelector('.brain-container');
+        const brainPaths = document.querySelectorAll('.brain-part');
+
+        // Create background rings
+        const colors = ['#ff00ff', '#00ffff', '#ffff00', '#00ff00'];
+        for(let i=0; i<15; i++) {
+            const ring = document.createElement('div');
+            ring.classList.add('ring');
+            ring.style.animationDuration = (4 + Math.random() * 5) + 's';
+            ring.style.animationDelay = (i * 0.5) + 's';
+            ring.style.setProperty('--color', colors[i % colors.length]);
+            vortex.appendChild(ring);
+        }
+
+        function updateVisuals(val, type) {
+            if (type === 'speed') {
+                document.querySelectorAll('.ring').forEach(r => {
+                    // Inverse logic: lower val = slower duration
+                    let base = 21 - val; 
+                    r.style.animationDuration = base + 's';
+                });
+            } else if (type === 'hue') {
+                document.body.style.filter = `hue-rotate(${val}deg)`;
+            } else if (type === 'glow') {
+                brainContainer.style.filter = `drop-shadow(0 0 ${val}px rgba(0, 255, 255, 0.8))`;
+            }
+        }
+
+        // --- Game Logic ---
+        let gameSequence = [];
+        let playerSequence = [];
+        let isGameActive = false;
+        let isPlayerTurn = false;
+        let level = 1;
+        let score = 0;
+
+        const parts = ['frontal', 'parietal', 'occipital', 'temporal', 'cerebellum'];
+        
+        // Audio Context for Synth Sounds
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioContext();
+
+        function playTone(freq, type='sine') {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.value = freq;
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.5);
+            osc.stop(audioCtx.currentTime + 0.5);
+        }
+
+        const tones = {
+            'frontal': 261.63, // C4
+            'parietal': 329.63, // E4
+            'occipital': 392.00, // G4
+            'temporal': 493.88, // B4
+            'cerebellum': 523.25 // C5
+        };
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.panel-content').forEach(p => p.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tab + '-panel').classList.add('active');
+        }
+
+        function startGame() {
+            if (isGameActive) return;
+            isGameActive = true;
+            gameSequence = [];
+            playerSequence = [];
+            level = 1;
+            score = 0;
+            updateUI();
+            nextRound();
+        }
+
+        function nextRound() {
+            playerSequence = [];
+            isPlayerTurn = false;
+            document.getElementById('status-text').innerText = "Observe Pattern...";
+            
+            // Add random part to sequence
+            const randomPart = parts[Math.floor(Math.random() * parts.length)];
+            gameSequence.push(randomPart);
+
+            // Play sequence
+            let delay = 500;
+            gameSequence.forEach((part, index) => {
+                setTimeout(() => {
+                    flashPart(part);
+                }, delay);
+                delay += 800;
+            });
+
+            setTimeout(() => {
+                isPlayerTurn = true;
+                document.getElementById('status-text').innerText = "Repeat Pattern";
+            }, delay);
+        }
+
+        function flashPart(partId) {
+            const el = document.getElementById('lobe-' + partId);
+            el.classList.add('active');
+            playTone(tones[partId]);
+            setTimeout(() => {
+                el.classList.remove('active');
+            }, 400);
+        }
+
+        function handleBrainClick(partId) {
+            // Visual feedback even outside game
+            if (!isGameActive) {
+                flashPart(partId);
+                return;
+            }
+
+            if (!isPlayerTurn) return;
+
+            flashPart(partId);
+            playerSequence.push(partId);
+
+            // Check correctness
+            const currentMoveIndex = playerSequence.length - 1;
+            if (playerSequence[currentMoveIndex] !== gameSequence[currentMoveIndex]) {
+                gameOver();
+                return;
+            }
+
+            if (playerSequence.length === gameSequence.length) {
+                score += 10 * level;
+                level++;
+                updateUI();
+                isPlayerTurn = false;
+                document.getElementById('status-text').innerText = "Correct! Syncing...";
+                setTimeout(nextRound, 1000);
+            }
+        }
+
+        function gameOver() {
+            isGameActive = false;
+            document.getElementById('status-text').innerText = "Neural Desync! Game Over.";
+            playTone(100, 'sawtooth'); // Error sound
+            document.body.style.background = '#300';
+            setTimeout(() => {
+                document.body.style.background = 'var(--bg-dark)';
+            }, 500);
+        }
+
+        function updateUI() {
+            document.getElementById('level-display').innerText = level;
+            document.getElementById('score-display').innerText = score;
+        }
+
+        // Initial idle animation for brain
+        setInterval(() => {
+            if(!isGameActive) {
+                const r = Math.floor(Math.random() * parts.length);
+                // Subtle pulse
+                const el = document.getElementById('lobe-' + parts[r]);
+                el.style.fillOpacity = 0.4;
+                setTimeout(() => el.style.fillOpacity = 0.1, 1000);
+            }
+        }, 2000);
+
+    </script>
+</body>
+</html>
