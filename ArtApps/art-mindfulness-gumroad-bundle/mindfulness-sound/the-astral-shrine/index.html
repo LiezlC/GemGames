@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Astral Shrine</title>
+    <style>
+        :root {
+            --bg-dark: #0f0518;
+            --bg-light: #2a1a4a;
+            --accent-gold: #ffd700;
+            --accent-flame: #ff9900;
+            --accent-glow: #ff55aa;
+            --stone: #3a3a50;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: radial-gradient(circle at 50% 30%, var(--bg-light), var(--bg-dark));
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: white;
+            user-select: none;
+        }
+
+        /* --- Background Elements --- */
+        .stars {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            opacity: 0.8;
+            animation: twinkle var(--duration) infinite ease-in-out;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; transform: scale(0.8); }
+            50% { opacity: 1; transform: scale(1.2); }
+        }
+
+        .clouds {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            opacity: 0.5;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(255, 0, 150, 0.1), transparent 40%),
+                radial-gradient(circle at 80% 30%, rgba(0, 200, 255, 0.1), transparent 40%);
+            filter: blur(30px);
+            animation: drift 20s infinite alternate;
+        }
+
+        @keyframes drift {
+            from { transform: translateX(-20px); }
+            to { transform: translateX(20px); }
+        }
+
+        /* --- The Mandala (Sun) --- */
+        .mandala-container {
+            position: absolute;
+            top: 10%;
+            left: 50%;
+            transform: translateX(-50%) scale(0); /* Hidden initially */
+            width: 300px;
+            height: 300px;
+            z-index: 2;
+            transition: transform 2s cubic-bezier(0.175, 0.885, 0.32, 1.27);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .mandala-ring {
+            position: absolute;
+            border: 2px dashed var(--accent-gold);
+            border-radius: 50%;
+            box-shadow: 0 0 20px var(--accent-gold);
+        }
+
+        .r1 { width: 100px; height: 100px; animation: spin 10s linear infinite; border-style: dotted; }
+        .r2 { width: 180px; height: 180px; animation: spin 15s linear infinite reverse; border: 4px double var(--accent-glow); }
+        .r3 { width: 260px; height: 260px; animation: spin 20s linear infinite; border: 1px solid rgba(255,255,255,0.5); }
+
+        .mandala-core {
+            width: 60px;
+            height: 60px;
+            background: radial-gradient(circle, #fff, var(--accent-gold));
+            border-radius: 50%;
+            box-shadow: 0 0 50px var(--accent-gold);
+            z-index: 3;
+            cursor: pointer;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* --- The Goddess (Ethereal Shape) --- */
+        .goddess {
+            position: absolute;
+            top: 30%;
+            left: 15%;
+            width: 150px;
+            height: 300px;
+            background: linear-gradient(to bottom, rgba(200,200,255,0.8), rgba(200,200,255,0));
+            clip-path: polygon(50% 0%, 30% 20%, 10% 100%, 90% 100%, 70% 20%);
+            filter: blur(10px);
+            opacity: 0;
+            transition: opacity 3s ease;
+            z-index: 2;
+            animation: float 4s infinite ease-in-out;
+        }
+
+        .goddess::after {
+            content: '';
+            position: absolute;
+            top: -20px;
+            left: 35px;
+            width: 80px;
+            height: 80px;
+            background: rgba(255,255,255,0.6);
+            border-radius: 50%;
+            box-shadow: 0 0 20px white;
+        }
+
+        /* --- The Monk (Player Character) --- */
+        .monk-container {
+            position: absolute;
+            bottom: 15%;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .monk-head {
+            width: 60px;
+            height: 60px;
+            background: #111;
+            border-radius: 50%;
+            box-shadow: inset -5px -5px 10px rgba(255,255,255,0.2);
+            z-index: 11;
+        }
+
+        .monk-body {
+            width: 100px;
+            height: 90px;
+            background: #1a1a2e;
+            border-radius: 50px 50px 10px 10px;
+            margin-top: -10px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .monk-shadow {
+            width: 140px;
+            height: 20px;
+            background: rgba(0,0,0,0.6);
+            border-radius: 50%;
+            margin-top: -10px;
+            filter: blur(5px);
+        }
+
+        /* --- Candles --- */
+        .candles-layer {
+            position: absolute;
+            bottom: 10%;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            padding: 0 10%;
+            box-sizing: border-box;
+            z-index: 20;
+            pointer-events: none; /* Let clicks pass through to candles */
+        }
+
+        .candle-wrapper {
+            position: relative;
+            width: 40px;
+            height: 120px;
+            pointer-events: auto;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .candle-wrapper:hover {
+            transform: scale(1.1);
+        }
+
+        .candle-stick {
+            position: absolute;
+            bottom: 0;
+            left: 10px;
+            width: 20px;
+            height: 60px;
+            background: linear-gradient(to right, #8b5a2b, #5a3a1a);
+            border-radius: 3px;
+        }
+
+        .candle-plate {
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 40px;
+            height: 10px;
+            background: #444;
+            border-radius: 50%;
+        }
+
+        .flame {
+            position: absolute;
+            bottom: 65px;
+            left: 12px;
+            width: 16px;
+            height: 24px;
+            background: radial-gradient(ellipse at bottom, var(--accent-gold), var(--accent-flame), transparent);
+            border-radius: 50% 50% 20% 20%;
+            opacity: 0;
+            transform-origin: bottom center;
+            filter: blur(1px);
+            transition: opacity 0.5s;
+        }
+
+        .candle-wrapper.lit .flame {
+            opacity: 1;
+            animation: flicker 0.1s infinite alternate;
+            box-shadow: 0 0 20px var(--accent-flame);
+        }
+
+        @keyframes flicker {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.1) rotate(2deg); }
+        }
+
+        /* --- Skulls/Decor --- */
+        .skull {
+            position: absolute;
+            bottom: 5%;
+            width: 50px;
+            height: 60px;
+            background: #555;
+            border-radius: 20px 20px 10px 10px;
+            z-index: 15;
+            filter: brightness(0.5);
+        }
+        .skull::before, .skull::after {
+            content: '';
+            position: absolute;
+            top: 20px;
+            width: 15px;
+            height: 15px;
+            background: #222;
+            border-radius: 50%;
+        }
+        .skull::before { left: 8px; }
+        .skull::after { right: 8px; }
+        .skull.left { left: 10%; transform: rotate(-15deg); }
+        .skull.right { right: 10%; transform: rotate(15deg); }
+
+        /* --- UI / HUD --- */
+        .ui-overlay {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            text-align: center;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        h1 {
+            font-weight: 300;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            text-shadow: 0 0 10px rgba(255,255,255,0.5);
+            margin: 0;
+            opacity: 0.8;
+        }
+
+        p.instruction {
+            font-size: 0.9rem;
+            color: #aaa;
+            margin-top: 5px;
+            opacity: 1;
+            transition: opacity 1s;
+        }
+
+        .breath-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2rem;
+            font-weight: 100;
+            opacity: 0;
+            transition: opacity 1s;
+            z-index: 50;
+            text-shadow: 0 0 20px var(--accent-gold);
+        }
+
+        /* --- Animations --- */
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @keyframes pulse-breath {
+            0% { transform: translateX(-50%) scale(1); }
+            50% { transform: translateX(-50%) scale(1.2); }
+            100% { transform: translateX(-50%) scale(1); }
+        }
+
+        .breathing .mandala-container {
+            animation: pulse-breath 8s infinite ease-in-out;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Background -->
+    <div class="stars" id="starsContainer"></div>
+    <div class="clouds"></div>
+
+    <!-- The Goddess (Hidden until lit) -->
+    <div class="goddess" id="goddess"></div>
+
+    <!-- The Mandala (Hidden until lit) -->
+    <div class="mandala-container" id="mandala">
+        <div class="mandala-ring r3"></div>
+        <div class="mandala-ring r2"></div>
+        <div class="mandala-ring r1"></div>
+        <div class="mandala-core"></div>
+    </div>
+
+    <!-- Breathing Text -->
+    <div class="breath-text" id="breathText">Breathe In</div>
+
+    <!-- The Monk -->
+    <div class="monk-container">
+        <div class="monk-head"></div>
+        <div class="monk-body"></div>
+        <div class="monk-shadow"></div>
+    </div>
+
+    <!-- Foreground Decor -->
+    <div class="skull left"></div>
+    <div class="skull right"></div>
+
+    <!-- Interactive Candles -->
+    <div class="candles-layer">
+        <div class="candle-wrapper" onclick="lightCandle(this)">
+            <div class="flame"></div>
+            <div class="candle-stick"></div>
+            <div class="candle-plate"></div>
+        </div>
+        <div class="candle-wrapper" style="transform: translateY(-20px)" onclick="lightCandle(this)">
+            <div class="flame"></div>
+            <div class="candle-stick"></div>
+            <div class="candle-plate"></div>
+        </div>
+        <div class="candle-wrapper" style="transform: translateY(-10px)" onclick="lightCandle(this)">
+            <div class="flame"></div>
+            <div class="candle-stick"></div>
+            <div class="candle-plate"></div>
+        </div>
+        <div class="candle-wrapper" style="transform: translateY(-30px)" onclick="lightCandle(this)">
+            <div class="flame"></div>
+            <div class="candle-stick"></div>
+            <div class="candle-plate"></div>
+        </div>
+        <div class="candle-wrapper" onclick="lightCandle(this)">
+            <div class="flame"></div>
+            <div class="candle-stick"></div>
+            <div class="candle-plate"></div>
+        </div>
+    </div>
+
+    <!-- UI -->
+    <div class="ui-overlay">
+        <h1>Astral Shrine</h1>
+        <p class="instruction" id="instruction">Light the candles to begin the ritual.</p>
+    </div>
+
+    <script>
+        // 1. Generate Stars
+        const starsContainer = document.getElementById('starsContainer');
+        const starCount = 100;
+
+        for (let i = 0; i < starCount; i++) {
+            const star = document.createElement('div');
+            star.classList.add('star');
+            const x = Math.random() * 100;
+            const y = Math.random() * 100;
+            const size = Math.random() * 3;
+            const duration = Math.random() * 3 + 2;
+            
+            star.style.left = `${x}%`;
+            star.style.top = `${y}%`;
+            star.style.width = `${size}px`;
+            star.style.height = `${size}px`;
+            star.style.setProperty('--duration', `${duration}s`);
+            
+            starsContainer.appendChild(star);
+        }
+
+        // 2. Game Logic
+        let candlesLit = 0;
+        const totalCandles = 5;
+        const instruction = document.getElementById('instruction');
+        const mandala = document.getElementById('mandala');
+        const goddess = document.getElementById('goddess');
+        const breathText = document.getElementById('breathText');
+        const body = document.body;
+
+        function lightCandle(el) {
+            if (el.classList.contains('lit')) return;
+
+            el.classList.add('lit');
+            candlesLit++;
+
+            // Visual feedback
+            instruction.innerText = `${candlesLit} / ${totalCandles} flames ignited...`;
+
+            // Check completion
+            if (candlesLit === totalCandles) {
+                activateShrine();
+            }
+        }
+
+        function activateShrine() {
+            instruction.style.opacity = 0;
+            
+            setTimeout(() => {
+                instruction.innerText = "The gateway is open. Breathe with the cosmos.";
+                instruction.style.opacity = 1;
+                instruction.style.color = "#ffd700";
+            }, 1000);
+
+            // Reveal Mandala
+            mandala.style.transform = "translateX(-50%) scale(1)";
+            
+            // Reveal Goddess
+            goddess.style.opacity = 0.6;
+
+            // Change Atmosphere
+            body.style.background = "radial-gradient(circle at 50% 30%, #4a2a6a, #000)";
+            
+            // Start Breathing Exercise
+            startBreathingCycle();
+        }
+
+        function startBreathingCycle() {
+            document.body.classList.add('breathing');
+            
+            let cycle = 0;
+            const phases = [
+                { text: "Breathe In", duration: 4000 },
+                { text: "Hold", duration: 2000 },
+                { text: "Breathe Out", duration: 4000 }
+            ];
+
+            function runPhase(index) {
+                const phase = phases[index];
+                breathText.innerText = phase.text;
+                breathText.style.opacity = 1;
+
+                setTimeout(() => {
+                    if (index === 2) {
+                        breathText.style.opacity = 0.5; // dim slightly between cycles
+                        setTimeout(() => runPhase(0), 100);
+                    } else {
+                        runPhase(index + 1);
+                    }
+                }, phase.duration);
+            }
+
+            setTimeout(() => {
+                runPhase(0);
+            }, 2000); // Initial delay for animations to settle
+        }
+
+    </script>
+</body>
+</html>

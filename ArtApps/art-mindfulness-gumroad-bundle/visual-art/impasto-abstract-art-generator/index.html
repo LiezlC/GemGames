@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Impasto: Abstract Art Generator</title>
+    <style>
+        :root {
+            --bg-color: #1a1a1a;
+            --panel-bg: rgba(255, 255, 255, 0.1);
+            --text-color: #ffffff;
+            --accent: #ff4757;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: var(--bg-color);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            user-select: none;
+            touch-action: none;
+        }
+
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+            cursor: crosshair;
+            perspective: 1000px;
+        }
+
+        /* The Paint Strokes */
+        .stroke {
+            position: absolute;
+            transform-origin: center;
+            box-shadow: 
+                2px 4px 6px rgba(0,0,0,0.3), 
+                inset 2px 2px 5px rgba(255,255,255,0.4),
+                inset -2px -2px 5px rgba(0,0,0,0.2);
+            border-radius: 2px;
+            transition: transform 0.1s ease-out;
+            will-change: transform;
+        }
+
+        /* Animation for new strokes */
+        @keyframes popIn {
+            0% { transform: scale(0) rotate(var(--rot)); opacity: 0; }
+            100% { transform: scale(1) rotate(var(--rot)); opacity: 1; }
+        }
+
+        .stroke.animate {
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        /* UI Controls */
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(20, 20, 20, 0.85);
+            backdrop-filter: blur(10px);
+            padding: 15px 25px;
+            border-radius: 50px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            z-index: 100;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .palette {
+            display: flex;
+            gap: 10px;
+        }
+
+        .color-btn {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.2);
+            cursor: pointer;
+            transition: transform 0.2s, border-color 0.2s;
+            position: relative;
+        }
+
+        .color-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .color-btn.active {
+            transform: scale(1.2);
+            border-color: white;
+            box-shadow: 0 0 10px rgba(255,255,255,0.5);
+        }
+
+        /* Texture overlay on buttons to look like paint */
+        .color-btn::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.4), transparent);
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            border-left: 1px solid rgba(255,255,255,0.2);
+            padding-left: 20px;
+        }
+
+        button.action-btn {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        button.action-btn:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: white;
+        }
+
+        button.action-btn.primary {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+        
+        button.action-btn.primary:hover {
+            background: #ff6b81;
+        }
+
+        /* Intro Overlay */
+        #intro {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            color: white;
+            text-align: center;
+            pointer-events: none; /* Let clicks pass through after animation */
+            opacity: 1;
+            transition: opacity 0.5s;
+        }
+
+        #intro h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #ff4757, #2ed573, #ffa502);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        #intro p {
+            font-size: 1.2rem;
+            opacity: 0.8;
+        }
+
+        .hidden {
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+
+        /* Floating particles for explosion effect */
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            border-radius: 50%;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Intro Screen -->
+    <div id="intro">
+        <h1>Digital Impasto</h1>
+        <p>Click, drag, and splatter to create 3D textured art.</p>
+        <p style="font-size: 0.9rem; margin-top: 20px; color: #aaa;">(Tap anywhere to start)</p>
+    </div>
+
+    <!-- Main Canvas Area -->
+    <div id="canvas-container"></div>
+
+    <!-- Controls -->
+    <div id="controls">
+        <div class="palette">
+            <!-- Colors extracted from the image -->
+            <div class="color-btn active" style="background: #e63946;" data-color="#e63946"></div> <!-- Red -->
+            <div class="color-btn" style="background: #f1faee;" data-color="#f1faee"></div> <!-- White -->
+            <div class="color-btn" style="background: #a8dadc;" data-color="#a8dadc"></div> <!-- Light Blue -->
+            <div class="color-btn" style="background: #457b9d;" data-color="#457b9d"></div> <!-- Med Blue -->
+            <div class="color-btn" style="background: #1d3557;" data-color="#1d3557"></div> <!-- Dark Blue -->
+            <div class="color-btn" style="background: #ffb703;" data-color="#ffb703"></div> <!-- Yellow -->
+            <div class="color-btn" style="background: #fb8500;" data-color="#fb8500"></div> <!-- Orange -->
+            <div class="color-btn" style="background: #2a9d8f;" data-color="#2a9d8f"></div> <!-- Green -->
+        </div>
+        
+        <div class="actions">
+            <button class="action-btn primary" id="explode-btn">💥 Explode</button>
+            <button class="action-btn" id="clear-btn">Clear</button>
+        </div>
+    </div>
+
+    <script>
+        const container = document.getElementById('canvas-container');
+        const colorBtns = document.querySelectorAll('.color-btn');
+        const explodeBtn = document.getElementById('explode-btn');
+        const clearBtn = document.getElementById('clear-btn');
+        const intro = document.getElementById('intro');
+
+        let currentColor = '#e63946';
+        let isDrawing = false;
+        let lastX = 0;
+        let lastY = 0;
+        let strokeCount = 0;
+
+        // Initialize
+        document.body.addEventListener('click', () => {
+            intro.classList.add('hidden');
+        }, { once: true });
+
+        // Color Selection
+        colorBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                // Remove active class
+                colorBtns.forEach(b => b.classList.remove('active'));
+                // Add active to clicked
+                e.target.classList.add('active');
+                currentColor = e.target.getAttribute('data-color');
+            });
+        });
+
+        // Drawing Logic
+        const createStroke = (x, y, force = false) => {
+            // Don't draw too frequently unless forced (explosion)
+            if (!force && Math.random() > 0.6) return;
+
+            const stroke = document.createElement('div');
+            stroke.classList.add('stroke');
+            stroke.classList.add('animate');
+
+            // Randomize dimensions to look like palette knife strokes
+            const width = 20 + Math.random() * 60;
+            const height = 10 + Math.random() * 40;
+            
+            // Random rotation
+            const rotation = Math.random() * 360;
+            
+            // Style
+            stroke.style.width = `${width}px`;
+            stroke.style.height = `${height}px`;
+            stroke.style.backgroundColor = currentColor;
+            stroke.style.left = `${x - width/2}px`;
+            stroke.style.top = `${y - height/2}px`;
+            stroke.style.setProperty('--rot', `${rotation}deg`);
+            stroke.style.zIndex = strokeCount++;
+
+            // Add slight texture variance
+            if (Math.random() > 0.5) {
+                stroke.style.backgroundImage = 'linear-gradient(45deg, rgba(255,255,255,0.1), transparent)';
+            }
+
+            container.appendChild(stroke);
+
+            // Cleanup old strokes if too many (performance)
+            if (container.children.length > 500) {
+                container.removeChild(container.firstChild);
+            }
+        };
+
+        // Mouse/Touch Events
+        const startDraw = (e) => {
+            isDrawing = true;
+            const { clientX, clientY } = e.touches ? e.touches[0] : e;
+            lastX = clientX;
+            lastY = clientY;
+            createStroke(clientX, clientY, true);
+        };
+
+        const moveDraw = (e) => {
+            if (!isDrawing) return;
+            const { clientX, clientY } = e.touches ? e.touches[0] : e;
+            
+            // Calculate distance to avoid stacking too many on one spot
+            const dist = Math.hypot(clientX - lastX, clientY - lastY);
+            
+            if (dist > 10) {
+                createStroke(clientX, clientY);
+                lastX = clientX;
+                lastY = clientY;
+            }
+        };
+
+        const endDraw = () => {
+            isDrawing = false;
+        };
+
+        container.addEventListener('mousedown', startDraw);
+        container.addEventListener('mousemove', moveDraw);
+        container.addEventListener('mouseup', endDraw);
+        container.addEventListener('mouseleave', endDraw);
+
+        container.addEventListener('touchstart', startDraw);
+        container.addEventListener('touchmove', moveDraw);
+        container.addEventListener('touchend', endDraw);
+
+        // Explosion Logic (Mimicking the input image)
+        const triggerExplosion = () => {
+            const centerX = window.innerWidth / 2;
+            const centerY = window.innerHeight / 2;
+            const colors = ['#e63946', '#f1faee', '#a8dadc', '#457b9d', '#1d3557', '#ffb703', '#fb8500', '#2a9d8f'];
+
+            // Create 60 strokes radiating outward
+            for (let i = 0; i < 60; i++) {
+                setTimeout(() => {
+                    const angle = Math.random() * Math.PI * 2;
+                    const distance = 50 + Math.random() * 300; // Distance from center
+                    
+                    const x = centerX + Math.cos(angle) * distance;
+                    const y = centerY + Math.sin(angle) * distance;
+
+                    // Temporarily switch color for chaos
+                    const originalColor = currentColor;
+                    currentColor = colors[Math.floor(Math.random() * colors.length)];
+                    
+                    // Create stroke oriented towards center
+                    const stroke = document.createElement('div');
+                    stroke.classList.add('stroke');
+                    stroke.classList.add('animate');
+                    
+                    const width = 30 + Math.random() * 80;
+                    const height = 15 + Math.random() * 30;
+                    
+                    // Angle the stroke to point away from center (like an explosion)
+                    const rotation = (angle * 180 / Math.PI); 
+
+                    stroke.style.width = `${width}px`;
+                    stroke.style.height = `${height}px`;
+                    stroke.style.backgroundColor = currentColor;
+                    stroke.style.left = `${x - width/2}px`;
+                    stroke.style.top = `${y - height/2}px`;
+                    stroke.style.setProperty('--rot', `${rotation}deg`);
+                    stroke.style.zIndex = strokeCount++;
+                    
+                    container.appendChild(stroke);
+                    
+                    // Reset color
+                    currentColor = originalColor;
+                }, i * 10);
+            }
+        };
+
+        explodeBtn.addEventListener('click', triggerExplosion);
+
+        clearBtn.addEventListener('click', () => {
+            container.innerHTML = '';
+            strokeCount = 0;
+        });
+
+        // Initial "Art" on Load to mimic the image
+        window.addEventListener('load', () => {
+            setTimeout(triggerExplosion, 500);
+        });
+
+    </script>
+</body>
+</html>

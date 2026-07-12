@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neural Harmony: Chaos to Clarity</title>
+    <style>
+        :root {
+            --left-bg: linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%);
+            --right-bg: #0a0a0a;
+            --brain-width: 600px;
+            --brain-height: 500px;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: #222;
+        }
+
+        /* Split Background */
+        #world {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            z-index: 0;
+        }
+
+        .hemisphere-bg {
+            width: 50%;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #left-world {
+            background: var(--left-bg);
+        }
+        
+        /* Grass on left */
+        #left-world::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 30%;
+            background: linear-gradient(to top, #2e8b57, #7cfc00);
+            border-radius: 50% 50% 0 0 / 20% 20% 0 0;
+            transform: scaleX(1.5);
+            opacity: 0.8;
+        }
+
+        /* Clouds */
+        .cloud {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 50%;
+            filter: blur(8px);
+            animation: float 20s infinite linear;
+        }
+
+        #right-world {
+            background: var(--right-bg);
+        }
+
+        /* Roots overlay on right */
+        .root-bg {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            opacity: 0.3;
+            background-image: radial-gradient(circle at 50% 50%, transparent 0%, #000 80%),
+                              repeating-linear-gradient(45deg, #222 0px, #222 2px, transparent 2px, transparent 10px);
+        }
+
+        /* UI Overlay */
+        #ui-layer {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            text-align: center;
+            z-index: 100;
+            color: white;
+            pointer-events: none;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        h1 {
+            margin: 0;
+            font-weight: 300;
+            letter-spacing: 2px;
+            font-size: 1.5rem;
+        }
+
+        #score-board {
+            margin-top: 10px;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        #instructions {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+
+        /* The Brain Container */
+        #brain-container {
+            position: relative;
+            width: var(--brain-width);
+            height: var(--brain-height);
+            z-index: 10;
+            display: flex;
+            filter: drop-shadow(0 0 20px rgba(255,255,255,0.2));
+        }
+
+        /* SVG Brain Overlay */
+        #brain-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 20;
+        }
+
+        /* Canvas for Particles */
+        #game-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 15;
+            cursor: crosshair;
+        }
+
+        /* Animations */
+        @keyframes float {
+            0% { transform: translateX(-100px); }
+            100% { transform: translateX(120vw); }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 0.5; }
+        }
+
+        .glow-center {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 50px;
+            height: 300px;
+            background: linear-gradient(to right, rgba(255,255,255,0), rgba(255,255,255,0.8), rgba(255,255,255,0));
+            filter: blur(15px);
+            z-index: 5;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Background World -->
+    <div id="world">
+        <div id="left-world" class="hemisphere-bg">
+            <div class="cloud" style="width: 100px; height: 40px; top: 10%; left: -10%; animation-duration: 25s;"></div>
+            <div class="cloud" style="width: 140px; height: 60px; top: 20%; left: -20%; animation-duration: 35s;"></div>
+            <div class="cloud" style="width: 80px; height: 30px; top: 5%; left: -5%; animation-duration: 45s;"></div>
+        </div>
+        <div id="right-world" class="hemisphere-bg">
+            <div class="root-bg"></div>
+        </div>
+        <div class="glow-center"></div>
+    </div>
+
+    <!-- UI -->
+    <div id="ui-layer">
+        <h1>NEURAL HARMONY</h1>
+        <div id="instructions">Drag the chaotic red nodes (Right) to the serene blue maze (Left)</div>
+        <div id="score-board">Clarity: <span id="score">0</span>%</div>
+    </div>
+
+    <!-- Main Interactive Area -->
+    <div id="brain-container">
+        <canvas id="game-canvas"></canvas>
+        
+        <!-- SVG Structure for Visual Reference -->
+        <svg id="brain-svg" viewBox="0 0 600 500" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="leftGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" style="stop-color:rgba(255,255,255,0.8);stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:rgba(255,255,255,0.2);stop-opacity:1" />
+                </linearGradient>
+                <linearGradient id="rightGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" style="stop-color:rgba(100,100,100,0.5);stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:rgba(50,50,50,0.8);stop-opacity:1" />
+                </linearGradient>
+            </defs>
+
+            <!-- Brain Outline -->
+            <path d="M 300 480 C 250 480 100 450 50 300 C 10 180 100 20 300 20 C 500 20 590 180 550 300 C 500 450 350 480 300 480" 
+                  fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="4" />
+            
+            <!-- Divider -->
+            <line x1="300" y1="20" x2="300" y2="480" stroke="white" stroke-width="2" stroke-opacity="0.5" stroke-dasharray="5,5" />
+
+            <!-- Left Maze Visuals (Stylistic) -->
+            <path d="M 100 300 Q 150 300 150 250 T 200 200" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="8" stroke-linecap="round" />
+            <path d="M 80 200 Q 120 150 180 150 T 250 100" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="8" stroke-linecap="round" />
+            <path d="M 120 400 Q 180 420 220 350 T 280 300" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="8" stroke-linecap="round" />
+
+            <!-- Right Root Visuals (Stylistic) -->
+            <path d="M 500 300 C 450 320 480 380 420 400" fill="none" stroke="rgba(100,100,100,0.6)" stroke-width="3" />
+            <path d="M 520 200 C 480 220 450 150 400 180" fill="none" stroke="rgba(100,100,100,0.6)" stroke-width="3" />
+            <path d="M 450 250 L 420 280 L 460 310 L 400 350" fill="none" stroke="rgba(100,100,100,0.6)" stroke-width="2" />
+        </svg>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+
+        // Resize canvas to match container
+        canvas.width = 600;
+        canvas.height = 500;
+
+        const CENTER_X = canvas.width / 2;
+        const CENTER_Y = canvas.height / 2;
+
+        let clarityScore = 0;
+        let particles = [];
+        let draggedParticle = null;
+        let mouse = { x: 0, y: 0 };
+
+        // Particle Class
+        class Particle {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                // Spawn in Right Hemisphere (Chaos)
+                this.x = CENTER_X + 50 + Math.random() * (CENTER_X - 100);
+                this.y = 100 + Math.random() * (canvas.height - 200);
+                this.radius = 6 + Math.random() * 4;
+                this.state = 'chaos'; // chaos, dragging, clarity
+                
+                // Chaotic movement
+                this.vx = (Math.random() - 0.5) * 4;
+                this.vy = (Math.random() - 0.5) * 4;
+                
+                this.color = `hsl(${0 + Math.random() * 40}, 70%, 50%)`; // Red/Orange
+                this.history = [];
+            }
+
+            update() {
+                // Trail history
+                this.history.push({x: this.x, y: this.y});
+                if (this.history.length > 10) this.history.shift();
+
+                if (this.state === 'dragging') {
+                    // Follow mouse with some lag (elasticity)
+                    this.x += (mouse.x - this.x) * 0.2;
+                    this.y += (mouse.y - this.y) * 0.2;
+
+                    // Check if crossed to left side
+                    if (this.x < CENTER_X) {
+                        this.transformToClarity();
+                    }
+                } 
+                else if (this.state === 'chaos') {
+                    // Bounce around right side
+                    this.x += this.vx;
+                    this.y += this.vy;
+
+                    // Boundaries for right side
+                    if (this.x < CENTER_X + 20 || this.x > canvas.width - 20) this.vx *= -1;
+                    if (this.y < 50 || this.y > canvas.height - 50) this.vy *= -1;
+
+                    // Jitter
+                    this.x += (Math.random() - 0.5) * 2;
+                    this.y += (Math.random() - 0.5) * 2;
+                } 
+                else if (this.state === 'clarity') {
+                    // Flow towards a goal on the left
+                    // Maze-like movement: move towards center-left
+                    const targetX = 100;
+                    const targetY = CENTER_Y;
+
+                    const dx = targetX - this.x;
+                    const dy = targetY - this.y;
+                    
+                    // Smooth flow
+                    this.vx = dx * 0.02;
+                    this.vy = dy * 0.02 + Math.sin(this.x * 0.05) * 2; // Wavy path
+
+                    this.x += this.vx;
+                    this.y += this.vy;
+
+                    // Shrink and disappear
+                    if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {
+                        this.radius -= 0.1;
+                        if (this.radius <= 0) {
+                            this.reset(); // Respawn as chaos
+                            updateScore(1);
+                        }
+                    }
+                }
+            }
+
+            transformToClarity() {
+                this.state = 'clarity';
+                draggedParticle = null;
+                this.color = `hsl(${180 + Math.random() * 40}, 80%, 60%)`; // Cyan/Blue
+                
+                // Visual Pop effect
+                createExplosion(this.x, this.y, '#fff');
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                
+                if (this.state === 'chaos') {
+                    // Jagged look
+                    ctx.fillStyle = this.color;
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = 'red';
+                } else if (this.state === 'dragging') {
+                    ctx.fillStyle = '#fff';
+                    ctx.shadowBlur = 20;
+                    ctx.shadowColor = '#fff';
+                } else {
+                    // Smooth look
+                    ctx.fillStyle = this.color;
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = 'cyan';
+                }
+                
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                ctx.closePath();
+
+                // Draw connections/roots for chaos
+                if (this.state === 'chaos') {
+                    ctx.beginPath();
+                    ctx.moveTo(this.x, this.y);
+                    if(this.history.length > 0) {
+                        ctx.lineTo(this.history[0].x, this.history[0].y);
+                    }
+                    ctx.strokeStyle = 'rgba(255, 50, 50, 0.3)';
+                    ctx.stroke();
+                }
+            }
+        }
+
+        // Explosion Effect
+        let explosions = [];
+        function createExplosion(x, y, color) {
+            for(let i=0; i<10; i++) {
+                explosions.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 5,
+                    vy: (Math.random() - 0.5) * 5,
+                    life: 1.0,
+                    color: color
+                });
+            }
+        }
+
+        function updateExplosions() {
+            for(let i = explosions.length - 1; i >= 0; i--) {
+                let e = explosions[i];
+                e.x += e.vx;
+                e.y += e.vy;
+                e.life -= 0.05;
+                
+                ctx.globalAlpha = e.life;
+                ctx.fillStyle = e.color;
+                ctx.beginPath();
+                ctx.arc(e.x, e.y, 3, 0, Math.PI*2);
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+
+                if(e.life <= 0) explosions.splice(i, 1);
+            }
+        }
+
+        function updateScore(points) {
+            clarityScore += points;
+            if(clarityScore > 100) clarityScore = 100;
+            scoreEl.innerText = clarityScore;
+            
+            // Visual feedback on world
+            const leftWorld = document.getElementById('left-world');
+            // Increase brightness of left side based on score
+            // This is subtle
+        }
+
+        // Input Handling
+        canvas.addEventListener('mousedown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouse.x = e.clientX - rect.left;
+            mouse.y = e.clientY - rect.top;
+
+            // Find clicked particle
+            for(let p of particles) {
+                if (p.state === 'chaos') {
+                    const dx = mouse.x - p.x;
+                    const dy = mouse.y - p.y;
+                    if (Math.sqrt(dx*dx + dy*dy) < p.radius + 10) {
+                        draggedParticle = p;
+                        p.state = 'dragging';
+                        break;
+                    }
+                }
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouse.x = e.clientX - rect.left;
+            mouse.y = e.clientY - rect.top;
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            if (draggedParticle) {
+                // If dropped on right side, return to chaos
+                if (draggedParticle.x > CENTER_X) {
+                    draggedParticle.state = 'chaos';
+                }
+                draggedParticle = null;
+            }
+        });
+
+        // Initialize
+        function init() {
+            for(let i=0; i<15; i++) {
+                particles.push(new Particle());
+            }
+            animate();
+        }
+
+        // Main Loop
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Brain Divider
+            ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(CENTER_X, 20);
+            ctx.lineTo(CENTER_X, canvas.height - 20);
+            ctx.stroke();
+
+            // Update and Draw Particles
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+
+            updateExplosions();
+
+            // Draw Drag Line
+            if (draggedParticle) {
+                ctx.beginPath();
+                ctx.moveTo(draggedParticle.x, draggedParticle.y);
+                ctx.lineTo(mouse.x, mouse.y);
+                ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+                ctx.setLineDash([5, 5]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        init();
+
+    </script>
+</body>
+</html>

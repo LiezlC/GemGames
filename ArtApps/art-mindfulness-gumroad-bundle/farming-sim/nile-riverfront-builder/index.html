@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nile Riverfront Builder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;600&display=swap');
+
+        :root {
+            --sky-top: #a8c0d0;
+            --sky-bottom: #e0e8ea;
+            --water-top: #4a5d6b;
+            --water-bottom: #2c3e50;
+            --grain-opacity: 0.3;
+            --sepia-amount: 0.2;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a1a1a;
+            color: #e2e8f0;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #background-image-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('background.png');
+            background-size: cover;
+            background-position: center;
+            opacity: 0.35;
+            z-index: -1;
+        }
+
+        /* The Vintage Texture Overlay mimicking the input image's scanlines/linen */
+        .vintage-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 50;
+            background: 
+                repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 2px,
+                    rgba(0, 0, 0, 0.1) 3px
+                ),
+                repeating-linear-gradient(
+                    45deg,
+                    rgba(255, 255, 255, 0.05) 0px,
+                    rgba(255, 255, 255, 0.05) 1px,
+                    transparent 1px,
+                    transparent 4px
+                );
+            mix-blend-mode: overlay;
+            opacity: var(--grain-opacity);
+            transition: opacity 0.3s;
+        }
+
+        /* Global Sepia Filter */
+        .scene-container {
+            filter: sepia(var(--sepia-amount)) contrast(1.1);
+            transition: filter 0.3s;
+        }
+
+        /* The Main Scene */
+        #canvas {
+            flex-grow: 1;
+            position: relative;
+            background: linear-gradient(to bottom, var(--sky-top) 0%, var(--sky-bottom) 60%, var(--water-top) 60%, var(--water-bottom) 100%);
+            overflow: hidden;
+            cursor: crosshair;
+            box-shadow: inset 0 0 100px rgba(0,0,0,0.5);
+        }
+
+        /* Horizon Line Helper */
+        .horizon {
+            position: absolute;
+            top: 60%;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: rgba(255,255,255,0.2);
+            z-index: 1;
+        }
+
+        /* Draggable Items */
+        .draggable {
+            position: absolute;
+            cursor: grab;
+            user-select: none;
+            transition: transform 0.1s;
+            filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.3));
+        }
+        .draggable:active {
+            cursor: grabbing;
+            transform: scale(1.05);
+        }
+
+        /* CSS Art: Mosque */
+        .mosque-shape {
+            position: relative;
+            width: 120px;
+            height: 100px;
+        }
+        .mosque-base {
+            position: absolute;
+            bottom: 0;
+            left: 10px;
+            width: 80px;
+            height: 50px;
+            background: #e6dec6;
+            border: 1px solid #b0a995;
+            box-shadow: inset 5px 0 10px rgba(0,0,0,0.1);
+        }
+        .mosque-dome {
+            position: absolute;
+            bottom: 50px;
+            left: 20px;
+            width: 60px;
+            height: 40px;
+            background: radial-gradient(circle at 30% 30%, #fdfbf7, #d4cbb3);
+            border-radius: 50% 50% 5px 5px;
+            border: 1px solid #b0a995;
+        }
+        .minaret {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 15px;
+            height: 140px;
+            background: #e6dec6;
+            border: 1px solid #b0a995;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .minaret-balcony {
+            width: 22px;
+            height: 5px;
+            background: #8b7d6b;
+            margin-top: 20px;
+            border-radius: 2px;
+        }
+        .minaret-top {
+            width: 15px;
+            height: 20px;
+            background: #d4cbb3;
+            border-radius: 50% 50% 0 0;
+            margin-top: -10px;
+        }
+
+        /* CSS Art: Houseboat */
+        .houseboat {
+            width: 100px;
+            height: 40px;
+            background: linear-gradient(to bottom, #fff 50%, #a63e3e 50%);
+            border-radius: 2px;
+            position: relative;
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-start;
+            padding-top: 5px;
+            border: 1px solid #555;
+        }
+        .houseboat::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: rgba(0,0,0,0.3);
+            filter: blur(2px);
+        }
+        .window {
+            width: 10px;
+            height: 10px;
+            background: #333;
+            border: 1px solid #fff;
+        }
+
+        /* Animations */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-5px); }
+        }
+        .floating {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        /* UI Panel */
+        .glass-panel {
+            background: rgba(20, 20, 20, 0.7);
+            backdrop-filter: blur(12px);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        .tool-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #ccc;
+        }
+        .tool-btn:hover {
+            background: rgba(255,255,255,0.15);
+            transform: translateY(-2px);
+            color: white;
+        }
+        .tool-btn span {
+            font-size: 1.5rem;
+            margin-bottom: 0.25rem;
+        }
+        .tool-btn p {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            border-left: 1px solid rgba(255,255,255,0.1);
+            padding-left: 1rem;
+        }
+        
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+            width: 80px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 12px;
+            width: 12px;
+            border-radius: 50%;
+            background: #fff;
+            cursor: pointer;
+            margin-top: -4px;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: rgba(255,255,255,0.2);
+            border-radius: 2px;
+        }
+
+        /* Reflection Effect for items in water */
+        .reflection {
+            transform: scaleY(-1) translateY(-5px);
+            opacity: 0.3;
+            filter: blur(2px);
+            pointer-events: none;
+            position: absolute;
+            bottom: -100%; 
+        }
+
+    </style>
+</head>
+<body>
+    <div id="background-image-layer"></div>
+
+    <!-- Top Info Bar -->
+    <div class="absolute top-4 left-4 z-50 text-white/80 pointer-events-none">
+        <h1 class="font-['Cinzel'] text-3xl font-bold drop-shadow-lg tracking-wide">Riverfront Architect</h1>
+        <p class="text-xs font-mono opacity-70 mt-1">Recreating the Vintage Nile • Drag & Drop to Build</p>
+    </div>
+
+    <!-- Main Scene Canvas -->
+    <div id="canvas" class="scene-container">
+        <div class="vintage-overlay"></div>
+        <div class="horizon"></div>
+        
+        <!-- Initial Scene Elements based on image -->
+        <!-- Mosque -->
+        <div class="draggable" style="top: 35%; left: 15%; z-index: 10;">
+            <div class="mosque-shape">
+                <div class="mosque-base"></div>
+                <div class="mosque-dome"></div>
+                <div class="minaret">
+                    <div class="minaret-top"></div>
+                    <div class="minaret-balcony" style="margin-top: 30px;"></div>
+                    <div class="minaret-balcony" style="margin-top: 30px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Houseboat 1 -->
+        <div class="draggable floating" style="top: 62%; left: 40%; z-index: 20;">
+            <div class="houseboat">
+                <div class="window"></div><div class="window"></div><div class="window"></div>
+            </div>
+        </div>
+
+        <!-- Houseboat 2 -->
+        <div class="draggable floating" style="top: 65%; left: 60%; z-index: 21;">
+            <div class="houseboat" style="background: linear-gradient(to bottom, #fff 50%, #3e6ba6 50%); width: 120px;">
+                <div class="window"></div><div class="window"></div><div class="window"></div><div class="window"></div>
+            </div>
+        </div>
+
+        <!-- Trees -->
+        <div class="draggable" style="top: 50%; left: 80%; font-size: 4rem; z-index: 15;">🌳</div>
+        <div class="draggable" style="top: 52%; left: 85%; font-size: 3rem; z-index: 16;">🌴</div>
+        
+        <!-- Background Buildings -->
+        <div class="draggable" style="top: 45%; left: 50%; z-index: 5;">
+            <div style="width: 80px; height: 60px; background: #dcdcdc; border: 1px solid #999; display: grid; grid-template-columns: repeat(4, 1fr); padding: 2px; gap: 2px;">
+                <div class="bg-gray-400 w-full h-full"></div><div class="bg-gray-400 w-full h-full"></div><div class="bg-gray-400 w-full h-full"></div><div class="bg-gray-400 w-full h-full"></div>
+                <div class="bg-gray-400 w-full h-full"></div><div class="bg-gray-400 w-full h-full"></div><div class="bg-gray-400 w-full h-full"></div><div class="bg-gray-400 w-full h-full"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Controls Toolbar -->
+    <div class="glass-panel">
+        <div class="flex gap-4">
+            <button class="tool-btn" onclick="spawn('mosque')">
+                <span>🕌</span>
+                <p>Mosque</p>
+            </button>
+            <button class="tool-btn" onclick="spawn('boat')">
+                <span>🛥️</span>
+                <p>Boat</p>
+            </button>
+            <button class="tool-btn" onclick="spawn('building')">
+                <span>🏢</span>
+                <p>Building</p>
+            </button>
+            <button class="tool-btn" onclick="spawn('tree')">
+                <span>🌴</span>
+                <p>Tree</p>
+            </button>
+            <button class="tool-btn" onclick="spawn('bird')">
+                <span>🦅</span>
+                <p>Bird</p>
+            </button>
+        </div>
+
+        <div class="controls flex-col items-end">
+            <div class="flex items-center gap-2 text-xs text-gray-400">
+                <label>Vintage Grain</label>
+                <input type="range" min="0" max="1" step="0.1" value="0.3" oninput="updateGrain(this.value)">
+            </div>
+            <div class="flex items-center gap-2 text-xs text-gray-400">
+                <label>Sepia Tone</label>
+                <input type="range" min="0" max="1" step="0.1" value="0.2" oninput="updateSepia(this.value)">
+            </div>
+            <div class="flex items-center gap-2 text-xs text-gray-400">
+                <label>Time of Day</label>
+                <input type="range" min="0" max="100" value="50" oninput="updateTime(this.value)">
+            </div>
+        </div>
+        
+        <div class="border-l border-white/10 pl-4">
+            <button class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded text-sm font-bold shadow-lg transition" onclick="clearDebris()">
+                Clear All
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        let activeElement = null;
+        let offsetX = 0;
+        let offsetY = 0;
+
+        // Initialize Drag and Drop
+        document.addEventListener('mousedown', (e) => {
+            const target = e.target.closest('.draggable');
+            if (target) {
+                activeElement = target;
+                const rect = activeElement.getBoundingClientRect();
+                // Calculate offset relative to the element's top-left
+                offsetX = e.clientX - rect.left;
+                offsetY = e.clientY - rect.top;
+                
+                // Bring to front
+                activeElement.style.zIndex = 100;
+                activeElement.style.cursor = 'grabbing';
+            }
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (activeElement) {
+                e.preventDefault();
+                const canvasRect = canvas.getBoundingClientRect();
+                
+                // Calculate new position relative to canvas
+                let x = e.clientX - canvasRect.left - offsetX;
+                let y = e.clientY - canvasRect.top - offsetY;
+
+                // Apply position
+                activeElement.style.left = `${x}px`;
+                activeElement.style.top = `${y}px`;
+
+                // Check if below horizon (approx 60% of height) to apply floating effect
+                const horizonY = canvasRect.height * 0.6;
+                if (y > horizonY - 50) {
+                    activeElement.classList.add('floating');
+                } else {
+                    activeElement.classList.remove('floating');
+                }
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (activeElement) {
+                activeElement.style.zIndex = activeElement.classList.contains('floating') ? 20 : 10;
+                activeElement.style.cursor = 'grab';
+                activeElement = null;
+            }
+        });
+
+        // Spawning Logic
+        function spawn(type) {
+            const el = document.createElement('div');
+            el.classList.add('draggable');
+            el.style.top = '20%';
+            el.style.left = '50%';
+            el.style.zIndex = '50';
+
+            if (type === 'mosque') {
+                el.innerHTML = `
+                    <div class="mosque-shape">
+                        <div class="mosque-base"></div>
+                        <div class="mosque-dome"></div>
+                        <div class="minaret">
+                            <div class="minaret-top"></div>
+                            <div class="minaret-balcony" style="margin-top: 30px;"></div>
+                            <div class="minaret-balcony" style="margin-top: 30px;"></div>
+                        </div>
+                    </div>`;
+            } else if (type === 'boat') {
+                el.innerHTML = `
+                    <div class="houseboat" style="background: linear-gradient(to bottom, #fff 50%, #${Math.floor(Math.random()*16777215).toString(16)} 50%);">
+                        <div class="window"></div><div class="window"></div><div class="window"></div>
+                    </div>`;
+            } else if (type === 'building') {
+                el.innerHTML = `
+                    <div style="width: 60px; height: 80px; background: #e0e0e0; border: 1px solid #999; display: grid; grid-template-columns: repeat(2, 1fr); padding: 4px; gap: 4px;">
+                        <div class="bg-gray-500 w-full h-full"></div><div class="bg-gray-500 w-full h-full"></div>
+                        <div class="bg-gray-500 w-full h-full"></div><div class="bg-gray-500 w-full h-full"></div>
+                        <div class="bg-gray-500 w-full h-full"></div><div class="bg-gray-500 w-full h-full"></div>
+                    </div>`;
+            } else if (type === 'tree') {
+                el.style.fontSize = '3rem';
+                el.innerText = Math.random() > 0.5 ? '🌴' : '🌳';
+            } else if (type === 'bird') {
+                el.style.fontSize = '1.5rem';
+                el.innerText = '🦅';
+                // Birds auto fly
+                animateBird(el);
+            }
+
+            canvas.appendChild(el);
+        }
+
+        function animateBird(el) {
+            let pos = 50;
+            let direction = 1;
+            setInterval(() => {
+                if(!activeElement || activeElement !== el) {
+                    pos += 0.2 * direction;
+                    if(pos > 90 || pos < 10) direction *= -1;
+                    el.style.left = pos + '%';
+                }
+            }, 20);
+        }
+
+        function clearDebris() {
+            const items = document.querySelectorAll('.draggable');
+            items.forEach(item => item.remove());
+        }
+
+        // Visual Controls
+        function updateGrain(val) {
+            document.documentElement.style.setProperty('--grain-opacity', val);
+        }
+
+        function updateSepia(val) {
+            document.documentElement.style.setProperty('--sepia-amount', val);
+        }
+
+        function updateTime(val) {
+            // 0 = Night, 50 = Day, 100 = Sunset
+            let skyTop, skyBot, waterTop, waterBot;
+
+            if (val < 30) { // Night
+                skyTop = '#0f172a'; skyBot = '#1e293b';
+                waterTop = '#020617'; waterBot = '#0f172a';
+            } else if (val < 70) { // Day
+                skyTop = '#a8c0d0'; skyBot = '#e0e8ea';
+                waterTop = '#4a5d6b'; waterBot = '#2c3e50';
+            } else { // Sunset
+                skyTop = '#4c1d95'; skyBot = '#f59e0b';
+                waterTop = '#7c2d12'; waterBot = '#451a03';
+            }
+
+            document.documentElement.style.setProperty('--sky-top', skyTop);
+            document.documentElement.style.setProperty('--sky-bottom', skyBot);
+            document.documentElement.style.setProperty('--water-top', waterTop);
+            document.documentElement.style.setProperty('--water-bottom', waterBot);
+        }
+
+        // Initial setup for existing elements
+        document.querySelectorAll('.draggable').forEach(el => {
+            const rect = el.getBoundingClientRect();
+            const canvasRect = canvas.getBoundingClientRect();
+            // Convert % to px for drag logic consistency
+            el.style.left = (rect.left - canvasRect.left) + 'px';
+            el.style.top = (rect.top - canvasRect.top) + 'px';
+        });
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Night, Reimagined | Digital Field Guide</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;600;800&display=swap');
+
+        :root {
+            --neon-green: #00ff9d;
+            --neon-blue: #00f3ff;
+            --neon-red: #ff2a2a;
+            --deep-bg: #050505;
+            --card-bg: #111111;
+        }
+
+        body {
+            background-color: var(--deep-bg);
+            color: #e0e0e0;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* Animations */
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 10px var(--neon-green); }
+            50% { box-shadow: 0 0 25px var(--neon-green), 0 0 10px var(--neon-blue); }
+            100% { box-shadow: 0 0 10px var(--neon-green); }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @keyframes inflate {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.5); }
+            100% { transform: scale(1); }
+        }
+
+        .creature-card {
+            background: var(--card-bg);
+            border: 1px solid #333;
+            transition: all 0.3s ease;
+        }
+        .creature-card:hover {
+            border-color: #555;
+            transform: translateY(-2px);
+        }
+
+        /* The Glim Eyes */
+        .glim-container {
+            position: relative;
+            width: 200px;
+            height: 120px;
+            margin: 0 auto;
+            background: #000;
+            border-radius: 60px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+        }
+        .eye {
+            width: 40px;
+            height: 40px;
+            background: #ffdb00;
+            border-radius: 50%;
+            position: relative;
+            transition: box-shadow 0.2s;
+        }
+        .pupil {
+            width: 10px;
+            height: 25px;
+            background: #000;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            transition: height 0.2s;
+        }
+
+        /* The Sundor Vision */
+        .sundor-scene {
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(to bottom, #1a1a1a, #000);
+            position: relative;
+            overflow: hidden;
+            border-radius: 12px;
+            transition: filter 0.5s ease;
+        }
+        .tiger-shape {
+            font-size: 80px;
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            filter: drop-shadow(0 0 10px rgba(255, 0, 0, 0.5));
+            transition: filter 0.5s;
+        }
+        /* Dichromatic Simulation (Protanopia-ish) */
+        .dichromatic-view {
+            filter: grayscale(0.8) sepia(0.4) hue-rotate(50deg);
+        }
+
+        /* The Lumander Glow */
+        .lumander-svg {
+            width: 150px;
+            height: 150px;
+            fill: none;
+            stroke: var(--neon-blue);
+            stroke-width: 4;
+            filter: drop-shadow(0 0 5px var(--neon-blue));
+            transition: filter 0.3s;
+        }
+        .glow-active {
+            filter: drop-shadow(0 0 20px var(--neon-blue));
+        }
+        .warning-active {
+            stroke: var(--neon-red);
+            filter: drop-shadow(0 0 20px var(--neon-red));
+        }
+
+        /* The Furtoad Camouflage */
+        .forest-floor {
+            background-color: #1a2f1a;
+            background-image: radial-gradient(#2a4f2a 15%, transparent 16%), radial-gradient(#2a4f2a 15%, transparent 16%);
+            background-size: 20px 20px;
+            background-position: 0 0, 10px 10px;
+            height: 250px;
+            position: relative;
+            cursor: crosshair;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .hidden-toad {
+            position: absolute;
+            font-size: 40px;
+            opacity: 0.3; /* Hard to see */
+            filter: blur(1px) hue-rotate(90deg);
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+            user-select: none;
+        }
+        .hidden-toad.revealed {
+            opacity: 1;
+            filter: none;
+            transform: scale(2.5);
+            z-index: 10;
+        }
+
+        /* Navigation */
+        .nav-btn {
+            background: transparent;
+            border: 1px solid #444;
+            color: #888;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .nav-btn.active {
+            border-color: var(--neon-green);
+            color: var(--neon-green);
+            background: rgba(0, 255, 157, 0.1);
+        }
+
+        /* Utility */
+        .slider-container {
+            width: 100%;
+            margin-top: 10px;
+        }
+        input[type=range] {
+            width: 100%;
+            accent-color: var(--neon-green);
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <!-- Header -->
+    <header class="p-6 border-b border-gray-800 bg-opacity-90 backdrop-blur-md sticky top-0 z-50 bg-black">
+        <div class="max-w-4xl mx-auto flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold text-white tracking-tighter">THE NIGHT, <span class="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500">REIMAGINED</span></h1>
+                <p class="text-xs text-gray-500">A Field Guide to AI Biology</p>
+            </div>
+            <div class="hidden md:block text-xs text-gray-600 border border-gray-800 px-3 py-1 rounded-full">
+                Interactive Edition
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow p-4 md:p-8 max-w-4xl mx-auto w-full">
+        
+        <!-- Navigation Tabs -->
+        <div class="flex overflow-x-auto gap-2 mb-8 pb-2 scrollbar-hide">
+            <button onclick="switchTab('intro')" id="btn-intro" class="nav-btn active">Start</button>
+            <button onclick="switchTab('glim')" id="btn-glim" class="nav-btn">The Glim</button>
+            <button onclick="switchTab('sundor')" id="btn-sundor" class="nav-btn">The Sundor</button>
+            <button onclick="switchTab('lumander')" id="btn-lumander" class="nav-btn">The Lumander</button>
+            <button onclick="switchTab('furtoad')" id="btn-furtoad" class="nav-btn">The Furtoad</button>
+            <button onclick="switchTab('ethics')" id="btn-ethics" class="nav-btn text-red-400 border-red-900">Truth & AI</button>
+        </div>
+
+        <!-- SECTIONS -->
+
+        <!-- INTRO -->
+        <section id="intro" class="tab-content animate-fade-in">
+            <div class="bg-gradient-to-br from-gray-900 to-black p-8 rounded-2xl border border-gray-800 text-center">
+                <div class="text-6xl mb-4 animate-[float_3s_ease-in-out_infinite]">🧬</div>
+                <h2 class="text-3xl font-bold mb-4 text-white">What if a machine could dream up life?</h2>
+                <p class="text-gray-400 mb-6 max-w-lg mx-auto">
+                    We asked AI to design creatures perfectly built for a world without sun. 
+                    From urban scavengers to silent forest stalkers, the results are astonishingly plausible.
+                    <br><br>
+                    But beware: <strong>Not everything you see is real.</strong>
+                </p>
+                <button onclick="switchTab('glim')" class="bg-white text-black font-bold py-3 px-8 rounded-full hover:bg-gray-200 transition">
+                    Begin Expedition
+                </button>
+            </div>
+        </section>
+
+        <!-- THE GLIM -->
+        <section id="glim" class="tab-content hidden">
+            <div class="grid md:grid-cols-2 gap-8 items-center">
+                <div class="creature-card p-6 rounded-2xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-2xl font-bold text-white">The Glim</h2>
+                        <span class="text-xs bg-gray-800 px-2 py-1 rounded text-gray-400">Urban Scavenger</span>
+                    </div>
+                    
+                    <!-- Interactive Visual -->
+                    <div class="bg-gray-900 rounded-xl p-8 flex flex-col items-center justify-center relative overflow-hidden" id="glim-bg">
+                        <div class="glim-container">
+                            <div class="eye" id="eye-left"><div class="pupil" id="pupil-left"></div></div>
+                            <div class="eye" id="eye-right"><div class="pupil" id="pupil-right"></div></div>
+                        </div>
+                        <div class="mt-8 w-full">
+                            <label class="text-xs text-gray-500 uppercase tracking-widest">Ambient Light Level</label>
+                            <input type="range" min="0" max="100" value="50" class="w-full mt-2" id="light-slider">
+                            <div class="flex justify-between text-xs text-gray-600 mt-1">
+                                <span>Dark Alley</span>
+                                <span>Streetlamp</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-xl font-semibold mb-2 text-green-400">The Tapetum Lucidum</h3>
+                    <p class="text-gray-400 mb-4 text-sm leading-relaxed">
+                        Small, nimble, and cat-sized, the Glim melts into city shadows. It has a reflective layer behind its retina (like a cat) that doubles its night vision sensitivity.
+                    </p>
+                    <div class="bg-gray-900 p-4 rounded-lg border-l-4 border-green-500">
+                        <p class="text-xs text-gray-300">
+                            <strong>Interactive:</strong> Drag the slider to simulate light levels. Notice how the pupils dilate in the dark and the eyes begin to glow (eyeshine) to capture every photon.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- THE SUNDOR -->
+        <section id="sundor" class="tab-content hidden">
+            <div class="grid md:grid-cols-2 gap-8 items-center">
+                <div class="creature-card p-6 rounded-2xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-2xl font-bold text-white">The Sundor</h2>
+                        <span class="text-xs bg-gray-800 px-2 py-1 rounded text-gray-400">Silent Stalker</span>
+                    </div>
+
+                    <!-- Interactive Visual -->
+                    <div class="sundor-scene" id="sundor-scene">
+                        <div class="tiger-shape">🐅</div>
+                        <!-- Foliage overlay -->
+                        <div class="absolute bottom-0 w-full h-12 bg-gradient-to-t from-black to-transparent"></div>
+                    </div>
+                    
+                    <div class="mt-4 flex gap-2">
+                        <button onclick="setVision('human')" class="flex-1 py-2 text-sm bg-gray-800 rounded hover:bg-gray-700 text-white transition">Human Vision</button>
+                        <button onclick="setVision('prey')" class="flex-1 py-2 text-sm bg-gray-800 rounded hover:bg-gray-700 text-white transition border border-red-900/30">Prey Vision (Deer)</button>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-xl font-semibold mb-2 text-red-400">The Illusion of Color</h3>
+                    <p class="text-gray-400 mb-4 text-sm leading-relaxed">
+                        Red fur seems like a fatal flaw for camouflage. But the Sundor's main prey (deer) are <strong>dichromats</strong>—red-green colorblind.
+                    </p>
+                    <div class="bg-gray-900 p-4 rounded-lg border-l-4 border-red-500">
+                        <p class="text-xs text-gray-300">
+                            <strong>Experiment:</strong> Switch to "Prey Vision". To a deer, the vibrant red tiger fades into a muted, dark muddy shade, blending perfectly with the forest floor.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- THE LUMANDER -->
+        <section id="lumander" class="tab-content hidden">
+            <div class="grid md:grid-cols-2 gap-8 items-center">
+                <div class="creature-card p-6 rounded-2xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-2xl font-bold text-white">The Lumander</h2>
+                        <span class="text-xs bg-gray-800 px-2 py-1 rounded text-gray-400">Forest Jewel</span>
+                    </div>
+
+                    <div class="bg-black rounded-xl p-8 flex flex-col items-center justify-center h-64 relative">
+                        <!-- SVG Representation of Lumander Antlers -->
+                        <svg class="lumander-svg" viewBox="0 0 100 100" id="lumander-glow">
+                            <!-- Head -->
+                            <path d="M30,60 Q50,80 70,60 Q80,50 50,40 Q20,50 30,60" stroke-linecap="round" />
+                            <!-- Antlers Left -->
+                            <path d="M35,45 C20,30 10,40 5,20 M25,35 C20,20 30,10 25,5" stroke-linecap="round" />
+                            <!-- Antlers Right -->
+                            <path d="M65,45 C80,30 90,40 95,20 M75,35 C80,20 70,10 75,5" stroke-linecap="round" />
+                        </svg>
+                        <div class="mt-4 text-center text-xs text-gray-500" id="signal-text">Waiting for signal...</div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 mt-4">
+                        <button onclick="signal('mate')" class="py-3 bg-blue-900/30 border border-blue-500/50 text-blue-300 rounded hover:bg-blue-900/50 transition">
+                            💙 Mating Signal
+                        </button>
+                        <button onclick="signal('danger')" class="py-3 bg-red-900/30 border border-red-500/50 text-red-300 rounded hover:bg-red-900/50 transition">
+                            ⚠️ Danger Warning
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-xl font-semibold mb-2 text-blue-400">The Language of Light</h3>
+                    <p class="text-gray-400 mb-4 text-sm leading-relaxed">
+                        Bioluminescence isn't just decoration. For the Lumander, its glowing antlers are a complex communication device.
+                    </p>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li class="flex items-start gap-2">
+                            <span class="text-blue-400">●</span>
+                            <span><strong>Mating:</strong> Rhythmic, soft blue pulses to signal fitness.</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-red-400">●</span>
+                            <span><strong>Warning:</strong> Sharp, bright flashes (often shifting spectrum) to warn predators of toxicity.</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- THE FURTOAD -->
+        <section id="furtoad" class="tab-content hidden">
+            <div class="flex flex-col gap-6">
+                <div class="text-center">
+                    <h2 class="text-2xl font-bold text-white">The Horned Furtoad</h2>
+                    <p class="text-gray-400 text-sm">The Moss-Cloaked Fortress</p>
+                </div>
+
+                <div class="creature-card p-1 rounded-2xl relative">
+                    <div class="absolute top-4 left-4 z-10 bg-black/70 px-3 py-1 rounded text-xs text-white pointer-events-none">
+                        Mission: Locate the Toad
+                    </div>
+                    
+                    <!-- Game Area -->
+                    <div class="forest-floor" id="forest-floor" onclick="checkMiss(event)">
+                        <!-- Random moss debris -->
+                        <div style="position:absolute; top:20%; left:10%; font-size:24px; opacity:0.5; filter:blur(1px)">🌿</div>
+                        <div style="position:absolute; top:60%; left:80%; font-size:20px; opacity:0.4; filter:blur(2px)">🌱</div>
+                        <div style="position:absolute; top:10%; left:70%; font-size:28px; opacity:0.6; filter:blur(1px)">🍃</div>
+                        <div style="position:absolute; top:80%; left:30%; font-size:22px; opacity:0.5; filter:blur(1px)">🌿</div>
+
+                        <!-- The Toad -->
+                        <div id="toad" class="hidden-toad" onclick="revealToad(event)">🐸</div>
+                    </div>
+                    
+                    <div class="p-4 bg-gray-900 rounded-b-xl">
+                        <p id="game-msg" class="text-center text-sm text-green-400">Click on the camouflage to reveal the creature.</p>
+                    </div>
+                </div>
+
+                <div class="grid md:grid-cols-3 gap-4 text-xs text-gray-400">
+                    <div class="bg-gray-800 p-3 rounded">
+                        <strong class="text-white block mb-1">1. Camouflage</strong>
+                        Thick, moss-like fur makes it invisible on the forest floor.
+                    </div>
+                    <div class="bg-gray-800 p-3 rounded">
+                        <strong class="text-white block mb-1">2. Inflation</strong>
+                        When threatened, it gulps air to become too big to swallow.
+                    </div>
+                    <div class="bg-gray-800 p-3 rounded">
+                        <strong class="text-white block mb-1">3. Display</strong>
+                        Coral-like horns are used for sexual selection.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ETHICS -->
+        <section id="ethics" class="tab-content hidden">
+            <div class="max-w-2xl mx-auto">
+                <div class="bg-red-900/20 border border-red-900 p-6 rounded-2xl mb-8">
+                    <h2 class="text-2xl font-bold text-red-500 mb-4 flex items-center gap-2">
+                        <span>⚠️</span> When Fiction Distorts Fact
+                    </h2>
+                    <p class="text-gray-300 mb-4">
+                        The creatures you just explored <strong>do not exist</strong>. They are AI hallucinations grounded in biological principles. 
+                    </p>
+                    <p class="text-gray-400 text-sm">
+                        However, viral AI wildlife videos are fooling millions, creating false demands for exotic pets and undermining real conservation science.
+                    </p>
+                </div>
+
+                <div class="bg-gray-900 p-6 rounded-2xl border border-gray-800">
+                    <h3 class="text-xl font-bold text-white mb-4">Field Guide to the Truth</h3>
+                    <p class="mb-4 text-sm text-gray-400">Next time you scroll past an unbelievable animal, ask yourself:</p>
+                    
+                    <div class="space-y-3">
+                        <div class="flex items-center gap-3 p-3 bg-black rounded border border-gray-800">
+                            <div class="text-2xl">👁️</div>
+                            <div>
+                                <div class="font-bold text-gray-200">Physics of Light</div>
+                                <div class="text-xs text-gray-500">Does the reflection in the eyes match the environment?</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 p-3 bg-black rounded border border-gray-800">
+                            <div class="text-2xl">🦶</div>
+                            <div>
+                                <div class="font-bold text-gray-200">Anatomy</div>
+                                <div class="text-xs text-gray-500">Do the limbs blend into the ground? (Common AI artifact)</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 p-3 bg-black rounded border border-gray-800">
+                            <div class="text-2xl">🧬</div>
+                            <div>
+                                <div class="font-bold text-gray-200">Plausibility</div>
+                                <div class="text-xs text-gray-500">Does its survival strategy make sense in its habitat?</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-8 text-center">
+                    <button onclick="switchTab('intro')" class="text-gray-500 hover:text-white transition text-sm underline">Return to Start</button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="p-6 text-center text-gray-700 text-xs border-t border-gray-900">
+        <p>Generated from "The Night, Reimagined" • AI Biology Expedition</p>
+    </footer>
+
+    <script>
+        // Tab Switching Logic
+        function switchTab(tabId) {
+            // Hide all sections
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            // Show target
+            document.getElementById(tabId).classList.remove('hidden');
+            
+            // Update buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('btn-' + tabId).classList.add('active');
+
+            // Reset specific interactions if needed
+            if(tabId === 'furtoad') resetToad();
+        }
+
+        // --- THE GLIM LOGIC ---
+        const slider = document.getElementById('light-slider');
+        const bg = document.getElementById('glim-bg');
+        const eyes = document.querySelectorAll('.eye');
+        const pupils = document.querySelectorAll('.pupil');
+
+        slider.addEventListener('input', (e) => {
+            const val = e.target.value; // 0 (dark) to 100 (light)
+            
+            // Background darkness
+            const darkness = 100 - val;
+            bg.style.backgroundColor = `hsl(0, 0%, ${val/2}%)`; // 0% to 50% lightness
+
+            // Eye Glow (Brighter when darker)
+            const glowIntensity = (100 - val) / 2;
+            eyes.forEach(eye => {
+                eye.style.boxShadow = `0 0 ${glowIntensity}px ${glowIntensity/2}px #ffdb00`;
+            });
+
+            // Pupil Dilation (Larger when darker)
+            // At 100 light: height 25px (slit). At 0 light: height 35px (round).
+            const pupilHeight = 10 + (val * 0.25); // 10px to 35px
+            const pupilWidth = 35 - (val * 0.25);  // Inverse
+            
+            pupils.forEach(p => {
+                // Cat eyes: Slit in light, round in dark
+                // Let's simplify: Height grows, width stays mostly same or grows slightly
+                // Actually: Dark = Big Round. Light = Thin Slit.
+                
+                // Dark (val=0): Width 30px, Height 30px
+                // Light (val=100): Width 5px, Height 35px
+                
+                const w = 30 - (val * 0.25);
+                const h = 30 + (val * 0.05);
+                
+                p.style.width = `${w}px`;
+                p.style.height = `${h}px`;
+            });
+        });
+
+        // --- THE SUNDOR LOGIC ---
+        function setVision(type) {
+            const scene = document.getElementById('sundor-scene');
+            if (type === 'prey') {
+                scene.classList.add('dichromatic-view');
+            } else {
+                scene.classList.remove('dichromatic-view');
+            }
+        }
+
+        // --- THE LUMANDER LOGIC ---
+        let signalTimeout;
+        function signal(type) {
+            const svg = document.getElementById('lumander-glow');
+            const text = document.getElementById('signal-text');
+            
+            // Reset
+            svg.classList.remove('glow-active', 'warning-active');
+            clearTimeout(signalTimeout);
+
+            if (type === 'mate') {
+                text.innerText = "Signaling: Fitness & Availability";
+                text.style.color = "#60a5fa";
+                
+                // Pulse animation via JS adding/removing class
+                let count = 0;
+                const pulse = setInterval(() => {
+                    svg.classList.toggle('glow-active');
+                    count++;
+                    if(count > 5) {
+                        clearInterval(pulse);
+                        svg.classList.remove('glow-active');
+                        text.innerText = "Signal complete.";
+                    }
+                }, 400);
+
+            } else if (type === 'danger') {
+                text.innerText = "Signaling: TOXIC! STAY AWAY!";
+                text.style.color = "#f87171";
+                svg.classList.add('warning-active');
+                
+                signalTimeout = setTimeout(() => {
+                    svg.classList.remove('warning-active');
+                    text.innerText = "Threat passed.";
+                }, 2000);
+            }
+        }
+
+        // --- THE FURTOAD LOGIC ---
+        function resetToad() {
+            const toad = document.getElementById('toad');
+            toad.classList.remove('revealed');
+            document.getElementById('game-msg').innerText = "Click on the camouflage to reveal the creature.";
+            document.getElementById('game-msg').className = "text-center text-sm text-green-400";
+            
+            // Randomize position
+            const x = Math.floor(Math.random() * 80) + 10;
+            const y = Math.floor(Math.random() * 80) + 10;
+            toad.style.left = x + '%';
+            toad.style.top = y + '%';
+        }
+
+        function revealToad(e) {
+            e.stopPropagation(); // Prevent checkMiss
+            const toad = document.getElementById('toad');
+            toad.classList.add('revealed');
+            document.getElementById('game-msg').innerText = "Creature Detected! Inflating defense mechanism active.";
+            document.getElementById('game-msg').className = "text-center text-sm text-red-400 font-bold";
+        }
+
+        function checkMiss(e) {
+            // Optional: feedback for missing
+        }
+
+        // Initialize
+        resetToad();
+        // Trigger slider event to set initial state
+        slider.dispatchEvent(new Event('input'));
+
+    </script>
+</body>
+</html>

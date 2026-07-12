@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice AI Impact Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+            color: #e2e8f0;
+            overflow-x: hidden;
+        }
+
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .neon-text-green {
+            color: #4ade80;
+            text-shadow: 0 0 10px rgba(74, 222, 128, 0.5);
+        }
+
+        .neon-text-purple {
+            color: #c084fc;
+            text-shadow: 0 0 10px rgba(192, 132, 252, 0.5);
+        }
+
+        .neon-text-yellow {
+            color: #facc15;
+            text-shadow: 0 0 10px rgba(250, 204, 21, 0.5);
+        }
+
+        .neon-border-blue {
+            border-color: #60a5fa;
+            box-shadow: 0 0 15px rgba(96, 165, 250, 0.3);
+        }
+
+        /* Animations */
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            100% { transform: scale(1.3); opacity: 0; }
+        }
+
+        .pulse-circle {
+            position: absolute;
+            border-radius: 50%;
+            border: 2px solid rgba(96, 165, 250, 0.5);
+            animation: pulse-ring 3s infinite;
+        }
+
+        .wave-bar {
+            transition: height 0.2s ease;
+        }
+
+        .stat-bar {
+            transition: height 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Custom Range Slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #facc15;
+            cursor: pointer;
+            margin-top: -6px;
+            box-shadow: 0 0 10px #facc15;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #475569;
+            border-radius: 2px;
+        }
+
+        .floating {
+            animation: float 6s ease-in-out infinite;
+        }
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4 relative">
+
+    <!-- Background Decoration -->
+    <div class="absolute inset-0 pointer-events-none overflow-hidden">
+        <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"></div>
+        <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl"></div>
+    </div>
+
+    <!-- Header -->
+    <header class="text-center mb-8 z-10">
+        <h1 class="text-4xl font-bold tracking-tight mb-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-green-400">
+            VOICE AI IMPACT SIMULATOR
+        </h1>
+        <p class="text-slate-400 text-sm max-w-xl mx-auto">
+            Interactive dashboard visualizing the benefits of Voice AI for vulnerable and diverse populations. 
+            <span class="text-blue-400">Adjust parameters to see real-time impact.</span>
+        </p>
+    </header>
+
+    <!-- Main Grid -->
+    <main class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-6xl z-10 relative">
+        
+        <!-- CENTER CORE: The Brain (Visualizer) -->
+        <div class="lg:col-start-2 lg:row-start-1 lg:row-span-2 flex flex-col items-center justify-center order-first lg:order-none mb-8 lg:mb-0">
+            <div class="relative w-64 h-64 flex items-center justify-center">
+                <!-- Animated Rings -->
+                <div class="pulse-circle w-full h-full"></div>
+                <div class="pulse-circle w-48 h-48" style="animation-delay: 1s;"></div>
+                <div class="pulse-circle w-32 h-32" style="animation-delay: 2s;"></div>
+                
+                <!-- Brain Icon SVG -->
+                <div class="relative z-10 floating">
+                    <svg width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"/>
+                        <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"/>
+                    </svg>
+                </div>
+
+                <!-- Audio Waveform -->
+                <div class="absolute flex items-center justify-center gap-1 w-full h-full pointer-events-none opacity-50">
+                    <div class="wave-bar w-1 bg-blue-400 h-4 rounded-full"></div>
+                    <div class="wave-bar w-1 bg-blue-400 h-8 rounded-full"></div>
+                    <div class="wave-bar w-1 bg-blue-400 h-12 rounded-full"></div>
+                    <div class="wave-bar w-1 bg-blue-400 h-6 rounded-full"></div>
+                    <div class="wave-bar w-1 bg-blue-400 h-10 rounded-full"></div>
+                </div>
+            </div>
+            
+            <div class="mt-4 text-center">
+                <div class="text-xs font-mono text-blue-300 mb-1">SYSTEM STATUS</div>
+                <div id="system-status" class="text-xl font-bold text-white">IDLE</div>
+                <div class="text-xs text-slate-500 mt-2">Global Impact Score: <span id="global-score" class="text-green-400 font-mono">0</span>/100</div>
+            </div>
+        </div>
+
+        <!-- TOP LEFT: Older Adults (Accessibility) -->
+        <div class="glass-panel rounded-2xl p-6 hover:border-yellow-500/50 transition-colors duration-300">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="p-2 bg-yellow-500/20 rounded-lg text-2xl">👵</div>
+                <h2 class="font-semibold text-yellow-100">Accessibility Access</h2>
+            </div>
+            <p class="text-xs text-slate-400 mb-4">Voice AI helps older adults navigate technology without complex touch interfaces.</p>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="text-xs font-mono text-yellow-400">VOICE CLARITY</label>
+                    <input type="range" min="0" max="100" value="30" class="w-full mt-2" id="access-slider">
+                </div>
+                <div class="flex justify-between items-center bg-slate-800/50 p-3 rounded-lg">
+                    <span class="text-sm text-slate-300">Simulated Font Size</span>
+                    <span id="font-preview" class="text-sm font-bold transition-all duration-300">Aa</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- TOP RIGHT: Anonymity & Stigma -->
+        <div class="glass-panel rounded-2xl p-6 hover:border-purple-500/50 transition-colors duration-300">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="p-2 bg-purple-500/20 rounded-lg text-2xl">🛡️</div>
+                <h2 class="font-semibold text-purple-100">Privacy & Stigma</h2>
+            </div>
+            <p class="text-xs text-slate-400 mb-4">Anonymity encourages participation from stigmatized groups.</p>
+
+            <div class="flex items-center justify-between mb-4">
+                <span class="text-sm font-mono text-purple-300">VOICE MASKING</span>
+                <button id="privacy-toggle" class="w-12 h-6 rounded-full bg-slate-700 relative transition-colors duration-300">
+                    <div class="w-4 h-4 bg-white rounded-full absolute top-1 left-1 transition-transform duration-300" id="privacy-knob"></div>
+                </button>
+            </div>
+
+            <div class="relative h-24 bg-slate-800/50 rounded-lg overflow-hidden flex items-center justify-center">
+                <div id="lock-icon" class="text-3xl transition-all duration-500 opacity-30 grayscale">🔒</div>
+                <div id="shield-glow" class="absolute inset-0 bg-purple-500/0 transition-all duration-500"></div>
+                <div class="absolute bottom-2 text-xs font-mono text-slate-400" id="privacy-status">UNSECURED</div>
+            </div>
+        </div>
+
+        <!-- BOTTOM LEFT: Productivity Stats -->
+        <div class="glass-panel rounded-2xl p-6 hover:border-green-500/50 transition-colors duration-300">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="p-2 bg-green-500/20 rounded-lg text-2xl">📈</div>
+                <h2 class="font-semibold text-green-100">Workforce Impact</h2>
+            </div>
+            
+            <div class="flex gap-4 items-end h-32 mb-4 px-2 border-b border-slate-700 pb-2 relative">
+                <!-- Y Axis Lines -->
+                <div class="absolute inset-0 flex flex-col justify-between pointer-events-none">
+                    <div class="h-px bg-slate-700/50 w-full"></div>
+                    <div class="h-px bg-slate-700/50 w-full"></div>
+                    <div class="h-px bg-slate-700/50 w-full"></div>
+                </div>
+                
+                <!-- Bar 1: Productivity -->
+                <div class="w-1/2 flex flex-col justify-end gap-1 group">
+                    <div id="prod-bar" class="w-full bg-green-500/80 rounded-t-sm stat-bar h-1/4 relative group-hover:bg-green-400 transition-colors">
+                        <span class="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-bold text-green-400 opacity-0 group-hover:opacity-100 transition-opacity">+4%</span>
+                    </div>
+                    <span class="text-[10px] text-center text-slate-400 uppercase">Prod.</span>
+                </div>
+
+                <!-- Bar 2: Attrition (Inverse) -->
+                <div class="w-1/2 flex flex-col justify-end gap-1 group">
+                    <div id="att-bar" class="w-full bg-red-500/80 rounded-t-sm stat-bar h-3/4 relative group-hover:bg-red-400 transition-colors">
+                        <span class="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-bold text-red-400 opacity-0 group-hover:opacity-100 transition-opacity">-19%</span>
+                    </div>
+                    <span class="text-[10px] text-center text-slate-400 uppercase">Attr.</span>
+                </div>
+            </div>
+
+            <button id="deploy-btn" class="w-full py-2 bg-green-600 hover:bg-green-500 text-white text-xs font-bold rounded uppercase tracking-wider transition-all active:scale-95">
+                Deploy AI Assistant
+            </button>
+        </div>
+
+        <!-- BOTTOM RIGHT: Low Literacy -->
+        <div class="glass-panel rounded-2xl p-6 hover:border-blue-500/50 transition-colors duration-300">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="p-2 bg-blue-500/20 rounded-lg text-2xl">🎙️</div>
+                <h2 class="font-semibold text-blue-100">Low-Literacy Access</h2>
+            </div>
+            <p class="text-xs text-slate-400 mb-4">Enabling access to complex services via natural language.</p>
+
+            <div class="bg-slate-800 rounded-lg p-3 mb-3 h-24 overflow-y-auto font-mono text-xs text-green-400 border border-slate-700" id="console-output">
+                > Waiting for input...<br>
+            </div>
+
+            <button id="mic-btn" class="w-full py-3 border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg flex items-center justify-center gap-2 transition-all group">
+                <div class="w-3 h-3 bg-red-500 rounded-full animate-pulse hidden" id="rec-dot"></div>
+                <span class="text-sm font-medium text-blue-300 group-hover:text-blue-200" id="mic-text">Hold to Speak</span>
+            </button>
+        </div>
+
+    </main>
+
+    <script>
+        // --- State ---
+        let globalScore = 0;
+        let scores = {
+            access: 0,
+            privacy: 0,
+            productivity: 0,
+            literacy: 0
+        };
+
+        // --- Elements ---
+        const systemStatus = document.getElementById('system-status');
+        const globalScoreEl = document.getElementById('global-score');
+        const waveBars = document.querySelectorAll('.wave-bar');
+
+        // --- Audio Visualization Loop ---
+        function animateWaves() {
+            waveBars.forEach(bar => {
+                const height = Math.floor(Math.random() * 24) + 8;
+                bar.style.height = `${height}px`;
+            });
+        }
+        setInterval(animateWaves, 150);
+
+        // --- Update Global Score ---
+        function updateGlobalScore() {
+            const total = Object.values(scores).reduce((a, b) => a + b, 0);
+            // Animate number count up
+            let start = parseInt(globalScoreEl.innerText);
+            const end = Math.min(Math.floor(total), 100);
+            
+            if (start !== end) {
+                const duration = 500;
+                const startTime = performance.now();
+                
+                function step(currentTime) {
+                    const elapsed = currentTime - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    const current = Math.floor(start + (end - start) * progress);
+                    
+                    globalScoreEl.innerText = current;
+                    
+                    if (progress < 1) {
+                        requestAnimationFrame(step);
+                    }
+                }
+                requestAnimationFrame(step);
+            }
+
+            // Update System Status based on score
+            if (total > 80) {
+                systemStatus.innerText = "OPTIMIZED";
+                systemStatus.className = "text-xl font-bold neon-text-green";
+            } else if (total > 40) {
+                systemStatus.innerText = "PROCESSING";
+                systemStatus.className = "text-xl font-bold neon-text-yellow";
+            } else {
+                systemStatus.innerText = "IDLE";
+                systemStatus.className = "text-xl font-bold text-white";
+            }
+        }
+
+        // --- 1. Accessibility Logic ---
+        const accessSlider = document.getElementById('access-slider');
+        const fontPreview = document.getElementById('font-preview');
+
+        accessSlider.addEventListener('input', (e) => {
+            const val = e.target.value;
+            // Scale font size
+            const fontSize = 14 + (val / 5); 
+            fontPreview.style.fontSize = `${fontSize}px`;
+            
+            // Update score
+            scores.access = (val / 100) * 25;
+            updateGlobalScore();
+        });
+
+        // --- 2. Privacy Logic ---
+        const privacyToggle = document.getElementById('privacy-toggle');
+        const privacyKnob = document.getElementById('privacy-knob');
+        const lockIcon = document.getElementById('lock-icon');
+        const shieldGlow = document.getElementById('shield-glow');
+        const privacyStatus = document.getElementById('privacy-status');
+        let isPrivate = false;
+
+        privacyToggle.addEventListener('click', () => {
+            isPrivate = !isPrivate;
+            
+            if (isPrivate) {
+                privacyToggle.classList.replace('bg-slate-700', 'bg-purple-600');
+                privacyKnob.style.transform = 'translateX(24px)';
+                lockIcon.classList.remove('opacity-30', 'grayscale');
+                lockIcon.classList.add('text-white', 'scale-125');
+                shieldGlow.classList.replace('bg-purple-500/0', 'bg-purple-500/20');
+                privacyStatus.innerText = "SECURE ANONYMITY";
+                privacyStatus.classList.add('text-purple-400');
+                scores.privacy = 25;
+            } else {
+                privacyToggle.classList.replace('bg-purple-600', 'bg-slate-700');
+                privacyKnob.style.transform = 'translateX(0)';
+                lockIcon.classList.add('opacity-30', 'grayscale');
+                lockIcon.classList.remove('text-white', 'scale-125');
+                shieldGlow.classList.replace('bg-purple-500/20', 'bg-purple-500/0');
+                privacyStatus.innerText = "UNSECURED";
+                privacyStatus.classList.remove('text-purple-400');
+                scores.privacy = 0;
+            }
+            updateGlobalScore();
+        });
+
+        // --- 3. Productivity Logic ---
+        const deployBtn = document.getElementById('deploy-btn');
+        const prodBar = document.getElementById('prod-bar');
+        const attBar = document.getElementById('att-bar');
+        let isDeployed = false;
+
+        deployBtn.addEventListener('click', () => {
+            isDeployed = !isDeployed;
+            
+            if (isDeployed) {
+                deployBtn.innerText = "Rollback System";
+                deployBtn.classList.replace('bg-green-600', 'bg-red-600');
+                deployBtn.classList.replace('hover:bg-green-500', 'hover:bg-red-500');
+                
+                // Animate Charts
+                prodBar.style.height = "85%"; // Increase productivity
+                attBar.style.height = "20%";  // Decrease attrition
+                
+                scores.productivity = 25;
+            } else {
+                deployBtn.innerText = "Deploy AI Assistant";
+                deployBtn.classList.replace('bg-red-600', 'bg-green-600');
+                deployBtn.classList.replace('hover:bg-red-500', 'hover:bg-green-500');
+                
+                // Reset Charts
+                prodBar.style.height = "25%";
+                attBar.style.height = "75%";
+                
+                scores.productivity = 0;
+            }
+            updateGlobalScore();
+        });
+
+        // --- 4. Low Literacy Logic (Simulation) ---
+        const micBtn = document.getElementById('mic-btn');
+        const recDot = document.getElementById('rec-dot');
+        const micText = document.getElementById('mic-text');
+        const consoleOutput = document.getElementById('console-output');
+        
+        const commands = [
+            "Checking bank balance...",
+            "Scheduling appointment...",
+            "Translating document...",
+            "Reading news summary..."
+        ];
+
+        micBtn.addEventListener('mousedown', startListening);
+        micBtn.addEventListener('mouseup', stopListening);
+        micBtn.addEventListener('touchstart', startListening); // Mobile support
+        micBtn.addEventListener('touchend', stopListening);
+
+        function startListening(e) {
+            e.preventDefault();
+            recDot.classList.remove('hidden');
+            micText.innerText = "Listening...";
+            micBtn.classList.add('bg-blue-500/30');
+        }
+
+        function stopListening(e) {
+            e.preventDefault();
+            recDot.classList.add('hidden');
+            micText.innerText = "Hold to Speak";
+            micBtn.classList.remove('bg-blue-500/30');
+
+            // Simulate processing
+            const cmd = commands[Math.floor(Math.random() * commands.length)];
+            const newLine = document.createElement('div');
+            newLine.innerHTML = `> <span class="text-white">User:</span> [Voice Input Detected]<br>> <span class="text-blue-400">AI:</span> ${cmd}`;
+            consoleOutput.appendChild(newLine);
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+
+            // Increment score slightly for each interaction, up to max
+            if (scores.literacy < 25) {
+                scores.literacy += 5;
+                updateGlobalScore();
+            }
+        }
+
+    </script>
+</body>
+</html>

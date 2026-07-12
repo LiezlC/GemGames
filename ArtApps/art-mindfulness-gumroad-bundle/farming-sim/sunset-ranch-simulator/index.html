@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sunset Ranch Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap');
+
+        :root {
+            --sky-top: #0f172a;
+            --sky-mid: #4c1d95;
+            --sky-bot: #fb923c;
+            --ground-top: #3f6212;
+            --ground-bot: #14532d;
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            background-color: #000;
+            color: white;
+            user-select: none;
+        }
+
+        #background-image-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('background.png');
+            background-size: cover;
+            background-position: center;
+            opacity: 0.4;
+        }
+
+        /* The Game World */
+        #world {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: linear-gradient(to bottom, var(--sky-top) 0%, var(--sky-mid) 40%, var(--sky-bot) 60%, var(--ground-top) 60%, var(--ground-bot) 100%);
+            cursor: crosshair;
+            transition: filter 0.5s ease;
+        }
+
+        /* Sun/Lighting */
+        .sun {
+            position: absolute;
+            top: 35%;
+            left: 20%;
+            width: 150px;
+            height: 150px;
+            background: radial-gradient(circle, #fde047 20%, #fb923c 60%, transparent 70%);
+            border-radius: 50%;
+            filter: blur(10px);
+            opacity: 0.9;
+            z-index: 1;
+            animation: pulseSun 10s infinite alternate;
+        }
+
+        @keyframes pulseSun {
+            0% { transform: scale(1); opacity: 0.8; }
+            100% { transform: scale(1.1); opacity: 1; }
+        }
+
+        /* Silhouette Trees */
+        .tree {
+            position: absolute;
+            bottom: 40%; /* Horizon line */
+            font-size: 8rem;
+            filter: brightness(0) blur(1px); /* Silhouette */
+            z-index: 2;
+            transform-origin: bottom center;
+            pointer-events: none;
+        }
+
+        /* Fence */
+        .fence {
+            position: absolute;
+            bottom: 42%;
+            left: 0;
+            width: 100%;
+            height: 40px;
+            background-image: repeating-linear-gradient(90deg, transparent, transparent 50px, #2c1a0e 50px, #2c1a0e 55px),
+                              linear-gradient(to bottom, transparent 10px, #2c1a0e 10px, #2c1a0e 15px, transparent 15px);
+            z-index: 3;
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        /* Entities (Horses, Items) */
+        .entity {
+            position: absolute;
+            transform: translate(-50%, -100%);
+            transition: top 0.5s linear, left 0.5s linear, transform 0.2s;
+            z-index: 10;
+            cursor: pointer;
+        }
+
+        .horse {
+            font-size: 4rem;
+            filter: drop-shadow(0 10px 10px rgba(0,0,0,0.5));
+        }
+        
+        /* Spotted horse effect via CSS mask/overlay is hard on emoji, 
+           so we use brightness/sepia to mimic the photo's rustic vibe */
+        .horse-spotted {
+            filter: sepia(0.6) contrast(1.2) drop-shadow(0 10px 10px rgba(0,0,0,0.5));
+        }
+
+        .horse-grazing {
+            transform: translate(-50%, -100%) rotate(-15deg) scaleY(0.9);
+        }
+
+        .item {
+            font-size: 2rem;
+            z-index: 5;
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn {
+            from { transform: translate(-50%, -100%) scale(0); }
+            to { transform: translate(-50%, -100%) scale(1); }
+        }
+
+        /* UI Overlay */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 2rem;
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+            padding: 1rem;
+            pointer-events: auto;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .stat-bar {
+            height: 6px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+        .stat-fill {
+            height: 100%;
+            background: #4ade80;
+            width: 50%;
+            transition: width 0.5s ease;
+        }
+
+        button {
+            transition: all 0.2s;
+        }
+        button:active {
+            transform: scale(0.95);
+        }
+
+        /* Particles */
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            animation: floatUp 1.5s forwards;
+            font-size: 1.5rem;
+            z-index: 20;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-100px) scale(1.5); opacity: 0; }
+        }
+
+        /* Log from image */
+        .log-obstacle {
+            position: absolute;
+            bottom: 10%;
+            left: 30%;
+            font-size: 5rem;
+            z-index: 15;
+            transform: rotate(-10deg);
+            filter: brightness(0.6);
+            pointer-events: none;
+        }
+
+    </style>
+</head>
+<body>
+    <div id="background-image-layer"></div>
+
+    <div id="world">
+        <!-- Scenery -->
+        <div class="sun"></div>
+        
+        <!-- Trees (Procedurally placed to mimic photo density) -->
+        <div class="tree" style="left: -5%; transform: scale(1.2);">🌲</div>
+        <div class="tree" style="left: 10%; transform: scale(1.5);">🌳</div>
+        <div class="tree" style="left: 25%; transform: scale(0.8);">🌲</div>
+        <div class="tree" style="left: 60%; transform: scale(1.1);">🌲</div>
+        <div class="tree" style="left: 75%; transform: scale(1.3);">🌳</div>
+        <div class="tree" style="left: 90%; transform: scale(0.9);">🌲</div>
+
+        <div class="fence"></div>
+        
+        <!-- Foreground Log -->
+        <div class="log-obstacle">🪵</div>
+
+        <!-- Dynamic Container for Horses & Items -->
+        <div id="game-layer"></div>
+    </div>
+
+    <div id="ui-layer">
+        <!-- Top Bar: Stats -->
+        <div class="flex justify-between items-start">
+            <div class="glass-panel w-64">
+                <h1 class="text-xl font-bold text-orange-100 mb-2 flex items-center gap-2">
+                    <span class="text-2xl">🐎</span> Sunset Ranch
+                </h1>
+                <div class="space-y-3">
+                    <div>
+                        <div class="flex justify-between text-xs text-gray-300">
+                            <span>Herd Happiness</span>
+                            <span id="happiness-val">50%</span>
+                        </div>
+                        <div class="stat-bar"><div id="happiness-bar" class="stat-fill bg-pink-500"></div></div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs text-gray-300">
+                            <span>Food Supply</span>
+                            <span id="food-val">0</span>
+                        </div>
+                        <div class="stat-bar"><div id="food-bar" class="stat-fill bg-yellow-500" style="width: 0%"></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-panel">
+                <div class="text-right">
+                    <div class="text-xs text-gray-400 uppercase tracking-wider">Time</div>
+                    <div class="text-2xl font-mono font-bold text-orange-200">18:45 PM</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Bar: Controls -->
+        <div class="flex justify-center pb-6">
+            <div class="glass-panel flex gap-4">
+                <button onclick="game.spawnFood()" class="flex flex-col items-center gap-1 p-2 hover:bg-white/10 rounded-lg group">
+                    <div class="text-3xl group-hover:scale-110 transition-transform">🌾</div>
+                    <span class="text-xs font-semibold text-gray-300">Place Hay</span>
+                </button>
+                <button onclick="game.spawnApple()" class="flex flex-col items-center gap-1 p-2 hover:bg-white/10 rounded-lg group">
+                    <div class="text-3xl group-hover:scale-110 transition-transform">🍎</div>
+                    <span class="text-xs font-semibold text-gray-300">Treat</span>
+                </button>
+                <button onclick="game.whistle()" class="flex flex-col items-center gap-1 p-2 hover:bg-white/10 rounded-lg group">
+                    <div class="text-3xl group-hover:scale-110 transition-transform">😗💨</div>
+                    <span class="text-xs font-semibold text-gray-300">Call Herd</span>
+                </button>
+                <div class="w-px bg-white/20 mx-2"></div>
+                <button onclick="game.togglePhotoFilter()" class="flex flex-col items-center gap-1 p-2 hover:bg-white/10 rounded-lg group">
+                    <div class="text-3xl group-hover:scale-110 transition-transform">📸</div>
+                    <span class="text-xs font-semibold text-gray-300">Photo Mode</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class Game {
+            constructor() {
+                this.layer = document.getElementById('game-layer');
+                this.horses = [];
+                this.foods = [];
+                this.happiness = 50;
+                this.maxHappiness = 100;
+                
+                // Initial Spawn based on image (3 horses)
+                this.spawnHorse(30, 80, 'spotted');
+                this.spawnHorse(60, 75, 'white');
+                this.spawnHorse(85, 85, 'spotted');
+
+                // Loop
+                this.lastTime = 0;
+                requestAnimationFrame((t) => this.loop(t));
+
+                // Click to move/interact
+                document.getElementById('world').addEventListener('click', (e) => {
+                    // If clicking on UI, ignore
+                    if(e.target.closest('.glass-panel')) return;
+                    
+                    // If clicking empty space, spawn grass
+                    if(e.target.id === 'world' || e.target.id === 'game-layer') {
+                        this.spawnFoodAt(e.clientX, e.clientY);
+                    }
+                });
+            }
+
+            spawnHorse(xPercent, yPercent, type) {
+                const el = document.createElement('div');
+                el.classList.add('entity', 'horse');
+                if(type === 'spotted') el.classList.add('horse-spotted');
+                el.innerText = '🐎';
+                
+                // Randomize slightly
+                const scale = 0.8 + Math.random() * 0.4;
+                el.style.fontSize = `${4 * scale}rem`;
+
+                const horse = {
+                    el: el,
+                    x: (window.innerWidth * xPercent) / 100,
+                    y: (window.innerHeight * yPercent) / 100,
+                    targetX: (window.innerWidth * xPercent) / 100,
+                    targetY: (window.innerHeight * yPercent) / 100,
+                    state: 'idle', // idle, moving, eating
+                    hunger: 0,
+                    timer: 0,
+                    flip: false
+                };
+
+                // Interaction: Petting
+                el.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.petHorse(horse, e.clientX, e.clientY);
+                });
+
+                this.layer.appendChild(el);
+                this.horses.push(horse);
+                this.updateHorseVisuals(horse);
+            }
+
+            spawnFood() {
+                // Random location in bottom half
+                const x = Math.random() * window.innerWidth;
+                const y = (window.innerHeight * 0.6) + (Math.random() * (window.innerHeight * 0.35));
+                this.spawnFoodAt(x, y, '🌾');
+            }
+
+            spawnApple() {
+                const x = Math.random() * window.innerWidth;
+                const y = (window.innerHeight * 0.6) + (Math.random() * (window.innerHeight * 0.35));
+                this.spawnFoodAt(x, y, '🍎');
+            }
+
+            spawnFoodAt(x, y, type = '🌾') {
+                // Clamp to ground area
+                const groundY = window.innerHeight * 0.6;
+                if(y < groundY) y = groundY + 20;
+
+                const el = document.createElement('div');
+                el.classList.add('entity', 'item');
+                el.innerText = type;
+                el.style.left = x + 'px';
+                el.style.top = y + 'px';
+                
+                this.layer.appendChild(el);
+                this.foods.push({ el, x, y, type });
+                
+                this.createParticle(x, y, '✨');
+            }
+
+            petHorse(horse, x, y) {
+                this.happiness = Math.min(this.maxHappiness, this.happiness + 5);
+                this.createParticle(x, y - 50, '❤️');
+                this.createParticle(x + 20, y - 80, '❤️');
+                horse.el.style.transform = `translate(-50%, -100%) scale(1.1) ${horse.flip ? 'scaleX(-1)' : ''}`;
+                setTimeout(() => {
+                    horse.el.style.transform = `translate(-50%, -100%) scale(1) ${horse.flip ? 'scaleX(-1)' : ''}`;
+                }, 200);
+                this.updateUI();
+            }
+
+            whistle() {
+                const centerX = window.innerWidth / 2;
+                const centerY = window.innerHeight * 0.8;
+                this.horses.forEach(h => {
+                    h.targetX = centerX + (Math.random() - 0.5) * 300;
+                    h.targetY = centerY + (Math.random() - 0.5) * 100;
+                    h.state = 'moving';
+                    this.createParticle(h.x, h.y - 50, '❓');
+                });
+            }
+
+            togglePhotoFilter() {
+                const world = document.getElementById('world');
+                if(world.style.filter === 'grayscale(100%)') {
+                    world.style.filter = '';
+                } else {
+                    // Dramatic high contrast B&W
+                    // world.style.filter = 'grayscale(100%) contrast(1.2)';
+                    // Actually let's do a "Vivid" mode
+                    world.style.filter = 'saturate(1.5) contrast(1.1)';
+                    setTimeout(() => world.style.filter = '', 3000);
+                }
+            }
+
+            createParticle(x, y, char) {
+                const p = document.createElement('div');
+                p.innerText = char;
+                p.classList.add('particle');
+                p.style.left = x + 'px';
+                p.style.top = y + 'px';
+                document.body.appendChild(p);
+                setTimeout(() => p.remove(), 1500);
+            }
+
+            updateHorseVisuals(h) {
+                h.el.style.left = h.x + 'px';
+                h.el.style.top = h.y + 'px';
+                
+                // Direction
+                if (h.targetX < h.x) h.flip = true;
+                if (h.targetX > h.x) h.flip = false;
+
+                let transform = 'translate(-50%, -100%)';
+                if (h.flip) transform += ' scaleX(-1)';
+                
+                // Bobbing animation if moving
+                if (h.state === 'moving') {
+                    const bob = Math.sin(Date.now() / 100) * 5;
+                    transform += ` translateY(${bob}px)`;
+                }
+                
+                // Grazing tilt
+                if (h.state === 'eating') {
+                    transform += ' rotate(15deg) translateY(10px)';
+                }
+
+                h.el.style.transform = transform;
+                h.el.style.zIndex = Math.floor(h.y); // Depth sorting
+            }
+
+            loop(t) {
+                const dt = t - this.lastTime;
+                this.lastTime = t;
+
+                // Logic
+                this.horses.forEach(h => {
+                    // State Machine
+                    if (h.state === 'idle') {
+                        h.timer += dt;
+                        // Random wander
+                        if (h.timer > 2000 + Math.random() * 3000) {
+                            h.timer = 0;
+                            // Find food?
+                            if (this.foods.length > 0) {
+                                const food = this.getClosestFood(h);
+                                h.targetX = food.x;
+                                h.targetY = food.y;
+                                h.state = 'moving';
+                                h.targetFood = food;
+                            } else {
+                                // Wander
+                                h.targetX = Math.max(100, Math.min(window.innerWidth - 100, h.x + (Math.random() - 0.5) * 400));
+                                h.targetY = Math.max(window.innerHeight * 0.6, Math.min(window.innerHeight - 50, h.y + (Math.random() - 0.5) * 200));
+                                h.state = 'moving';
+                            }
+                        }
+                    }
+
+                    if (h.state === 'moving') {
+                        const dx = h.targetX - h.x;
+                        const dy = h.targetY - h.y;
+                        const dist = Math.sqrt(dx*dx + dy*dy);
+                        
+                        if (dist < 10) {
+                            h.state = 'idle';
+                            // If arrived at food
+                            if (h.targetFood && this.foods.includes(h.targetFood)) {
+                                h.state = 'eating';
+                                h.timer = 0;
+                            }
+                        } else {
+                            const speed = 0.05 * dt; // pixels per ms roughly
+                            h.x += (dx / dist) * speed;
+                            h.y += (dy / dist) * speed;
+                        }
+                    }
+
+                    if (h.state === 'eating') {
+                        h.timer += dt;
+                        if (h.timer > 2000) {
+                            // Finished eating
+                            this.consumeFood(h.targetFood);
+                            h.targetFood = null;
+                            h.state = 'idle';
+                            h.timer = 0;
+                            this.happiness = Math.min(this.maxHappiness, this.happiness + 10);
+                            this.createParticle(h.x, h.y - 60, '😋');
+                            this.updateUI();
+                        }
+                    }
+
+                    this.updateHorseVisuals(h);
+                });
+
+                // Passive happiness decay
+                if (Math.random() < 0.005) {
+                    this.happiness = Math.max(0, this.happiness - 0.1);
+                    this.updateUI();
+                }
+
+                requestAnimationFrame((t) => this.loop(t));
+            }
+
+            getClosestFood(horse) {
+                let closest = null;
+                let minDst = Infinity;
+                this.foods.forEach(f => {
+                    const dst = Math.hypot(f.x - horse.x, f.y - horse.y);
+                    if (dst < minDst) {
+                        minDst = dst;
+                        closest = f;
+                    }
+                });
+                return closest;
+            }
+
+            consumeFood(food) {
+                const idx = this.foods.indexOf(food);
+                if (idx > -1) {
+                    this.foods.splice(idx, 1);
+                    food.el.remove();
+                }
+            }
+
+            updateUI() {
+                const hapBar = document.getElementById('happiness-bar');
+                const hapVal = document.getElementById('happiness-val');
+                const foodBar = document.getElementById('food-bar');
+                const foodVal = document.getElementById('food-val');
+
+                hapBar.style.width = `${this.happiness}%`;
+                hapVal.innerText = `${Math.floor(this.happiness)}%`;
+                
+                // Color shift based on happiness
+                if(this.happiness > 70) hapBar.className = 'stat-fill bg-green-500';
+                else if(this.happiness > 30) hapBar.className = 'stat-fill bg-yellow-500';
+                else hapBar.className = 'stat-fill bg-red-500';
+
+                const foodPct = Math.min(100, this.foods.length * 10);
+                foodBar.style.width = `${foodPct}%`;
+                foodVal.innerText = this.foods.length;
+            }
+        }
+
+        // Initialize
+        const game = new Game();
+
+    </script>
+</body>
+</html>

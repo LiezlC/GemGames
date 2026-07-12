@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deep Dive - Interactive Experience</title>
+    <style>
+        :root {
+            --primary: #00ffff;
+            --secondary: #ff00ff;
+            --bg: #050011;
+        }
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--bg);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: white;
+            user-select: none;
+        }
+
+        /* The Canvas acts as the world */
+        canvas {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        /* Overlay UI */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none; /* Let clicks pass through to canvas */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        /* Title */
+        .title-container {
+            text-align: center;
+            margin-top: 5vh;
+            text-shadow: 0 0 20px rgba(0, 255, 255, 0.8);
+            opacity: 0.9;
+        }
+        h1 {
+            font-size: 4rem;
+            margin: 0;
+            font-weight: 800;
+            letter-spacing: -2px;
+            background: linear-gradient(to right, #00ffff, #ff00ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        p.subtitle {
+            margin-top: 0.5rem;
+            font-size: 1rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.7);
+        }
+
+        /* The Ledge Elements (Emojis) */
+        .ledge-elements {
+            position: absolute;
+            top: 50%; /* Horizon line */
+            width: 100%;
+            transform: translateY(-100%);
+            display: flex;
+            justify-content: space-between;
+            padding: 0 10%;
+            box-sizing: border-box;
+            pointer-events: auto;
+        }
+
+        .element {
+            font-size: 3rem;
+            filter: drop-shadow(0 0 10px rgba(0,0,0,0.8));
+            cursor: pointer;
+            transition: transform 0.2s;
+            animation: float 3s ease-in-out infinite;
+        }
+        .element:hover {
+            transform: scale(1.2) rotate(5deg);
+        }
+        .plant { font-size: 5rem; transform-origin: bottom center; }
+        .person { font-size: 2.5rem; margin-top: 2rem; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        /* Controls Dashboard */
+        .controls {
+            pointer-events: auto;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            align-items: center;
+            padding-bottom: 40px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #ccc;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 150px;
+            height: 6px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 3px;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: white;
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--primary);
+            transition: background 0.2s;
+        }
+        input[type="range"]::-webkit-slider-thumb:hover {
+            background: var(--primary);
+        }
+
+        .btn-dive {
+            padding: 12px 30px;
+            border: 2px solid white;
+            background: transparent;
+            color: white;
+            font-weight: bold;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-radius: 30px;
+        }
+        .btn-dive:hover {
+            background: white;
+            color: black;
+            box-shadow: 0 0 20px white;
+        }
+
+        /* Tutorial/Hint */
+        .hint {
+            position: absolute;
+            top: 60%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: rgba(255,255,255,0.5);
+            font-size: 0.9rem;
+            pointer-events: none;
+            animation: fadeOut 5s forwards;
+        }
+        @keyframes fadeOut {
+            0% { opacity: 1; }
+            80% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <canvas id="world"></canvas>
+
+    <div id="ui-layer">
+        <div class="title-container">
+            <!-- Hidden initially, revealed by JS or kept minimal -->
+        </div>
+
+        <div class="ledge-elements">
+            <div class="element plant" style="animation-delay: 0s;">🌿</div>
+            <div class="element person" style="animation-delay: 1s;" onclick="triggerRipple(window.innerWidth*0.3, window.innerHeight*0.6)">🧘</div>
+            <div style="flex-grow: 1;"></div>
+            <div class="element person" style="animation-delay: 1.5s;" onclick="triggerRipple(window.innerWidth*0.7, window.innerHeight*0.6)">🧘‍♀️</div>
+            <div class="element plant" style="animation-delay: 0.5s;">🪴</div>
+        </div>
+
+        <div class="hint">Click the water to ripple • Adjust controls below</div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label>Flow Speed</label>
+                <input type="range" id="speed" min="0" max="100" value="20">
+            </div>
+            <div class="control-group">
+                <label>Psychedelia</label>
+                <input type="range" id="colorShift" min="0" max="100" value="50">
+            </div>
+            <div class="control-group">
+                <label>Turbulence</label>
+                <input type="range" id="turbulence" min="0" max="100" value="30">
+            </div>
+            <button class="btn-dive" onclick="warpSpeed()">DEEP DIVE</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('world');
+        const ctx = canvas.getContext('2d');
+
+        // State
+        let width, height;
+        let time = 0;
+        let ripples = [];
+        
+        // Configuration (Bound to UI)
+        const config = {
+            speed: 0.02,
+            colorSpeed: 1,
+            turbulence: 30,
+            warp: false
+        };
+
+        // UI Bindings
+        document.getElementById('speed').addEventListener('input', (e) => config.speed = e.target.value / 1000);
+        document.getElementById('colorShift').addEventListener('input', (e) => config.colorSpeed = e.target.value / 20);
+        document.getElementById('turbulence').addEventListener('input', (e) => config.turbulence = e.target.value);
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Interaction
+        canvas.addEventListener('mousedown', (e) => {
+            triggerRipple(e.clientX, e.clientY);
+        });
+        
+        canvas.addEventListener('mousemove', (e) => {
+            if(Math.random() > 0.8) { // Don't spawn on every frame
+                triggerRipple(e.clientX, e.clientY, 5); // Smaller ripples
+            }
+        });
+
+        window.triggerRipple = function(x, y, strength = 20) {
+            // Only ripple if clicking in the "water" (bottom half)
+            if (y > height / 2) {
+                ripples.push({
+                    x: x,
+                    y: y,
+                    r: 0,
+                    alpha: 1,
+                    strength: strength
+                });
+            } else {
+                // If clicking sky, create a "star" burst
+                ripples.push({
+                    x: x,
+                    y: y,
+                    r: 0,
+                    alpha: 1,
+                    strength: strength,
+                    type: 'star'
+                });
+            }
+        };
+
+        window.warpSpeed = function() {
+            config.warp = true;
+            const btn = document.querySelector('.btn-dive');
+            btn.innerText = "DIVING...";
+            
+            // Animate speed up then down
+            let tempSpeed = config.speed;
+            config.speed = 0.2; // Fast!
+            
+            setTimeout(() => {
+                config.speed = tempSpeed;
+                config.warp = false;
+                btn.innerText = "DEEP DIVE";
+            }, 2000);
+        }
+
+        // The Core Loop
+        function draw() {
+            // Clear
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, width, height);
+
+            // Update Time
+            time += config.speed;
+            
+            // 1. Draw The Vortex (Top Half Background)
+            drawVortex();
+
+            // 2. Draw The Water (Bottom Half Reflection + Distortion)
+            drawWater();
+
+            // 3. Draw Ripples
+            drawRipples();
+
+            // 4. Draw Title Overlay (Simulating the text in image)
+            drawText();
+
+            requestAnimationFrame(draw);
+        }
+
+        function drawVortex() {
+            const cx = width / 2;
+            const cy = height / 2; // Horizon is center
+            const maxRadius = Math.sqrt(cx*cx + cy*cy);
+            
+            // Number of rings
+            const rings = 40;
+            
+            for (let i = 0; i < rings; i++) {
+                // Calculate radius based on time to create movement
+                let r = (i * 30 + (time * 1000)) % (maxRadius * 1.5);
+                if (r < 0) r += maxRadius * 1.5;
+                
+                // Dynamic Color
+                const hue = (time * 50 * config.colorSpeed + i * 10) % 360;
+                
+                ctx.beginPath();
+                
+                // Draw distorted circle
+                for (let a = 0; a <= Math.PI * 2; a += 0.1) {
+                    // Wavy distortion
+                    const noise = Math.sin(a * 10 + time * 2) * config.turbulence;
+                    const noise2 = Math.cos(a * 4 - time) * (config.turbulence / 2);
+                    
+                    const x = cx + (r + noise + noise2) * Math.cos(a);
+                    const y = cy + (r + noise + noise2) * Math.sin(a) * 0.8; // Flatten slightly for perspective
+                    
+                    if (a === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                
+                ctx.closePath();
+                ctx.lineWidth = 3 + (i/5);
+                ctx.strokeStyle = `hsla(${hue}, 80%, 60%, ${1 - (r/maxRadius)})`;
+                ctx.stroke();
+            }
+            
+            // Center glow
+            const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, 100);
+            gradient.addColorStop(0, '#00ffff');
+            gradient.addColorStop(1, 'transparent');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, width, height/2);
+        }
+
+        function drawWater() {
+            // The water starts at height/2
+            const waterLevel = height / 2;
+            
+            // Draw a base blue/purple gradient
+            const grad = ctx.createLinearGradient(0, waterLevel, 0, height);
+            grad.addColorStop(0, 'rgba(0, 20, 40, 0.8)');
+            grad.addColorStop(0.5, 'rgba(0, 100, 150, 0.6)');
+            grad.addColorStop(1, 'rgba(100, 0, 150, 0.8)');
+            
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, waterLevel, width, height - waterLevel);
+
+            // Draw "Reflections" - simulated by horizontal lines
+            // We use the same math as the vortex but flatten it completely
+            
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(0, waterLevel, width, height - waterLevel);
+            ctx.clip(); // Only draw in water area
+
+            const lines = 30;
+            for(let i=0; i<lines; i++) {
+                let y = waterLevel + (i * (height/2)/lines);
+                
+                // Perspective: lines get closer together near horizon (waterLevel)
+                // Actually, let's just make them move towards the camera
+                let perspectiveY = waterLevel + Math.pow(i/lines, 2) * (height/2);
+                
+                // Movement
+                let offset = (time * 100) % 50;
+                perspectiveY += offset; 
+                if(perspectiveY > height) perspectiveY -= (height/2);
+
+                ctx.beginPath();
+                ctx.moveTo(0, perspectiveY);
+                
+                // Wavy line across screen
+                for(let x=0; x<width; x+=20) {
+                    const wave = Math.sin(x * 0.01 + time * 5 + i) * 5;
+                    ctx.lineTo(x, perspectiveY + wave);
+                }
+                
+                const hue = (time * 20 + i * 10) % 360;
+                ctx.strokeStyle = `hsla(${hue}, 70%, 70%, 0.3)`;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+
+            // Pool Edge (White rim)
+            ctx.beginPath();
+            ctx.moveTo(0, waterLevel);
+            ctx.quadraticCurveTo(width/2, waterLevel + 20, width, waterLevel);
+            ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function drawRipples() {
+            for (let i = ripples.length - 1; i >= 0; i--) {
+                const r = ripples[i];
+                r.r += 2; // Expand
+                r.alpha -= 0.01; // Fade
+                
+                if (r.alpha <= 0) {
+                    ripples.splice(i, 1);
+                    continue;
+                }
+
+                ctx.beginPath();
+                if (r.type === 'star') {
+                    // Draw a star burst for sky clicks
+                    ctx.arc(r.x, r.y, r.r, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(255, 255, 255, ${r.alpha})`;
+                    ctx.fill();
+                } else {
+                    // Draw oval ripples for water (perspective)
+                    ctx.ellipse(r.x, r.y, r.r, r.r * 0.3, 0, 0, Math.PI * 2);
+                    ctx.strokeStyle = `rgba(200, 255, 255, ${r.alpha})`;
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+            }
+        }
+
+        function drawText() {
+            // Draw "Deep Dive" text on canvas to blend it better or keep it in DOM?
+            // Let's keep the DOM one for crispness, but maybe add a reflection in canvas
+            
+            ctx.save();
+            ctx.scale(1, -1); // Flip vertically
+            ctx.font = "bold 80px sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
+            // Draw reflection of text
+            ctx.fillText("Deep Dive", width/2, -(height - 80)); 
+            ctx.restore();
+            
+            // Main Text on Canvas (optional, if we want it to be part of the scene)
+            ctx.font = "800 60px 'Segoe UI'";
+            ctx.textAlign = "center";
+            ctx.fillStyle = "white";
+            ctx.shadowColor = "cyan";
+            ctx.shadowBlur = 20;
+            ctx.fillText("Deep Dive", width/2, height - 40);
+            ctx.shadowBlur = 0;
+        }
+
+        // Start
+        draw();
+
+    </script>
+</body>
+</html>

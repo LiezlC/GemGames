@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Celestial Altar: The Ritual</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap');
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #0f0c29;
+            font-family: 'Cinzel', serif;
+            user-select: none;
+        }
+
+        /* Dynamic Background representing the duality in the image */
+        #universe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(135deg, #240b36 0%, #c31432 40%, #1a2a6c 100%);
+            z-index: -2;
+            transition: filter 2s ease;
+        }
+
+        /* Stars */
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            opacity: 0.8;
+            animation: twinkle 3s infinite ease-in-out;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; transform: scale(0.8); }
+            50% { opacity: 1; transform: scale(1.2); }
+        }
+
+        /* The Portal / Archway */
+        .archway {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60vw;
+            height: 60vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .pillar {
+            width: 60px;
+            height: 100%;
+            background: linear-gradient(to right, #1a1a1a, #4a4a4a, #1a1a1a);
+            margin: 0 80px;
+            position: relative;
+            border-radius: 5px 5px 0 0;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+        }
+        
+        .pillar::before {
+            content: '';
+            position: absolute;
+            top: -20px;
+            left: -10px;
+            width: 80px;
+            height: 30px;
+            background: #333;
+            border-radius: 5px;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.5);
+        }
+
+        /* The Central Portal Energy */
+        .portal-energy {
+            position: absolute;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%) scale(0);
+            width: 200px;
+            height: 300px;
+            background: radial-gradient(ellipse at center, rgba(255,255,255,1) 0%, rgba(0,128,255,0.8) 40%, rgba(0,0,0,0) 70%);
+            border-radius: 50% 50% 0 0;
+            opacity: 0;
+            transition: all 2s ease;
+            filter: blur(10px);
+            z-index: 0;
+        }
+
+        .portal-energy.active {
+            transform: translateX(-50%) scale(1.5);
+            opacity: 1;
+            animation: pulsePortal 2s infinite alternate;
+        }
+
+        @keyframes pulsePortal {
+            0% { filter: blur(10px) hue-rotate(0deg); }
+            100% { filter: blur(15px) hue-rotate(40deg); }
+        }
+
+        /* Draggable Orbs (Sun/Moon) */
+        .orb-container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Let clicks pass through empty space */
+            z-index: 10;
+        }
+
+        .orb {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            position: absolute;
+            cursor: grab;
+            pointer-events: auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.1s;
+            font-size: 3rem;
+        }
+
+        .orb:active { cursor: grabbing; transform: scale(1.1); }
+
+        .sun-orb {
+            background: radial-gradient(circle at 30% 30%, #ffd700, #ff8c00, #b8860b);
+            box-shadow: 0 0 30px #ff8c00;
+            top: 10%;
+            left: 10%;
+        }
+
+        .moon-orb {
+            background: radial-gradient(circle at 70% 30%, #e0f7fa, #00bcd4, #006064);
+            box-shadow: 0 0 30px #00bcd4;
+            top: 10%;
+            right: 10%;
+        }
+
+        /* Target Zones */
+        .target-zone {
+            position: absolute;
+            width: 140px;
+            height: 140px;
+            border: 2px dashed rgba(255,255,255,0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: rgba(255,255,255,0.5);
+            font-size: 0.8rem;
+            text-align: center;
+            pointer-events: none;
+        }
+
+        /* Candles */
+        .candle-container {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 200px;
+            pointer-events: none;
+            z-index: 20;
+        }
+
+        .candle {
+            position: absolute;
+            bottom: 20px; /* Sitting on something */
+            width: 20px;
+            height: 60px;
+            background: linear-gradient(to right, #e6cfa1, #d4b57e, #e6cfa1);
+            border-radius: 3px;
+            cursor: pointer;
+            pointer-events: auto;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            transition: height 0.3s;
+        }
+        
+        .candle::after {
+            content: '';
+            position: absolute;
+            top: -5px;
+            left: 9px;
+            width: 2px;
+            height: 5px;
+            background: #333;
+        }
+
+        .flame {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%) scale(0);
+            width: 15px;
+            height: 25px;
+            background: radial-gradient(ellipse at bottom, #ffff00, #ff9900, transparent);
+            border-radius: 50% 50% 20% 20%;
+            opacity: 0;
+            transition: all 0.3s ease;
+            filter: blur(1px);
+        }
+
+        .candle.lit .flame {
+            opacity: 1;
+            transform: translateX(-50%) scale(1);
+            animation: flicker 0.1s infinite alternate;
+            box-shadow: 0 0 20px #ff9900, 0 0 40px #ff5500;
+        }
+
+        @keyframes flicker {
+            0% { transform: translateX(-50%) scale(1) rotate(-2deg); opacity: 0.9; }
+            100% { transform: translateX(-50%) scale(1.1) rotate(2deg); opacity: 1; }
+        }
+
+        /* UI Overlay */
+        #ui {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            text-align: center;
+            color: #ffeebb;
+            z-index: 100;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+            pointer-events: none;
+        }
+        
+        #message {
+            font-size: 1.5rem;
+            opacity: 0.8;
+            margin-bottom: 10px;
+        }
+
+        #progress-bar {
+            width: 300px;
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            margin: 0 auto;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        
+        #progress-fill {
+            height: 100%;
+            width: 0%;
+            background: #ff9900;
+            transition: width 0.5s ease;
+            box-shadow: 0 0 10px #ff9900;
+        }
+
+        .victory-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 4rem;
+            color: white;
+            text-shadow: 0 0 20px #fff, 0 0 40px #ff00de;
+            opacity: 0;
+            transition: opacity 2s;
+            z-index: 200;
+            text-align: center;
+        }
+
+        /* Floating Spirits (Abstracted from the angels in image) */
+        .spirit {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 0 10px white, 0 0 20px cyan;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 1s;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Background Layers -->
+    <div id="universe"></div>
+    
+    <!-- Stars generated by JS -->
+    <div id="stars-container"></div>
+
+    <!-- The Altar Structure -->
+    <div class="archway">
+        <div class="pillar"></div>
+        <div class="portal-energy" id="portal"></div>
+        <div class="pillar"></div>
+    </div>
+
+    <!-- Target Zones for Orbs -->
+    <!-- Based on image composition: Sun top leftish, Moon top rightish/center -->
+    <div class="target-zone" style="top: 30%; left: 30%; border-color: #ff8c00;" id="target-sun">Solar Alignment</div>
+    <div class="target-zone" style="top: 30%; left: 70%; border-color: #00bcd4;" id="target-moon">Lunar Alignment</div>
+
+    <!-- Draggable Orbs -->
+    <div class="orb-container">
+        <div class="orb sun-orb" id="sun" draggable="false">☀️</div>
+        <div class="orb moon-orb" id="moon" draggable="false">🌙</div>
+    </div>
+
+    <!-- Candles -->
+    <div class="candle-container" id="candle-container">
+        <!-- Candles generated by JS -->
+    </div>
+
+    <!-- UI -->
+    <div id="ui">
+        <h1 class="text-3xl font-bold tracking-widest">CELESTIAL RITUAL</h1>
+        <div id="message">Light the candles. Align the spheres.</div>
+        <div id="progress-bar"><div id="progress-fill"></div></div>
+    </div>
+
+    <div class="victory-text" id="victory-msg">
+        <div>HARMONY RESTORED</div>
+        <div style="font-size: 1.5rem; margin-top: 20px; cursor: pointer; pointer-events: auto;" onclick="location.reload()">Reset Ritual</div>
+    </div>
+
+    <script>
+        // --- Game State ---
+        const state = {
+            candlesLit: 0,
+            totalCandles: 8,
+            sunAligned: false,
+            moonAligned: false,
+            completed: false
+        };
+
+        // --- Initialization ---
+        const candleContainer = document.getElementById('candle-container');
+        const starsContainer = document.getElementById('stars-container');
+        const sun = document.getElementById('sun');
+        const moon = document.getElementById('moon');
+        const targetSun = document.getElementById('target-sun');
+        const targetMoon = document.getElementById('target-moon');
+        const portal = document.getElementById('portal');
+        const progressFill = document.getElementById('progress-fill');
+        const victoryMsg = document.getElementById('victory-msg');
+
+        // Generate Stars
+        for (let i = 0; i < 100; i++) {
+            const star = document.createElement('div');
+            star.classList.add('star');
+            star.style.top = Math.random() * 100 + 'vh';
+            star.style.left = Math.random() * 100 + 'vw';
+            star.style.width = Math.random() * 3 + 'px';
+            star.style.height = star.style.width;
+            star.style.animationDelay = Math.random() * 3 + 's';
+            starsContainer.appendChild(star);
+        }
+
+        // Generate Candles
+        // Placing them on the pillars and ground based on the image vibe
+        const candlePositions = [
+            { left: '15%', height: '50px', bottom: '20px' },
+            { left: '20%', height: '70px', bottom: '15px' }, // Left ground
+            { left: '32%', height: '40px', bottom: '120px' }, // Left Pillar top
+            { left: '35%', height: '60px', bottom: '120px' }, // Left Pillar top
+            { left: '65%', height: '60px', bottom: '120px' }, // Right Pillar top
+            { left: '68%', height: '40px', bottom: '120px' }, // Right Pillar top
+            { left: '80%', height: '70px', bottom: '15px' }, // Right ground
+            { left: '85%', height: '50px', bottom: '20px' }
+        ];
+
+        candlePositions.forEach((pos, index) => {
+            const c = document.createElement('div');
+            c.classList.add('candle');
+            c.style.left = pos.left;
+            c.style.height = pos.height;
+            c.style.bottom = pos.bottom;
+            
+            const f = document.createElement('div');
+            f.classList.add('flame');
+            c.appendChild(f);
+
+            c.addEventListener('click', () => toggleCandle(c));
+            candleContainer.appendChild(c);
+        });
+
+        // --- Interaction Logic ---
+
+        function toggleCandle(candle) {
+            if (state.completed) return;
+            
+            const isLit = candle.classList.contains('lit');
+            if (isLit) {
+                candle.classList.remove('lit');
+                state.candlesLit--;
+            } else {
+                candle.classList.add('lit');
+                state.candlesLit++;
+                spawnSpirit(candle.getBoundingClientRect());
+            }
+            checkProgress();
+        }
+
+        function spawnSpirit(rect) {
+            const spirit = document.createElement('div');
+            spirit.classList.add('spirit');
+            spirit.style.left = (rect.left + 5) + 'px';
+            spirit.style.top = (rect.top - 20) + 'px';
+            document.body.appendChild(spirit);
+
+            // Animate spirit floating up
+            spirit.style.opacity = 1;
+            let y = rect.top - 20;
+            let x = rect.left + 5;
+            let dx = (Math.random() - 0.5) * 2;
+            
+            const interval = setInterval(() => {
+                y -= 2;
+                x += Math.sin(y/10) + dx;
+                spirit.style.top = y + 'px';
+                spirit.style.left = x + 'px';
+                
+                if (y < 0) {
+                    clearInterval(interval);
+                    spirit.remove();
+                }
+            }, 20);
+
+            setTimeout(() => { spirit.style.opacity = 0; }, 1000);
+        }
+
+        // Drag and Drop Logic for Orbs
+        function makeDraggable(elm, targetElm, type) {
+            let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+            
+            elm.onmousedown = dragMouseDown;
+            elm.ontouchstart = dragTouchStart;
+
+            function dragMouseDown(e) {
+                e.preventDefault();
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                document.onmouseup = closeDragElement;
+                document.onmousemove = elementDrag;
+            }
+
+            function dragTouchStart(e) {
+                // e.preventDefault();
+                const touch = e.touches[0];
+                pos3 = touch.clientX;
+                pos4 = touch.clientY;
+                document.ontouchend = closeDragElement;
+                document.ontouchmove = elementTouchDrag;
+            }
+
+            function elementDrag(e) {
+                e.preventDefault();
+                pos1 = pos3 - e.clientX;
+                pos2 = pos4 - e.clientY;
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                setPos(elm.offsetTop - pos2, elm.offsetLeft - pos1);
+            }
+
+            function elementTouchDrag(e) {
+                // e.preventDefault();
+                const touch = e.touches[0];
+                pos1 = pos3 - touch.clientX;
+                pos2 = pos4 - touch.clientY;
+                pos3 = touch.clientX;
+                pos4 = touch.clientY;
+                setPos(elm.offsetTop - pos2, elm.offsetLeft - pos1);
+            }
+
+            function setPos(top, left) {
+                elm.style.top = top + "px";
+                elm.style.left = left + "px";
+                checkAlignment();
+            }
+
+            function closeDragElement() {
+                document.onmouseup = null;
+                document.onmousemove = null;
+                document.ontouchend = null;
+                document.ontouchmove = null;
+                snapToTarget();
+            }
+
+            function checkAlignment() {
+                const r1 = elm.getBoundingClientRect();
+                const r2 = targetElm.getBoundingClientRect();
+                
+                // Calculate distance between centers
+                const c1 = { x: r1.left + r1.width/2, y: r1.top + r1.height/2 };
+                const c2 = { x: r2.left + r2.width/2, y: r2.top + r2.height/2 };
+                const dist = Math.hypot(c1.x - c2.x, c1.y - c2.y);
+
+                if (dist < 50) {
+                    targetElm.style.borderColor = "#fff";
+                    targetElm.style.boxShadow = "0 0 20px white";
+                } else {
+                    targetElm.style.borderColor = "rgba(255,255,255,0.3)";
+                    targetElm.style.boxShadow = "none";
+                }
+            }
+
+            function snapToTarget() {
+                const r1 = elm.getBoundingClientRect();
+                const r2 = targetElm.getBoundingClientRect();
+                const c1 = { x: r1.left + r1.width/2, y: r1.top + r1.height/2 };
+                const c2 = { x: r2.left + r2.width/2, y: r2.top + r2.height/2 };
+                const dist = Math.hypot(c1.x - c2.x, c1.y - c2.y);
+
+                if (dist < 50) {
+                    // Snap
+                    elm.style.top = (targetElm.offsetTop - elm.offsetHeight/2) + "px";
+                    elm.style.left = (targetElm.offsetLeft - elm.offsetWidth/2) + "px";
+                    
+                    if (type === 'sun') state.sunAligned = true;
+                    if (type === 'moon') state.moonAligned = true;
+                    
+                    // Lock it visually
+                    elm.style.boxShadow = `0 0 50px ${type === 'sun' ? '#ff8c00' : '#00bcd4'}`;
+                } else {
+                    if (type === 'sun') state.sunAligned = false;
+                    if (type === 'moon') state.moonAligned = false;
+                }
+                checkProgress();
+            }
+        }
+
+        makeDraggable(sun, targetSun, 'sun');
+        makeDraggable(moon, targetMoon, 'moon');
+
+        function checkProgress() {
+            // Calculate percentage
+            let score = 0;
+            score += (state.candlesLit / state.totalCandles) * 60; // Candles are 60%
+            if (state.sunAligned) score += 20;
+            if (state.moonAligned) score += 20;
+
+            progressFill.style.width = score + "%";
+
+            if (score >= 99 && !state.completed) {
+                triggerWin();
+            }
+        }
+
+        function triggerWin() {
+            state.completed = true;
+            portal.classList.add('active');
+            
+            // Change background to a more unified mystical color
+            document.getElementById('universe').style.background = "radial-gradient(circle, #4b0082 0%, #000000 100%)";
+            
+            // Hide UI text
+            document.getElementById('message').style.opacity = 0;
+
+            setTimeout(() => {
+                victoryMsg.style.opacity = 1;
+                spawnVictoryParticles();
+            }, 1000);
+        }
+
+        function spawnVictoryParticles() {
+            setInterval(() => {
+                const p = document.createElement('div');
+                p.style.position = 'absolute';
+                p.style.left = '50%';
+                p.style.bottom = '100px';
+                p.style.width = '10px';
+                p.style.height = '10px';
+                p.style.background = `hsl(${Math.random() * 360}, 100%, 70%)`;
+                p.style.borderRadius = '50%';
+                p.style.pointerEvents = 'none';
+                document.body.appendChild(p);
+
+                const angle = Math.random() * Math.PI * 2;
+                const velocity = Math.random() * 5 + 2;
+                let x = 0, y = 0;
+                let opacity = 1;
+
+                const anim = setInterval(() => {
+                    x += Math.cos(angle) * velocity;
+                    y -= Math.sin(angle) * velocity;
+                    opacity -= 0.02;
+                    p.style.transform = `translate(calc(-50% + ${x}px), ${y}px)`;
+                    p.style.opacity = opacity;
+
+                    if (opacity <= 0) {
+                        clearInterval(anim);
+                        p.remove();
+                    }
+                }, 20);
+            }, 100);
+        }
+
+    </script>
+</body>
+</html>

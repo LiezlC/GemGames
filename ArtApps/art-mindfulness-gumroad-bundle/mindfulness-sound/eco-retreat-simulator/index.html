@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eco-Retreat Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --roof-color: #2A9D8F;
+            --roof-shadow: #1f7a6f;
+            --wall-color: #F4F1DE;
+            --sky-day-top: #4CC9F0;
+            --sky-day-bottom: #A6EFFF;
+            --sky-night-top: #0f172a;
+            --sky-night-bottom: #312e81;
+            --grass-front: #606c38;
+            --grass-back: #283618;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            overflow: hidden;
+            transition: background 2s ease;
+        }
+
+        /* --- SCENE LAYERS --- */
+        .scene {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(to bottom, var(--sky-day-top), var(--sky-day-bottom));
+            transition: background 2s ease;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        .scene.night {
+            background: linear-gradient(to bottom, var(--sky-night-top), var(--sky-night-bottom));
+        }
+
+        /* Celestial Bodies */
+        .sun {
+            position: absolute;
+            top: 10%;
+            right: 10%;
+            width: 80px;
+            height: 80px;
+            background: #F9C74F;
+            border-radius: 50%;
+            box-shadow: 0 0 40px #F9C74F;
+            transition: top 2s ease, right 2s ease, opacity 1s;
+            cursor: pointer;
+        }
+        
+        .moon {
+            position: absolute;
+            top: 10%;
+            left: 10%;
+            width: 60px;
+            height: 60px;
+            background: #E0E1DD;
+            border-radius: 50%;
+            box-shadow: 0 0 20px #E0E1DD;
+            opacity: 0;
+            transition: top 2s ease, opacity 1s;
+            cursor: pointer;
+        }
+
+        .scene.night .sun { opacity: 0; top: 120%; }
+        .scene.night .moon { opacity: 1; }
+
+        /* Landscape */
+        .ground-back {
+            position: absolute;
+            bottom: 15%;
+            width: 100%;
+            height: 30%;
+            background: var(--grass-back);
+            border-radius: 50% 50% 0 0 / 20% 20% 0 0;
+            transform: scale(1.5);
+        }
+
+        .ground-front {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 25%;
+            background: linear-gradient(to top, var(--grass-front), #8da05e);
+            z-index: 10;
+            clip-path: polygon(0% 20%, 10% 10%, 20% 20%, 30% 5%, 40% 15%, 50% 10%, 60% 20%, 70% 5%, 80% 15%, 90% 10%, 100% 20%, 100% 100%, 0% 100%);
+        }
+
+        /* --- THE HOUSE (CSS ART) --- */
+        .house-container {
+            position: absolute;
+            bottom: 20%; /* Sits on ground-back */
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            height: 300px;
+            z-index: 5;
+        }
+
+        /* Roof Structure */
+        .roof-main {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100px;
+            background: repeating-linear-gradient(
+                90deg,
+                var(--roof-color) 0px,
+                var(--roof-color) 10px,
+                var(--roof-shadow) 10px,
+                var(--roof-shadow) 12px
+            );
+            clip-path: polygon(0% 100%, 5% 0%, 95% 0%, 100% 100%);
+            z-index: 6;
+        }
+
+        .roof-gable {
+            position: absolute;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 140px;
+            background: var(--wall-color);
+            clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+            z-index: 7;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        /* The actual green part of the gable roof */
+        .roof-gable-top {
+            position: absolute;
+            top: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 220px;
+            height: 150px;
+            background: repeating-linear-gradient(
+                90deg,
+                var(--roof-color) 0px,
+                var(--roof-color) 10px,
+                var(--roof-shadow) 10px,
+                var(--roof-shadow) 12px
+            );
+            clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+            z-index: 6;
+        }
+
+        /* Walls */
+        .walls {
+            position: absolute;
+            top: 100px;
+            left: 20px;
+            width: 560px;
+            height: 120px;
+            background: var(--wall-color);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            z-index: 5;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 0 40px;
+        }
+
+        /* Windows & Doors */
+        .window {
+            width: 50px;
+            height: 60px;
+            background: #4a4a4a;
+            border: 3px solid #3d2b1f;
+            position: relative;
+            transition: background 0.5s;
+        }
+        
+        .window::after { /* Window Pane lines */
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: #3d2b1f;
+        }
+        .window::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 0;
+            height: 100%;
+            width: 2px;
+            background: #3d2b1f;
+        }
+
+        .door-area {
+            width: 80px;
+            height: 90px;
+            background: #5c4033;
+            margin-top: 30px; /* Align bottom */
+            display: flex;
+            border: 2px solid #3d2b1f;
+        }
+        .door-leaf {
+            width: 50%;
+            height: 100%;
+            border-right: 1px solid #3d2b1f;
+            background: rgba(0,0,0,0.2); /* Glass tint */
+        }
+
+        .round-window {
+            width: 50px;
+            height: 50px;
+            background: #4a4a4a;
+            border-radius: 50%;
+            border: 4px solid #3d2b1f;
+            position: absolute;
+            top: 40px; /* Inside gable */
+            z-index: 8;
+            /* Cross bars */
+            background-image: linear-gradient(to right, transparent 48%, #3d2b1f 48%, #3d2b1f 52%, transparent 52%),
+                              linear-gradient(to bottom, transparent 48%, #3d2b1f 48%, #3d2b1f 52%, transparent 52%);
+        }
+
+        /* Solar Panels */
+        .solar-panel {
+            position: absolute;
+            width: 60px;
+            height: 30px;
+            background: #14213d;
+            border: 2px solid #e5e5e5;
+            transform: skewX(-20deg);
+            cursor: pointer;
+            z-index: 10;
+            transition: transform 0.1s, filter 0.3s;
+            /* Grid lines */
+            background-image: linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 10px 10px;
+        }
+
+        .solar-panel:hover {
+            transform: skewX(-20deg) scale(1.1);
+            border-color: #4CC9F0;
+        }
+
+        .solar-panel.dirty {
+            filter: sepia(1) opacity(0.6);
+        }
+
+        /* Lights at night */
+        .scene.night .window, .scene.night .round-window {
+            background-color: #F9C74F;
+            box-shadow: 0 0 15px #F9C74F;
+        }
+
+        /* Vegetation */
+        .tree {
+            position: absolute;
+            font-size: 120px;
+            bottom: 20%;
+            z-index: 4;
+            filter: drop-shadow(5px 5px 5px rgba(0,0,0,0.3));
+        }
+        
+        .bush {
+            position: absolute;
+            font-size: 40px;
+            bottom: 18%;
+            z-index: 9;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .bush:active { transform: scale(0.9); }
+
+        /* --- UI OVERLAY --- */
+        .ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 100;
+            pointer-events: none; /* Let clicks pass through to game objects */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+        }
+
+        .hud-panel {
+            pointer-events: auto;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 16px;
+            color: white;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 4px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+        .stat-fill {
+            height: 100%;
+            transition: width 0.5s ease;
+        }
+
+        .floating-text {
+            position: absolute;
+            color: white;
+            font-weight: bold;
+            font-size: 1.2rem;
+            pointer-events: none;
+            animation: floatUp 1s ease-out forwards;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            z-index: 200;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-50px); opacity: 0; }
+        }
+
+        /* Modal */
+        .modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #1e293b;
+            padding: 30px;
+            border-radius: 20px;
+            color: white;
+            text-align: center;
+            z-index: 1000;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            border: 1px solid #334155;
+            display: none;
+        }
+        .modal.open { display: block; }
+
+    </style>
+</head>
+<body>
+
+    <!-- Game Scene -->
+    <div class="scene" id="scene">
+        
+        <!-- Sky Objects -->
+        <div class="sun" id="sun" title="Click to toggle Night"></div>
+        <div class="moon" id="moon" title="Click to toggle Day"></div>
+
+        <!-- Background Landscape -->
+        <div class="ground-back"></div>
+
+        <!-- Trees (Background) -->
+        <div class="tree" style="left: 10%; bottom: 25%;">🌲</div>
+        <div class="tree" style="left: 5%; bottom: 22%; transform: scale(0.8);">🌳</div>
+        <div class="tree" style="right: 10%; bottom: 25%;">🌲</div>
+        <div class="tree" style="right: 15%; bottom: 28%; transform: scale(1.2);">🌲</div>
+
+        <!-- The House -->
+        <div class="house-container">
+            <!-- Gable Roof Top -->
+            <div class="roof-gable-top"></div>
+            
+            <!-- Main Roof -->
+            <div class="roof-main">
+                <!-- Solar Panels -->
+                <div class="solar-panel" style="left: 50px; top: 20px;" onclick="cleanPanel(this)"></div>
+                <div class="solar-panel" style="left: 120px; top: 20px;" onclick="cleanPanel(this)"></div>
+                <div class="solar-panel" style="right: 50px; top: 20px; transform: skewX(20deg);" onclick="cleanPanel(this)"></div>
+            </div>
+
+            <!-- Gable Wall -->
+            <div class="roof-gable">
+                <div class="round-window"></div>
+            </div>
+
+            <!-- Main Walls -->
+            <div class="walls">
+                <div class="window"></div>
+                <div class="window"></div>
+                <!-- Center Door Area -->
+                <div class="door-area">
+                    <div class="door-leaf"></div>
+                    <div class="door-leaf"></div>
+                </div>
+                <div class="window"></div>
+                <div class="window" style="width: 30px;"></div> <!-- Small window -->
+            </div>
+        </div>
+
+        <!-- Foreground Vegetation (Interactive) -->
+        <div class="bush" style="left: 20%;" onclick="waterPlant(this, event)">🌿</div>
+        <div class="bush" style="left: 25%; bottom: 15%;" onclick="waterPlant(this, event)">🌾</div>
+        <div class="bush" style="left: 45%; bottom: 12%;" onclick="waterPlant(this, event)">🌱</div>
+        <div class="bush" style="right: 30%;" onclick="waterPlant(this, event)">🌿</div>
+        <div class="bush" style="right: 20%; bottom: 14%;" onclick="waterPlant(this, event)">🌾</div>
+
+        <!-- Foreground Ground -->
+        <div class="ground-front"></div>
+    </div>
+
+    <!-- UI Overlay -->
+    <div class="ui-layer">
+        <!-- Top Bar -->
+        <div class="flex justify-between w-full">
+            <div class="hud-panel flex items-center gap-4">
+                <div class="text-2xl" id="weather-icon">☀️</div>
+                <div>
+                    <div class="text-xs text-gray-400 uppercase tracking-wider">Current Time</div>
+                    <div class="text-xl font-mono font-bold" id="clock">12:00 PM</div>
+                </div>
+            </div>
+            
+            <div class="hud-panel">
+                <div class="text-xs text-gray-400 uppercase tracking-wider">Eco Score</div>
+                <div class="text-2xl font-mono font-bold text-green-400" id="score">0</div>
+            </div>
+        </div>
+
+        <!-- Bottom Bar -->
+        <div class="flex justify-center w-full pb-8">
+            <div class="hud-panel w-full max-w-2xl grid grid-cols-3 gap-8">
+                <!-- Energy -->
+                <div>
+                    <div class="flex justify-between items-end mb-1">
+                        <span class="text-sm font-semibold">Energy Stored</span>
+                        <span class="text-xs font-mono" id="energy-val">50%</span>
+                    </div>
+                    <div class="stat-bar">
+                        <div class="stat-fill bg-yellow-400" id="energy-bar" style="width: 50%;"></div>
+                    </div>
+                    <div class="text-xs text-gray-400 mt-1" id="energy-status">Generating...</div>
+                </div>
+
+                <!-- Garden -->
+                <div>
+                    <div class="flex justify-between items-end mb-1">
+                        <span class="text-sm font-semibold">Garden Health</span>
+                        <span class="text-xs font-mono" id="garden-val">80%</span>
+                    </div>
+                    <div class="stat-bar">
+                        <div class="stat-fill bg-green-500" id="garden-bar" style="width: 80%;"></div>
+                    </div>
+                    <div class="text-xs text-gray-400 mt-1">Click plants to water</div>
+                </div>
+
+                <!-- Maintenance -->
+                <div>
+                    <div class="flex justify-between items-end mb-1">
+                        <span class="text-sm font-semibold">Panel Efficiency</span>
+                        <span class="text-xs font-mono" id="panel-val">100%</span>
+                    </div>
+                    <div class="stat-bar">
+                        <div class="stat-fill bg-blue-400" id="panel-bar" style="width: 100%;"></div>
+                    </div>
+                    <div class="text-xs text-gray-400 mt-1">Click panels to clean</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Over / Milestone Modal -->
+    <div class="modal" id="modal">
+        <h2 class="text-2xl font-bold mb-2 text-green-400">🌿 Eco-Master!</h2>
+        <p class="mb-4 text-gray-300">You've maintained a perfect sustainable home for 24 hours.</p>
+        <button onclick="closeModal()" class="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-full font-semibold transition">Keep Going</button>
+    </div>
+
+    <script>
+        // --- Game State ---
+        const state = {
+            energy: 50,
+            gardenHealth: 80,
+            panelEfficiency: 100,
+            score: 0,
+            isDay: true,
+            time: 12, // 24h format
+            gameSpeed: 1000, // ms per tick
+        };
+
+        // --- DOM Elements ---
+        const els = {
+            scene: document.getElementById('scene'),
+            sun: document.getElementById('sun'),
+            moon: document.getElementById('moon'),
+            clock: document.getElementById('clock'),
+            weatherIcon: document.getElementById('weather-icon'),
+            score: document.getElementById('score'),
+            energyBar: document.getElementById('energy-bar'),
+            energyVal: document.getElementById('energy-val'),
+            energyStatus: document.getElementById('energy-status'),
+            gardenBar: document.getElementById('garden-bar'),
+            gardenVal: document.getElementById('garden-val'),
+            panelBar: document.getElementById('panel-bar'),
+            panelVal: document.getElementById('panel-val'),
+            panels: document.querySelectorAll('.solar-panel'),
+            modal: document.getElementById('modal')
+        };
+
+        // --- Game Loop ---
+        setInterval(() => {
+            tick();
+            updateUI();
+        }, state.gameSpeed);
+
+        function tick() {
+            // Time progression
+            state.time += 1;
+            if (state.time >= 24) state.time = 0;
+
+            // Day/Night Cycle logic
+            if (state.time >= 6 && state.time < 18) {
+                if (!state.isDay) setDay(true);
+            } else {
+                if (state.isDay) setDay(false);
+            }
+
+            // Energy Logic
+            if (state.isDay) {
+                // Generate energy based on panel efficiency
+                const generation = (state.panelEfficiency / 100) * 5;
+                state.energy = Math.min(100, state.energy + generation);
+                els.energyStatus.innerText = `Generating +${generation.toFixed(1)}/h`;
+            } else {
+                // Consume energy at night
+                state.energy = Math.max(0, state.energy - 4);
+                els.energyStatus.innerText = `Consuming -4/h`;
+            }
+
+            // Garden Logic (decays over time)
+            state.gardenHealth = Math.max(0, state.gardenHealth - 0.5);
+
+            // Panel Logic (get dirty randomly)
+            if (Math.random() > 0.7) {
+                state.panelEfficiency = Math.max(0, state.panelEfficiency - 5);
+                makeRandomPanelDirty();
+            }
+
+            // Score Logic
+            if (state.energy > 0 && state.gardenHealth > 20) {
+                state.score += 10;
+            }
+        }
+
+        // --- Interaction Handlers ---
+
+        function setDay(isDay) {
+            state.isDay = isDay;
+            if (isDay) {
+                els.scene.classList.remove('night');
+                els.weatherIcon.innerText = '☀️';
+            } else {
+                els.scene.classList.add('night');
+                els.weatherIcon.innerText = '🌙';
+            }
+        }
+
+        // Allow manual toggle
+        els.sun.addEventListener('click', () => { state.time = 18; tick(); updateUI(); });
+        els.moon.addEventListener('click', () => { state.time = 6; tick(); updateUI(); });
+
+        function cleanPanel(el) {
+            if (el.classList.contains('dirty')) {
+                el.classList.remove('dirty');
+                state.panelEfficiency = Math.min(100, state.panelEfficiency + 15);
+                showFloatingText(el, "+ Efficiency!", "#4CC9F0");
+                state.score += 50;
+                updateUI();
+            } else {
+                showFloatingText(el, "Already Clean", "#fff");
+            }
+        }
+
+        function makeRandomPanelDirty() {
+            const cleanPanels = Array.from(els.panels).filter(p => !p.classList.contains('dirty'));
+            if (cleanPanels.length > 0) {
+                const randomPanel = cleanPanels[Math.floor(Math.random() * cleanPanels.length)];
+                randomPanel.classList.add('dirty');
+            }
+        }
+
+        window.waterPlant = function(el, event) {
+            // Visual feedback
+            el.style.transform = "scale(1.2)";
+            setTimeout(() => el.style.transform = "scale(1)", 200);
+            
+            // Logic
+            state.gardenHealth = Math.min(100, state.gardenHealth + 10);
+            state.score += 20;
+            
+            showFloatingText(el, "❤️ Nature", "#a7f3d0");
+            updateUI();
+        }
+
+        function showFloatingText(targetEl, text, color) {
+            const rect = targetEl.getBoundingClientRect();
+            const floatEl = document.createElement('div');
+            floatEl.className = 'floating-text';
+            floatEl.innerText = text;
+            floatEl.style.left = rect.left + 'px';
+            floatEl.style.top = rect.top + 'px';
+            floatEl.style.color = color;
+            document.body.appendChild(floatEl);
+            setTimeout(() => floatEl.remove(), 1000);
+        }
+
+        function updateUI() {
+            // Clock
+            const ampm = state.time >= 12 ? 'PM' : 'AM';
+            const displayHour = state.time % 12 || 12;
+            els.clock.innerText = `${displayHour}:00 ${ampm}`;
+
+            // Bars
+            els.energyBar.style.width = `${state.energy}%`;
+            els.energyVal.innerText = `${Math.round(state.energy)}%`;
+            
+            els.gardenBar.style.width = `${state.gardenHealth}%`;
+            els.gardenVal.innerText = `${Math.round(state.gardenHealth)}%`;
+            
+            els.panelBar.style.width = `${state.panelEfficiency}%`;
+            els.panelVal.innerText = `${Math.round(state.panelEfficiency)}%`;
+
+            // Score
+            els.score.innerText = state.score.toLocaleString();
+
+            // Color changes based on critical levels
+            if (state.energy < 20) els.energyBar.classList.replace('bg-yellow-400', 'bg-red-500');
+            else els.energyBar.classList.replace('bg-red-500', 'bg-yellow-400');
+
+            if (state.gardenHealth < 30) els.gardenBar.classList.replace('bg-green-500', 'bg-orange-500');
+            else els.gardenBar.classList.replace('bg-orange-500', 'bg-green-500');
+        }
+
+        window.closeModal = function() {
+            els.modal.classList.remove('open');
+        }
+
+        // Initialize
+        updateUI();
+
+    </script>
+</body>
+</html>

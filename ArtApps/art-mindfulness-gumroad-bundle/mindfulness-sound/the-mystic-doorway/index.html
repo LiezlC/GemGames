@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Mystic Doorway</title>
+    <style>
+        :root {
+            --bg-dark: #050f16;
+            --bg-light: #1b3a4b;
+            --moon-color: #dceef5;
+            --tree-color: #020508;
+            --door-glow: #ffaa00;
+            --door-wood: #3e2723;
+            --orb-color: #aaddff;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: radial-gradient(circle at 30% 40%, var(--bg-light), var(--bg-dark));
+            font-family: 'Cinzel', 'Georgia', serif;
+            color: white;
+        }
+
+        /* --- The Scene Layers --- */
+        
+        /* 1. The Moon */
+        .moon {
+            position: absolute;
+            top: 25%;
+            left: 25%;
+            width: 120px;
+            height: 120px;
+            background: var(--moon-color);
+            border-radius: 50%;
+            box-shadow: 0 0 60px 20px rgba(220, 238, 245, 0.3);
+            opacity: 0.9;
+            z-index: 1;
+            transition: transform 5s ease-in-out;
+        }
+
+        /* 2. Fog/Atmosphere */
+        .fog {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 60%;
+            background: linear-gradient(to top, rgba(5, 15, 22, 0.9), transparent);
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        /* 3. The Tree Arch (SVG) */
+        .tree-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none; /* Let clicks pass through to door/orbs */
+            filter: drop-shadow(0 0 10px rgba(0,0,0,0.8));
+        }
+        
+        .tree-path {
+            fill: var(--tree-color);
+        }
+
+        /* 4. The Door Structure */
+        .door-container {
+            position: absolute;
+            right: 15%;
+            bottom: 25%;
+            width: 160px;
+            height: 240px;
+            z-index: 5;
+            perspective: 800px;
+        }
+
+        .door-frame {
+            position: absolute;
+            top: -20px;
+            left: -20px;
+            right: -20px;
+            bottom: -10px;
+            background: #1a1a1a;
+            border-radius: 80px 80px 5px 5px;
+            box-shadow: inset 0 0 20px #000;
+            z-index: 4;
+        }
+
+        .door-glow-back {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            border-radius: 60px 60px 0 0;
+            background: radial-gradient(circle, #ffcc00, #ff6600);
+            filter: blur(20px);
+            opacity: 0.6;
+            z-index: 3;
+            animation: pulseGlow 3s infinite alternate;
+        }
+
+        .door {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, #5d4037, #3e2723);
+            border-radius: 60px 60px 0 0;
+            border: 4px solid #1a1a1a;
+            transform-origin: left;
+            transition: transform 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            z-index: 6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.8);
+        }
+
+        .door.open {
+            transform: rotateY(-110deg);
+        }
+
+        .door-handle {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            width: 12px;
+            height: 12px;
+            background: #ffd700;
+            border-radius: 50%;
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+
+        .door-inner-light {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: white;
+            border-radius: 60px 60px 0 0;
+            z-index: 2;
+            opacity: 0;
+            transition: opacity 0.5s;
+            box-shadow: 0 0 50px 20px #ffaa00;
+        }
+
+        .door.open + .door-inner-light {
+            opacity: 1;
+        }
+
+        /* Steps */
+        .steps {
+            position: absolute;
+            bottom: -60px;
+            right: -20px;
+            width: 200px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transform: skewX(-20deg);
+        }
+        .step {
+            width: 100%;
+            height: 20px;
+            background: #1c1c1c;
+            margin-bottom: -5px;
+            border-top: 1px solid #333;
+            border-radius: 5px;
+        }
+        .step:nth-child(1) { width: 100%; background: #151515; }
+        .step:nth-child(2) { width: 110%; background: #101010; }
+        .step:nth-child(3) { width: 120%; background: #0a0a0a; }
+
+        /* --- Gameplay Elements --- */
+
+        /* Spirit Orbs */
+        .orb {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: radial-gradient(circle, #fff, var(--orb-color));
+            border-radius: 50%;
+            box-shadow: 0 0 15px var(--orb-color);
+            cursor: pointer;
+            z-index: 20;
+            animation: float 4s ease-in-out infinite;
+            opacity: 0; /* Hidden initially */
+            transition: transform 0.2s, opacity 1s;
+        }
+
+        .orb:hover {
+            transform: scale(1.5);
+            background: radial-gradient(circle, #fff, #ff00aa);
+            box-shadow: 0 0 20px #ff00aa;
+        }
+
+        /* UI Overlay */
+        .ui-layer {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 24px;
+            text-shadow: 0 0 10px var(--orb-color);
+            letter-spacing: 2px;
+        }
+
+        .status {
+            font-size: 14px;
+            color: #ccc;
+            margin-top: 5px;
+        }
+
+        .progress-bar-container {
+            width: 200px;
+            height: 6px;
+            background: rgba(255,255,255,0.1);
+            margin-top: 10px;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, var(--orb-color), #fff);
+            transition: width 0.3s ease;
+        }
+
+        .message-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 1s;
+        }
+
+        .message-overlay.visible {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .message-text {
+            font-size: 32px;
+            color: #ffaa00;
+            text-shadow: 0 0 20px #ffaa00;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        button {
+            background: transparent;
+            border: 2px solid #ffaa00;
+            color: #ffaa00;
+            padding: 10px 30px;
+            font-size: 16px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.3s;
+            pointer-events: auto;
+        }
+
+        button:hover {
+            background: #ffaa00;
+            color: #000;
+            box-shadow: 0 0 20px #ffaa00;
+        }
+
+        /* Animations */
+        @keyframes pulseGlow {
+            from { opacity: 0.4; transform: scale(0.95); }
+            to { opacity: 0.7; transform: scale(1.05); }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) translateX(0); }
+            25% { transform: translateY(-15px) translateX(5px); }
+            50% { transform: translateY(0) translateX(10px); }
+            75% { transform: translateY(15px) translateX(5px); }
+        }
+
+        @keyframes disappear {
+            to { opacity: 0; transform: scale(2); }
+        }
+
+        /* Silhouettes on tree */
+        .silhouette {
+            fill: #000;
+            opacity: 0.8;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- UI -->
+    <div class="ui-layer">
+        <h1>The Whispering Gate</h1>
+        <div class="status">Collect Spirit Orbs to break the seal.</div>
+        <div class="progress-bar-container">
+            <div class="progress-bar" id="progress"></div>
+        </div>
+    </div>
+
+    <!-- Victory Screen -->
+    <div class="message-overlay" id="victoryScreen">
+        <div class="message-text">The Ancient Path is Open</div>
+        <button onclick="resetGame()">Seal the Door</button>
+    </div>
+
+    <!-- Background Elements -->
+    <div class="moon"></div>
+    <div class="fog"></div>
+
+    <!-- Interactive Door -->
+    <div class="door-container">
+        <div class="door-glow-back"></div>
+        <div class="door-inner-light"></div>
+        <div class="door-frame"></div>
+        <div class="door" id="mainDoor" onclick="tryOpenDoor()">
+            <div class="door-handle"></div>
+        </div>
+        <div class="steps">
+            <div class="step"></div>
+            <div class="step"></div>
+            <div class="step"></div>
+        </div>
+    </div>
+
+    <!-- Foreground Tree SVG -->
+    <svg class="tree-layer" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <defs>
+            <filter id="glow">
+                <feGaussianBlur stdDeviation="0.5" result="coloredBlur"/>
+                <feMerge>
+                    <feMergeNode in="coloredBlur"/>
+                    <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+            </filter>
+        </defs>
+        <!-- Left Tree Trunk -->
+        <path class="tree-path" d="M0,0 L30,0 C35,20 20,40 10,60 C5,80 20,90 40,100 L0,100 Z" />
+        <!-- Right Tree Trunk (Arching over) -->
+        <path class="tree-path" d="M100,0 L60,0 C50,10 40,20 30,30 C25,35 30,40 45,35 C60,30 80,40 90,60 C95,80 85,90 70,100 L100,100 Z" />
+        <!-- Top Branches connecting -->
+        <path class="tree-path" d="M20,0 C30,15 50,20 70,10 L100,0 Z" />
+        
+        <!-- Small Silhouette Figure on Branch -->
+        <circle cx="35" cy="31" r="1.5" class="silhouette" />
+        <path d="M35,32 L34,36 L37,36 Z" class="silhouette" />
+    </svg>
+
+    <!-- Container for Orbs -->
+    <div id="orbContainer"></div>
+
+    <script>
+        const totalOrbs = 10;
+        let collectedOrbs = 0;
+        const door = document.getElementById('mainDoor');
+        const progressBar = document.getElementById('progress');
+        const victoryScreen = document.getElementById('victoryScreen');
+        const orbContainer = document.getElementById('orbContainer');
+
+        function initGame() {
+            collectedOrbs = 0;
+            updateProgress();
+            door.classList.remove('open');
+            victoryScreen.classList.remove('visible');
+            orbContainer.innerHTML = '';
+            
+            // Spawn Orbs
+            for(let i=0; i<totalOrbs; i++) {
+                spawnOrb(i);
+            }
+        }
+
+        function spawnOrb(index) {
+            const orb = document.createElement('div');
+            orb.classList.add('orb');
+            
+            // Random Position (avoiding the door area roughly)
+            // Door is approx right 15%, bottom 25%.
+            let x, y;
+            let safe = false;
+            while(!safe) {
+                x = Math.random() * 90 + 5; // 5% to 95% vw
+                y = Math.random() * 80 + 10; // 10% to 90% vh
+                
+                // Simple exclusion zone for the door
+                if (x > 70 && y > 60) {
+                    safe = false;
+                } else {
+                    safe = true;
+                }
+            }
+
+            orb.style.left = x + '%';
+            orb.style.top = y + '%';
+            
+            // Random delay for appearance
+            orb.style.animationDelay = (Math.random() * 2) + 's';
+            
+            // Fade in delay
+            setTimeout(() => {
+                orb.style.opacity = 0.8;
+            }, index * 200 + 500);
+
+            orb.onclick = (e) => {
+                collectOrb(e.target);
+            };
+
+            orbContainer.appendChild(orb);
+        }
+
+        function collectOrb(element) {
+            // Visual feedback
+            element.style.transform = 'scale(3)';
+            element.style.opacity = '0';
+            element.style.pointerEvents = 'none';
+            
+            collectedOrbs++;
+            updateProgress();
+
+            // Sound effect simulation (visual flash)
+            document.body.style.boxShadow = `inset 0 0 50px rgba(255, 255, 255, 0.1)`;
+            setTimeout(() => {
+                document.body.style.boxShadow = 'none';
+            }, 100);
+
+            if (collectedOrbs === totalOrbs) {
+                setTimeout(openDoor, 500);
+            }
+        }
+
+        function updateProgress() {
+            const pct = (collectedOrbs / totalOrbs) * 100;
+            progressBar.style.width = pct + '%';
+        }
+
+        function tryOpenDoor() {
+            if (collectedOrbs < totalOrbs) {
+                // Shake animation for locked door
+                door.style.transform = 'translateX(5px)';
+                setTimeout(() => door.style.transform = 'translateX(-5px)', 100);
+                setTimeout(() => door.style.transform = 'translateX(5px)', 200);
+                setTimeout(() => door.style.transform = 'translateX(0)', 300);
+                
+                // Show hint
+                const status = document.querySelector('.status');
+                const originalText = status.innerText;
+                status.innerText = "The seal is still active. Find more Orbs.";
+                status.style.color = "#ffaa00";
+                setTimeout(() => {
+                    status.innerText = originalText;
+                    status.style.color = "#ccc";
+                }, 2000);
+            }
+        }
+
+        function openDoor() {
+            door.classList.add('open');
+            // Play victory sequence
+            setTimeout(() => {
+                victoryScreen.classList.add('visible');
+            }, 1500);
+        }
+
+        function resetGame() {
+            initGame();
+        }
+
+        // Start
+        initGame();
+
+    </script>
+</body>
+</html>

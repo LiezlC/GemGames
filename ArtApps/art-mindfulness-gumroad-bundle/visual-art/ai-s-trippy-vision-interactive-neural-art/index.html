@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI's Trippy Vision - Interactive Neural Art</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #050510;
+            font-family: 'Inter', sans-serif;
+            color: white;
+        }
+
+        #canvas-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none; /* Let clicks pass through to canvas where needed */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 2rem;
+            box-sizing: border-box;
+        }
+
+        .interactive-area {
+            pointer-events: auto;
+        }
+
+        h1 {
+            font-size: 5rem;
+            font-weight: 900;
+            line-height: 0.9;
+            text-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            letter-spacing: -2px;
+            mix-blend-mode: overlay;
+        }
+
+        .brain-container {
+            position: absolute;
+            top: 50%;
+            right: 10%;
+            transform: translateY(-50%);
+            width: 400px;
+            height: 400px;
+            pointer-events: auto;
+            cursor: pointer;
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .brain-container:active {
+            transform: translateY(-50%) scale(0.95);
+        }
+
+        .brain-svg {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 0 20px rgba(100, 200, 255, 0.4));
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .neuron {
+            fill: #ff4d4d;
+            filter: drop-shadow(0 0 5px #ffaa00);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .neuron.active {
+            opacity: 1;
+            animation: pulse 1s infinite alternate;
+        }
+
+        @keyframes pulse {
+            0% { r: 3; fill: #ff4d4d; }
+            100% { r: 6; fill: #ffff00; }
+        }
+
+        .controls {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            width: 300px;
+            pointer-events: auto;
+        }
+
+        .slider-group {
+            margin-bottom: 1rem;
+        }
+
+        .slider-group label {
+            display: block;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+            color: rgba(255,255,255,0.8);
+        }
+
+        input[type=range] {
+            width: 100%;
+            -webkit-appearance: none;
+            background: rgba(255,255,255,0.2);
+            height: 4px;
+            border-radius: 2px;
+            outline: none;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: white;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .btn {
+            background: white;
+            color: black;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+            margin-right: 0.5rem;
+        }
+
+        .btn:hover {
+            background: #ddd;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.4);
+        }
+
+        .tooltip {
+            position: absolute;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            font-size: 0.8rem;
+        }
+
+        /* Glassy Brain Parts */
+        .brain-lobe {
+            fill: rgba(200, 230, 255, 0.1);
+            stroke: rgba(255, 255, 255, 0.5);
+            stroke-width: 1.5;
+        }
+        .brain-core {
+            fill: rgba(100, 200, 255, 0.2);
+            stroke: rgba(100, 255, 255, 0.8);
+            stroke-width: 2;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="canvas-layer"></canvas>
+
+    <div id="ui-layer">
+        <div>
+            <h1>AI's<br>Trippy<br>Vision</h1>
+            <p style="font-size: 1.2rem; opacity: 0.8; max-width: 400px; margin-top: 1rem;">
+                Stimulate the neural network. Adjust parameters to alter the hallucination.
+            </p>
+        </div>
+
+        <div class="controls">
+            <div class="slider-group">
+                <label>Neuro-Plasticity (Warp)</label>
+                <input type="range" min="1" max="100" value="50" id="warp-slider">
+            </div>
+            <div class="slider-group">
+                <label>Dopamine Level (Color)</label>
+                <input type="range" min="0" max="360" value="180" id="color-slider">
+            </div>
+            <div class="slider-group">
+                <label>Synapse Speed (Flow)</label>
+                <input type="range" min="1" max="50" value="10" id="speed-slider">
+            </div>
+            <div style="display: flex; margin-top: 1rem;">
+                <button class="btn" id="stimulate-btn">⚡ Stimulate</button>
+                <button class="btn btn-secondary" id="undo-btn">↶ Undo</button>
+                <button class="btn btn-secondary" id="redo-btn">↷ Redo</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- The Brain Visual -->
+    <div class="brain-container" id="brain-container">
+        <svg class="brain-svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <radialGradient id="core-glow" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                    <stop offset="0%" style="stop-color:rgb(0,255,255);stop-opacity:0.8" />
+                    <stop offset="100%" style="stop-color:rgb(0,0,255);stop-opacity:0" />
+                </radialGradient>
+            </defs>
+            
+            <!-- Outer Lobes (Stylized) -->
+            <path class="brain-lobe" d="M60,100 C40,80 40,120 60,140 C50,160 90,180 110,160 C130,180 170,160 160,130 C180,110 160,60 130,50 C110,30 70,40 60,70 C40,60 30,90 60,100 Z" />
+            
+            <!-- Inner Structures -->
+            <path class="brain-lobe" d="M70,90 Q90,60 110,90 T150,90" fill="none" />
+            <path class="brain-lobe" d="M70,110 Q90,140 110,110 T150,110" fill="none" />
+            
+            <!-- The Core -->
+            <circle cx="100" cy="100" r="30" class="brain-core" />
+            <circle cx="100" cy="100" r="20" fill="url(#core-glow)" style="mix-blend-mode: screen;" />
+
+            <!-- Neurons (Dynamic Dots) -->
+            <g id="neuron-group">
+                <!-- Will be populated by JS -->
+            </g>
+        </svg>
+    </div>
+
+    <script>
+        /**
+         * STATE MANAGEMENT & UNDO/REDO
+         */
+        const state = {
+            warp: 50,
+            colorOffset: 180,
+            speed: 10,
+            activeNeurons: [], // Array of indices
+            waves: [] // Array of wave objects {y, amplitude, speed, color}
+        };
+
+        const historyStack = [];
+        let historyIndex = -1;
+        const MAX_HISTORY = 50;
+
+        function saveState() {
+            // Remove any future states if we are in the middle of the stack
+            if (historyIndex < historyStack.length - 1) {
+                historyStack.splice(historyIndex + 1);
+            }
+            
+            // Deep copy relevant state
+            const stateSnapshot = JSON.parse(JSON.stringify({
+                warp: state.warp,
+                colorOffset: state.colorOffset,
+                speed: state.speed,
+                activeNeurons: state.activeNeurons,
+                // We don't save 'waves' entirely as they are procedural, 
+                // but we save the parameters that generate them.
+            }));
+
+            historyStack.push(stateSnapshot);
+            if (historyStack.length > MAX_HISTORY) historyStack.shift();
+            else historyIndex++;
+            
+            updateUIFromState();
+        }
+
+        function restoreState(snapshot) {
+            state.warp = snapshot.warp;
+            state.colorOffset = snapshot.colorOffset;
+            state.speed = snapshot.speed;
+            state.activeNeurons = snapshot.activeNeurons;
+            
+            // Update UI Controls
+            document.getElementById('warp-slider').value = state.warp;
+            document.getElementById('color-slider').value = state.colorOffset;
+            document.getElementById('speed-slider').value = state.speed;
+
+            renderNeurons();
+        }
+
+        function undo() {
+            if (historyIndex > 0) {
+                historyIndex--;
+                restoreState(historyStack[historyIndex]);
+            }
+        }
+
+        function redo() {
+            if (historyIndex < historyStack.length - 1) {
+                historyIndex++;
+                restoreState(historyStack[historyIndex]);
+            }
+        }
+
+        // Initial Save
+        saveState();
+
+        /**
+         * VISUALIZER LOGIC (CANVAS)
+         */
+        const canvas = document.getElementById('canvas-layer');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        let time = 0;
+
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        function draw() {
+            // Clear with trail effect
+            ctx.fillStyle = 'rgba(5, 5, 16, 0.1)';
+            ctx.fillRect(0, 0, width, height);
+
+            const warpFactor = state.warp / 20;
+            const speedFactor = state.speed / 500;
+            time += speedFactor;
+
+            // Draw Trippy Waves
+            ctx.lineWidth = 2;
+            
+            // Create a "floor" effect similar to the image
+            const lines = 30;
+            for (let i = 0; i < lines; i++) {
+                ctx.beginPath();
+                const yBase = height - (i * (height/lines) * 0.8) + (Math.sin(time) * 20);
+                
+                // Color gradient based on state
+                const hue = (state.colorOffset + (i * 10) + (time * 50)) % 360;
+                ctx.strokeStyle = `hsla(${hue}, 70%, 60%, 0.5)`;
+                
+                for (let x = 0; x <= width; x += 20) {
+                    // Complex noise-like wave
+                    const distFromCenter = Math.abs(x - width/2) / width;
+                    const yOffset = Math.sin(x * 0.01 + time + i) * (50 * warpFactor) * distFromCenter;
+                    const yOffset2 = Math.cos(x * 0.03 - time) * (30 * warpFactor);
+                    
+                    ctx.lineTo(x, yBase + yOffset + yOffset2);
+                }
+                ctx.stroke();
+            }
+
+            // Draw "Thoughts" (Floating Orbs from active neurons)
+            state.activeNeurons.forEach((nIndex, i) => {
+                const x = (width/2) + Math.cos(time * (i+1) + nIndex) * (200 + Math.sin(time)*100);
+                const y = (height/2) + Math.sin(time * (i+1) + nIndex) * (200 + Math.cos(time)*100);
+                
+                ctx.beginPath();
+                ctx.arc(x, y, 5 + (Math.sin(time*10)*2), 0, Math.PI * 2);
+                ctx.fillStyle = `hsla(${(state.colorOffset + nIndex*50)%360}, 100%, 70%, 0.8)`;
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = ctx.fillStyle;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            });
+
+            requestAnimationFrame(draw);
+        }
+        draw();
+
+        /**
+         * BRAIN & INTERACTION LOGIC
+         */
+        const neuronGroup = document.getElementById('neuron-group');
+        const brainContainer = document.getElementById('brain-container');
+        
+        // Generate SVG Neurons
+        const neuronPositions = [
+            {cx: 80, cy: 70}, {cx: 120, cy: 60}, {cx: 150, cy: 80},
+            {cx: 60, cy: 100}, {cx: 90, cy: 100}, {cx: 140, cy: 110},
+            {cx: 80, cy: 130}, {cx: 120, cy: 140}, {cx: 100, cy: 100} // Core
+        ];
+
+        neuronPositions.forEach((pos, index) => {
+            const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            circle.setAttribute("cx", pos.cx);
+            circle.setAttribute("cy", pos.cy);
+            circle.setAttribute("r", "3");
+            circle.setAttribute("class", "neuron");
+            circle.setAttribute("data-index", index);
+            neuronGroup.appendChild(circle);
+        });
+
+        function renderNeurons() {
+            const neurons = document.querySelectorAll('.neuron');
+            neurons.forEach(n => n.classList.remove('active'));
+            state.activeNeurons.forEach(index => {
+                if(neurons[index]) neurons[index].classList.add('active');
+            });
+        }
+
+        function stimulateBrain() {
+            // Randomly activate a neuron
+            const randomIndex = Math.floor(Math.random() * neuronPositions.length);
+            if (!state.activeNeurons.includes(randomIndex)) {
+                state.activeNeurons.push(randomIndex);
+            } else {
+                // If already active, maybe shift color or warp slightly
+                state.colorOffset = (state.colorOffset + 45) % 360;
+            }
+            
+            // Limit active neurons to avoid chaos
+            if (state.activeNeurons.length > 5) state.activeNeurons.shift();
+            
+            renderNeurons();
+            saveState();
+            
+            // Visual feedback on UI
+            brainContainer.style.transform = "translateY(-50%) scale(1.1)";
+            setTimeout(() => {
+                brainContainer.style.transform = "translateY(-50%) scale(1)";
+            }, 100);
+        }
+
+        // Event Listeners
+        brainContainer.addEventListener('click', stimulateBrain);
+        document.getElementById('stimulate-btn').addEventListener('click', stimulateBrain);
+
+        document.getElementById('undo-btn').addEventListener('click', undo);
+        document.getElementById('redo-btn').addEventListener('click', redo);
+
+        // Sliders
+        const warpSlider = document.getElementById('warp-slider');
+        const colorSlider = document.getElementById('color-slider');
+        const speedSlider = document.getElementById('speed-slider');
+
+        function handleSliderChange(e, key) {
+            state[key] = parseInt(e.target.value);
+            // We save state on 'change' (mouse up), not 'input' (drag) to prevent history spam
+        }
+
+        // Real-time update
+        warpSlider.addEventListener('input', (e) => state.warp = parseInt(e.target.value));
+        colorSlider.addEventListener('input', (e) => state.colorOffset = parseInt(e.target.value));
+        speedSlider.addEventListener('input', (e) => state.speed = parseInt(e.target.value));
+
+        // History save
+        warpSlider.addEventListener('change', saveState);
+        colorSlider.addEventListener('change', saveState);
+        speedSlider.addEventListener('change', saveState);
+
+        // Keyboard Shortcuts
+        window.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+                e.preventDefault();
+                undo();
+            }
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'Z'))) {
+                e.preventDefault();
+                redo();
+            }
+        });
+
+        // External Message Listener
+        window.addEventListener('message', (e) => {
+            if (e.data.type === 'undo') undo();
+            if (e.data.type === 'redo') redo();
+        });
+
+        function updateUIFromState() {
+            // This is called after saveState, usually redundant unless logic changes,
+            // but useful for debugging or external triggers.
+        }
+
+    </script>
+</body>
+</html>

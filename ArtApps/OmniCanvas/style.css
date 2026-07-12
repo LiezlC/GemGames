@@ -1,0 +1,492 @@
+:root {
+    --bg-dark: #0a0a0d;
+    --panel-bg: rgba(20, 20, 25, 0.85);
+    --border: rgba(255, 255, 255, 0.1);
+    --accent: #00f3ff;
+    --accent-red: #ff3366;
+    --text: #e0e0e0;
+}
+
+body, html {
+    margin: 0;
+    padding: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: var(--bg-dark);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: var(--text);
+    overflow: hidden;
+}
+
+/* Artboard Area */
+#artboard-wrapper {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+}
+
+#artboard {
+    position: absolute;
+    top: 50%;
+    left: calc(50% - 150px);
+    width: 90vw;
+    height: 90vh;
+    transform: translate(-50%, -50%);
+    background: #111;
+    border-radius: 8px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+    overflow: hidden;
+}
+
+.art-layer {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    border: none;
+    pointer-events: none; /* Crucial: Let interaction pane catch events */
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    background: transparent;
+}
+
+.art-layer.active {
+    opacity: 1;
+}
+
+/* Some blend modes for fun composition */
+#layer-neon { mix-blend-mode: screen; }
+#layer-entropy { mix-blend-mode: screen; filter: hue-rotate(90deg); }
+
+/* The unified interaction catcher */
+#interaction-pane {
+    position: absolute;
+    top: 50%;
+    left: calc(50% - 150px);
+    width: 90vw;
+    height: 90vh;
+    transform: translate(-50%, -50%);
+    z-index: 50;
+    cursor: crosshair;
+}
+
+/* UI Panel */
+#ui-panel {
+    position: absolute;
+    right: 20px;
+    top: 20px;
+    width: 300px;
+    background: var(--panel-bg);
+    backdrop-filter: blur(15px);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    z-index: 100;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+.header h1 {
+    font-size: 1.5rem;
+    margin: 0 0 5px 0;
+    background: linear-gradient(90deg, #00f3ff, #bc13fe);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: 1px;
+}
+
+.header p {
+    font-size: 0.85rem;
+    color: #888;
+    margin: 0 0 20px 0;
+}
+
+.layer-manager h3 {
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 8px;
+    margin-bottom: 15px;
+    color: #aaa;
+}
+
+.layer-toggle {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    transition: color 0.2s;
+}
+
+.layer-toggle:hover { color: white; }
+
+.layer-toggle input {
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--border);
+    border-radius: 4px;
+    background: transparent;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s;
+}
+
+.layer-toggle input:checked {
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+.layer-toggle input:checked::after {
+    content: "✓";
+    position: absolute;
+    top: -2px; left: 2px;
+    color: #000;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.actions {
+    margin-top: 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.btn {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.btn.primary {
+    background: white;
+    color: black;
+}
+.btn.primary:hover { background: #ccc; }
+
+.btn.secondary {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: white;
+}
+.btn.secondary:hover { background: rgba(255,255,255,0.1); }
+
+.btn.psycho {
+    background: linear-gradient(45deg, #ff3366, #bc13fe);
+    color: white;
+    margin-top: 10px;
+    box-shadow: 0 0 15px rgba(255, 51, 102, 0.3);
+}
+.btn.psycho:hover {
+    box-shadow: 0 0 25px rgba(255, 51, 102, 0.6);
+    transform: translateY(-2px);
+}
+
+/* Psychoanalysis Modal */
+.hidden { display: none !important; }
+
+#modal-backdrop {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(0,0,0,0.8);
+    backdrop-filter: blur(8px);
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#psycho-modal {
+    background: #15151a;
+    border: 1px solid var(--border);
+    border-top: 4px solid var(--accent-red);
+    border-radius: 12px;
+    width: 500px;
+    max-width: 90vw;
+    padding: 30px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    text-align: center;
+}
+
+#psycho-modal h2 { margin-top: 0; font-size: 1.5rem; color: #fff; }
+
+.spinner {
+    width: 40px; height: 40px;
+    border: 4px solid rgba(255, 51, 102, 0.2);
+    border-top: 4px solid var(--accent-red);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 20px auto;
+}
+@keyframes spin { 100% { transform: rotate(360deg); } }
+
+#analysis-text {
+    font-size: 1.05rem;
+    line-height: 1.6;
+    color: #ccc;
+    text-align: left;
+    margin: 20px 0;
+    font-style: italic;
+    border-left: 3px solid var(--accent-red);
+    padding-left: 15px;
+}
+
+.metrics {
+    display: flex;
+    justify-content: space-around;
+    margin: 25px 0;
+    background: rgba(0,0,0,0.3);
+    padding: 15px;
+    border-radius: 8px;
+}
+
+.metric span { display: block; font-size: 1.5rem; font-weight: bold; color: var(--accent); }
+.metric label { font-size: 0.75rem; color: #888; text-transform: uppercase; }
+
+/* === Layer Row Controls === */
+.layer-row {
+    display: grid;
+    grid-template-columns: 24px 1fr 60px 80px;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+    font-size: 0.85rem;
+    padding: 4px 0;
+}
+
+.layer-row input[type="checkbox"] {
+    appearance: none;
+    width: 16px; height: 16px;
+    border: 2px solid var(--border);
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.layer-row input[type="checkbox"]:checked {
+    background: var(--accent);
+    border-color: var(--accent);
+}
+.layer-row input[type="checkbox"]:checked::after {
+    content: "✓"; position: absolute; transform: translate(1px, -2px);
+    color: #000; font-size: 12px; font-weight: bold;
+}
+
+.layer-opacity {
+    width: 100%;
+    height: 4px;
+    -webkit-appearance: none;
+    background: rgba(255,255,255,0.15);
+    border-radius: 2px;
+    outline: none;
+}
+.layer-opacity::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px; height: 12px;
+    background: var(--accent);
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.layer-blend {
+    background: rgba(0,0,0,0.4);
+    color: #aaa;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 0.7rem;
+    padding: 2px;
+    cursor: pointer;
+}
+
+/* === Settings Sections === */
+.settings-section {
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+    margin-top: 12px;
+}
+.settings-section h3 {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    color: #aaa;
+    margin: 0 0 10px 0;
+    letter-spacing: 1px;
+}
+
+.slider-row {
+    margin-bottom: 8px;
+}
+.slider-row label {
+    font-size: 0.8rem;
+    color: #ccc;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 3px;
+}
+.slider-row input[type="range"] {
+    width: 100%;
+}
+
+/* === Effects Grid === */
+.effects-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.btn-fx {
+    padding: 8px 4px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: #ccc;
+    font-size: 0.72rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+}
+.btn-fx:hover {
+    background: rgba(255,255,255,0.15);
+    color: white;
+    border-color: var(--accent);
+    box-shadow: 0 0 10px rgba(0,243,255,0.2);
+}
+.btn-fx.active {
+    background: rgba(0,243,255,0.15);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+/* === Oracle Section === */
+.oracle-section {
+    border-top: 2px solid rgba(188,19,254,0.3);
+}
+
+.oracle-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+}
+
+.btn-oracle {
+    padding: 10px 6px;
+    background: linear-gradient(135deg, rgba(255,51,102,0.1), rgba(188,19,254,0.1));
+    border: 1px solid rgba(188,19,254,0.3);
+    border-radius: 8px;
+    color: #ccc;
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-align: center;
+}
+.btn-oracle:hover {
+    background: linear-gradient(135deg, rgba(255,51,102,0.25), rgba(188,19,254,0.25));
+    color: white;
+    box-shadow: 0 0 15px rgba(188,19,254,0.3);
+    transform: translateY(-1px);
+}
+.btn-oracle.premium {
+    border-color: gold;
+    background: linear-gradient(135deg, rgba(255,215,0,0.08), rgba(255,165,0,0.08));
+}
+.btn-oracle.premium:hover {
+    box-shadow: 0 0 15px rgba(255,215,0,0.3);
+}
+
+/* API Settings */
+.api-settings {
+    margin-top: 10px;
+    font-size: 0.8rem;
+}
+.api-settings summary {
+    cursor: pointer;
+    color: #888;
+    padding: 6px 0;
+}
+.api-settings summary:hover { color: #ccc; }
+.api-hint {
+    font-size: 0.75rem;
+    color: #666;
+    margin: 6px 0;
+}
+.api-settings input[type="password"],
+.api-settings select {
+    width: 100%;
+    padding: 6px 8px;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: #ccc;
+    font-size: 0.8rem;
+    margin-bottom: 6px;
+}
+
+/* === Scrollable Panel === */
+#ui-panel {
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.2) transparent;
+}
+#ui-panel::-webkit-scrollbar { width: 4px; }
+#ui-panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
+
+/* === Kaleidoscope Effect === */
+#artboard.kaleidoscope-2 { }
+#artboard.kaleidoscope-4 .art-layer {
+    clip-path: polygon(0 0, 50% 0, 50% 100%, 0 100%);
+}
+.kaleidoscope-reflect {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    transform: scaleX(-1);
+    z-index: 45;
+}
+
+/* === Glitch Effect === */
+@keyframes glitchShake {
+    0% { transform: translate(-50%,-50%); }
+    25% { transform: translate(-50%,-50%) translate(3px,-2px); }
+    50% { transform: translate(-50%,-50%) translate(-3px,2px); }
+    75% { transform: translate(-50%,-50%) translate(2px,3px); }
+    100% { transform: translate(-50%,-50%); }
+}
+#artboard.glitching {
+    animation: glitchShake 0.1s linear 5;
+}
+
+/* === Fullscreen === */
+body.fullscreen #ui-panel { display: none; }
+body.fullscreen #artboard {
+    width: 100vw !important;
+    height: 100vh !important;
+    left: 50% !important;
+    border-radius: 0;
+}
+body.fullscreen #interaction-pane {
+    width: 100vw !important;
+    height: 100vh !important;
+    left: 50% !important;
+}
+
+/* === Oracle Modal Enhancements === */
+.oracle-type-label {
+    display: inline-block;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #666;
+    margin-bottom: 8px;
+}

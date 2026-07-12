@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cosmic Infinity Engine</title>
+    <style>
+        :root {
+            --neon-red: #ff4d4d;
+            --neon-orange: #ff9f43;
+            --neon-blue: #18dcff;
+            --deep-space: #0f0c29;
+            --void: #000000;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            background: radial-gradient(circle at center, #2b1055, #0f0c29, #000000);
+            font-family: 'Courier New', Courier, monospace;
+            overflow: hidden;
+            color: white;
+            user-select: none;
+        }
+
+        /* Background Nebula Effects */
+        .nebula {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(60px);
+            opacity: 0.4;
+            z-index: 0;
+            animation: drift 20s infinite alternate ease-in-out;
+        }
+        .nebula:nth-child(1) { top: 10%; left: 20%; width: 400px; height: 400px; background: var(--neon-red); animation-delay: 0s; }
+        .nebula:nth-child(2) { bottom: 20%; right: 10%; width: 500px; height: 500px; background: var(--neon-blue); animation-delay: -5s; }
+        .nebula:nth-child(3) { top: 40%; left: 60%; width: 300px; height: 300px; background: var(--neon-orange); animation-delay: -10s; }
+
+        @keyframes drift {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(50px, -50px) scale(1.2); }
+        }
+
+        /* UI Overlay */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 100;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .hud-panel {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid var(--neon-blue);
+            padding: 15px;
+            border-radius: 8px;
+            backdrop-filter: blur(5px);
+            pointer-events: auto;
+            box-shadow: 0 0 15px rgba(24, 220, 255, 0.2);
+        }
+
+        h1 { margin: 0; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 2px; color: var(--neon-orange); text-shadow: 0 0 10px var(--neon-red); }
+        p { margin: 5px 0 0; font-size: 0.9rem; color: #ccc; }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .stat-item span { color: var(--neon-blue); }
+
+        /* Entropy Bar */
+        .entropy-container {
+            width: 300px;
+            height: 20px;
+            background: #333;
+            border: 1px solid #555;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 10px;
+            position: relative;
+        }
+        .entropy-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--neon-blue), var(--neon-red));
+            transition: width 0.2s linear;
+        }
+        .entropy-label {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 12px;
+            line-height: 20px;
+            text-shadow: 1px 1px 2px black;
+        }
+
+        /* The Central Infinity Engine */
+        #engine-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 600px;
+            height: 300px;
+            z-index: 10;
+            pointer-events: none; /* Let clicks pass through to numbers behind if needed, but mostly visual */
+        }
+
+        .infinity-svg {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 0 20px var(--neon-red));
+        }
+
+        .infinity-path {
+            fill: none;
+            stroke: url(#grad1);
+            stroke-width: 15;
+            stroke-linecap: round;
+            stroke-dasharray: 10 5; /* The "teeth" look */
+            animation: flow 2s linear infinite;
+        }
+        
+        .infinity-core {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.5);
+            stroke-width: 2;
+            stroke-dasharray: 2000;
+            stroke-dashoffset: 2000;
+            animation: drawLine 5s ease-in-out infinite alternate;
+        }
+
+        @keyframes flow {
+            to { stroke-dashoffset: -30; }
+        }
+        @keyframes drawLine {
+            to { stroke-dashoffset: 0; }
+        }
+
+        /* Floating Math Elements */
+        .math-particle {
+            position: absolute;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 50;
+            transition: transform 0.1s, color 0.2s;
+            text-shadow: 0 0 5px var(--neon-blue);
+            user-select: none;
+        }
+        
+        .math-particle:hover {
+            color: var(--neon-orange);
+            transform: scale(1.5);
+            text-shadow: 0 0 15px var(--neon-orange);
+            z-index: 60;
+        }
+
+        .math-particle.captured {
+            animation: suck-in 0.5s forwards ease-in;
+            pointer-events: none;
+        }
+
+        @keyframes suck-in {
+            0% { transform: scale(1); opacity: 1; }
+            100% { 
+                top: 50%; 
+                left: 50%; 
+                transform: scale(0) rotate(360deg); 
+                opacity: 0; 
+            }
+        }
+
+        /* Background Formulas */
+        .bg-formula {
+            position: absolute;
+            color: rgba(255, 255, 255, 0.1);
+            font-family: 'Times New Roman', serif;
+            font-style: italic;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        /* Game Over Screen */
+        #game-over {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 200;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        
+        button {
+            background: transparent;
+            border: 2px solid var(--neon-blue);
+            color: var(--neon-blue);
+            padding: 15px 40px;
+            font-size: 1.5rem;
+            font-family: inherit;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.3s;
+            text-transform: uppercase;
+        }
+        button:hover {
+            background: var(--neon-blue);
+            color: black;
+            box-shadow: 0 0 20px var(--neon-blue);
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Background Nebulas -->
+    <div class="nebula"></div>
+    <div class="nebula"></div>
+    <div class="nebula"></div>
+
+    <!-- UI Layer -->
+    <div id="ui-layer">
+        <div class="hud-panel">
+            <h1>Infinity Engine</h1>
+            <p>Stabilize the equation. Click the floating variables.</p>
+            <div class="entropy-container">
+                <div class="entropy-fill" id="entropy-bar"></div>
+                <div class="entropy-label">CHAOS LEVEL</div>
+            </div>
+        </div>
+        <div class="hud-panel stats">
+            <div class="stat-item">SCORE: <span id="score">0</span></div>
+            <div class="stat-item">LEVEL: <span id="level">1</span></div>
+        </div>
+    </div>
+
+    <!-- Central Graphic -->
+    <div id="engine-container">
+        <svg class="infinity-svg" viewBox="0 0 300 150">
+            <defs>
+                <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" style="stop-color:#ff4d4d;stop-opacity:1" />
+                    <stop offset="50%" style="stop-color:#ff9f43;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#ff4d4d;stop-opacity:1" />
+                </linearGradient>
+                <filter id="glow">
+                    <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+                    <feMerge>
+                        <feMergeNode in="coloredBlur"/>
+                        <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                </filter>
+            </defs>
+            <!-- The Infinity Path -->
+            <path class="infinity-path" d="M75,75 C25,75 25,125 75,125 C115,125 150,75 150,75 C150,75 185,25 225,25 C275,25 275,75 225,75 C185,75 150,125 150,125 C150,125 115,25 75,25 C25,25 25,75 75,75 Z" />
+            <!-- Inner Core Line -->
+            <path class="infinity-core" d="M75,75 C25,75 25,125 75,125 C115,125 150,75 150,75 C150,75 185,25 225,25 C275,25 275,75 225,75 C185,75 150,125 150,125 C150,125 115,25 75,25 C25,25 25,75 75,75 Z" />
+        </svg>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div id="game-over">
+        <h1 style="font-size: 3rem; color: var(--neon-red);">REALITY COLLAPSED</h1>
+        <p id="final-score" style="font-size: 1.5rem; margin-bottom: 20px;">Score: 0</p>
+        <button onclick="restartGame()">Reboot Universe</button>
+    </div>
+
+    <script>
+        // Game State
+        let score = 0;
+        let level = 1;
+        let entropy = 0;
+        let isGameOver = false;
+        let spawnRate = 1000;
+        let lastSpawn = 0;
+        let particles = [];
+        let animationFrameId;
+
+        // Config
+        const mathSymbols = ['∫', '∑', 'π', '∞', '√', '∂', '∆', '∇', '0', '1', '2', '3', '4', '5', '8', 'Ω', 'λ'];
+        const bgFormulas = [
+            '8 = (c + S)', 'E = mc²', 'e^(iπ) + 1 = 0', 'F = ma', '∫ e^x dx', 'sin² + cos² = 1'
+        ];
+
+        // DOM Elements
+        const scoreEl = document.getElementById('score');
+        const levelEl = document.getElementById('level');
+        const entropyBar = document.getElementById('entropy-bar');
+        const gameOverScreen = document.getElementById('game-over');
+        const finalScoreEl = document.getElementById('final-score');
+
+        // Initialize Background Decor
+        function initBackground() {
+            for(let i=0; i<10; i++) {
+                createBgFormula();
+            }
+        }
+
+        function createBgFormula() {
+            const el = document.createElement('div');
+            el.classList.add('bg-formula');
+            el.innerText = bgFormulas[Math.floor(Math.random() * bgFormulas.length)];
+            el.style.left = Math.random() * 100 + 'vw';
+            el.style.top = Math.random() * 100 + 'vh';
+            el.style.fontSize = (Math.random() * 20 + 10) + 'px';
+            el.style.transform = `rotate(${Math.random() * 360}deg)`;
+            document.body.appendChild(el);
+        }
+
+        // Game Logic
+        class Particle {
+            constructor() {
+                this.el = document.createElement('div');
+                this.el.classList.add('math-particle');
+                this.el.innerText = mathSymbols[Math.floor(Math.random() * mathSymbols.length)];
+                
+                // Random start position (edges of screen)
+                const side = Math.floor(Math.random() * 4); // 0:top, 1:right, 2:bottom, 3:left
+                if (side === 0) { this.x = Math.random() * window.innerWidth; this.y = -50; }
+                else if (side === 1) { this.x = window.innerWidth + 50; this.y = Math.random() * window.innerHeight; }
+                else if (side === 2) { this.x = Math.random() * window.innerWidth; this.y = window.innerHeight + 50; }
+                else { this.x = -50; this.y = Math.random() * window.innerHeight; }
+
+                this.vx = (window.innerWidth/2 - this.x) * (0.0005 + (level * 0.0001));
+                this.vy = (window.innerHeight/2 - this.y) * (0.0005 + (level * 0.0001));
+                
+                // Add some randomness to trajectory
+                this.vx += (Math.random() - 0.5) * 0.5;
+                this.vy += (Math.random() - 0.5) * 0.5;
+
+                this.el.style.left = this.x + 'px';
+                this.el.style.top = this.y + 'px';
+                
+                // Interaction
+                this.el.addEventListener('mousedown', () => this.capture());
+                this.el.addEventListener('touchstart', (e) => { e.preventDefault(); this.capture(); });
+
+                document.body.appendChild(this.el);
+                this.active = true;
+            }
+
+            update() {
+                if (!this.active) return;
+
+                this.x += this.vx;
+                this.y += this.vy;
+                
+                this.el.style.left = this.x + 'px';
+                this.el.style.top = this.y + 'px';
+
+                // Check distance to center
+                const dx = this.x - window.innerWidth/2;
+                const dy = this.y - window.innerHeight/2;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+
+                if (dist < 50) {
+                    this.absorb();
+                }
+            }
+
+            capture() {
+                if (!this.active) return;
+                this.active = false;
+                this.el.classList.add('captured');
+                
+                // Score logic
+                score += 10 * level;
+                scoreEl.innerText = score;
+                
+                // Reduce entropy
+                entropy = Math.max(0, entropy - 5);
+                updateEntropy();
+
+                // Level up check
+                if (score > level * 500) {
+                    level++;
+                    levelEl.innerText = level;
+                    spawnRate = Math.max(200, 1000 - (level * 100));
+                    flashScreen();
+                }
+
+                setTimeout(() => {
+                    if (this.el.parentNode) this.el.parentNode.removeChild(this.el);
+                }, 500);
+            }
+
+            absorb() {
+                // Reached center without being clicked
+                this.active = false;
+                if (this.el.parentNode) this.el.parentNode.removeChild(this.el);
+                
+                // Increase entropy
+                entropy += 15;
+                updateEntropy();
+                
+                // Visual feedback
+                const engine = document.querySelector('.infinity-svg');
+                engine.style.filter = 'drop-shadow(0 0 30px red)';
+                setTimeout(() => {
+                    engine.style.filter = 'drop-shadow(0 0 20px var(--neon-red))';
+                }, 200);
+            }
+        }
+
+        function updateEntropy() {
+            entropyBar.style.width = entropy + '%';
+            if (entropy >= 100) {
+                triggerGameOver();
+            }
+        }
+
+        function flashScreen() {
+            const flash = document.createElement('div');
+            flash.style.position = 'absolute';
+            flash.style.top = '0';
+            flash.style.left = '0';
+            flash.style.width = '100%';
+            flash.style.height = '100%';
+            flash.style.background = 'white';
+            flash.style.opacity = '0.5';
+            flash.style.pointerEvents = 'none';
+            flash.style.zIndex = '999';
+            flash.style.transition = 'opacity 0.5s';
+            document.body.appendChild(flash);
+            
+            setTimeout(() => {
+                flash.style.opacity = '0';
+                setTimeout(() => flash.remove(), 500);
+            }, 50);
+        }
+
+        function triggerGameOver() {
+            isGameOver = true;
+            finalScoreEl.innerText = "Final Score: " + score;
+            gameOverScreen.style.display = 'flex';
+            particles.forEach(p => {
+                if(p.el.parentNode) p.el.parentNode.removeChild(p.el);
+            });
+            particles = [];
+        }
+
+        function restartGame() {
+            score = 0;
+            level = 1;
+            entropy = 0;
+            spawnRate = 1000;
+            isGameOver = false;
+            scoreEl.innerText = '0';
+            levelEl.innerText = '1';
+            updateEntropy();
+            gameOverScreen.style.display = 'none';
+            gameLoop(0);
+        }
+
+        function gameLoop(timestamp) {
+            if (isGameOver) return;
+
+            if (timestamp - lastSpawn > spawnRate) {
+                particles.push(new Particle());
+                lastSpawn = timestamp;
+            }
+
+            // Update particles
+            particles.forEach((p, index) => {
+                p.update();
+                if (!p.active && !p.el.classList.contains('captured')) {
+                    particles.splice(index, 1);
+                }
+            });
+
+            // Clean up captured particles from array occasionally to prevent memory leak
+            // (Though splice above handles absorbed ones, captured ones linger for anim)
+            particles = particles.filter(p => p.el.parentNode);
+
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        // Start
+        initBackground();
+        requestAnimationFrame(gameLoop);
+
+    </script>
+</body>
+</html>
